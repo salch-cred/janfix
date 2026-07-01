@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,141 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const isHorizontal = dims.w > dims.h;
   const scale = 360 / dims.w; // preview width 360px
 
+  const previewFrameStyle: CSSProperties = { width: dims.w * scale, height: dims.h * scale };
+  const posterOuterStyle: CSSProperties = {
+    width: dims.w,
+    height: dims.h,
+    transform: `scale(${scale})`,
+    transformOrigin: "top left",
+    background: "linear-gradient(160deg,#0b1220 0%,#0f1d3a 55%,#102a4d 100%)",
+    color: "white",
+    fontFamily: "Inter, sans-serif",
+    position: "relative",
+    padding: isHorizontal ? 56 : 64,
+    display: "flex",
+    flexDirection: isHorizontal ? "row" : "column",
+    gap: 36,
+  };
+  const photoWrapStyle: CSSProperties = {
+    position: "relative",
+    flex: isHorizontal ? "0 0 45%" : "0 0 55%",
+    borderRadius: 28,
+    overflow: "hidden",
+    background: "#0a0f1e",
+  };
+  const photoImgStyle: CSSProperties = { width: "100%", height: "100%", objectFit: "cover" };
+  const photoCategoryBadgeStyle: CSSProperties = {
+    position: "absolute",
+    top: 24,
+    left: 24,
+    background: cat.color ?? "#64748b",
+    color: "white",
+    padding: "8px 18px",
+    borderRadius: 999,
+    fontSize: 22,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  };
+  const photoStatusBadgeStyle: CSSProperties = {
+    position: "absolute",
+    bottom: 24,
+    left: 24,
+    background: "rgba(0,0,0,0.55)",
+    color: "white",
+    padding: "8px 18px",
+    borderRadius: 999,
+    fontSize: 20,
+    fontWeight: 700,
+    letterSpacing: 1,
+  };
+  const contentColumnStyle: CSSProperties = {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: 28,
+    minWidth: 0,
+  };
+  const brandRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 16 };
+  const brandMarkStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    background: "#2563eb",
+    fontSize: 28,
+    fontWeight: 800,
+  };
+  const brandNameStyle: CSSProperties = { fontSize: 28, fontWeight: 800, lineHeight: 1 };
+  const brandSubStyle: CSSProperties = { fontSize: 16, opacity: 0.6, marginTop: 2 };
+  const descriptionStyle: CSSProperties = {
+    fontSize: isHorizontal ? 34 : 40,
+    fontWeight: 800,
+    lineHeight: 1.25,
+  };
+  const metaRowStyle: CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    fontSize: 20,
+    opacity: 0.8,
+  };
+  const authorityRowStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+    padding: "16px 18px",
+    borderRadius: 18,
+    background: "rgba(255,255,255,0.08)",
+  };
+  const authorityLogoStyle: CSSProperties = {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    objectFit: "cover",
+    background: "white",
+  };
+  const authorityLogoPlaceholderStyle: CSSProperties = {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.15)",
+  };
+  const authorityTextStyle: CSSProperties = { flex: 1, minWidth: 0 };
+  const authorityLabelStyle: CSSProperties = {
+    fontSize: 14,
+    opacity: 0.6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  };
+  const authorityNameStyle: CSSProperties = { fontSize: 20, fontWeight: 700 };
+  const repPhotoStyle: CSSProperties = {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    objectFit: "cover",
+    border: "2px solid rgba(255,255,255,0.4)",
+  };
+  const qrRowStyle: CSSProperties = {
+    marginTop: "auto",
+    display: "flex",
+    alignItems: "center",
+    gap: 18,
+    paddingTop: 24,
+    borderTop: "1px solid rgba(255,255,255,0.15)",
+  };
+  const qrImageStyle: CSSProperties = {
+    width: 96,
+    height: 96,
+    borderRadius: 12,
+    background: "white",
+    padding: 6,
+  };
+  const qrCaptionStyle: CSSProperties = { fontSize: 16, opacity: 0.7, lineHeight: 1.4 };
+  const qrDomainStyle: CSSProperties = { fontWeight: 700, opacity: 1, color: "white" };
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
@@ -113,130 +248,61 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
       <div className="overflow-hidden rounded-xl border bg-muted/40 p-3">
         <div
-          style={{
-            width: dims.w * scale,
-            height: dims.h * scale,
-            overflow: "hidden",
-          }}
+          style={previewFrameStyle}
           className="mx-auto"
         >
           <div
             ref={posterRef}
-            style={{
-              width: dims.w,
-              height: dims.h,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-              background: "linear-gradient(160deg,#0b1220 0%,#0f1d3a 55%,#102a4d 100%)",
-              color: "white",
-              fontFamily: "Inter, sans-serif",
-              position: "relative",
-              padding: isHorizontal ? 56 : 64,
-              display: "flex",
-              flexDirection: isHorizontal ? "row" : "column",
-              gap: 36,
-            }}
+            style={posterOuterStyle}
           >
             {/* Issue photo dominant */}
             <div
-              style={{
-                flex: isHorizontal ? "0 0 55%" : "0 0 auto",
-                width: isHorizontal ? undefined : "100%",
-                height: isHorizontal ? "100%" : "55%",
-                borderRadius: 28,
-                overflow: "hidden",
-                background: "#1f2937",
-                boxShadow: "0 24px 60px rgba(0,0,0,.45)",
-                position: "relative",
-              }}
+              style={photoWrapStyle}
             >
               {imgSrc ? (
                 <img
                   src={imgSrc}
                   alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={photoImgStyle}
                 />
               ) : null}
               <div
-                style={{
-                  position: "absolute",
-                  left: 24,
-                  top: 24,
-                  padding: "10px 18px",
-                  borderRadius: 999,
-                  background: cat.color ?? "#1d4ed8",
-                  fontWeight: 800,
-                  fontSize: 22,
-                  letterSpacing: ".04em",
-                  textTransform: "uppercase",
-                }}
+                style={photoCategoryBadgeStyle}
               >
                 {cat.name_en}
               </div>
               <div
-                style={{
-                  position: "absolute",
-                  right: 24,
-                  bottom: 24,
-                  padding: "10px 18px",
-                  borderRadius: 999,
-                  background: "rgba(0,0,0,.55)",
-                  backdropFilter: "blur(6px)",
-                  fontWeight: 700,
-                  fontSize: 22,
-                  letterSpacing: ".05em",
-                }}
+                style={photoStatusBadgeStyle}
               >
                 {status.label.toUpperCase()}
               </div>
             </div>
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={contentColumnStyle}>
+              <div style={brandRowStyle}>
                 <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 14,
-                    background: "#1d4ed8",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 900,
-                    fontSize: 28,
-                  }}
+                  style={brandMarkStyle}
                 >
                   J
                 </div>
                 <div>
                   <div
-                    style={{
-                      fontFamily: "'Plus Jakarta Sans',sans-serif",
-                      fontWeight: 800,
-                      fontSize: 36,
-                      lineHeight: 1,
-                    }}
+                    style={brandNameStyle}
                   >
                     JanFix
                   </div>
-                  <div style={{ opacity: 0.75, fontSize: 18, marginTop: 4 }}>Mangaluru</div>
+                  <div style={brandSubStyle}>Mangaluru</div>
                 </div>
               </div>
 
               <div
-                style={{
-                  fontFamily: "'Plus Jakarta Sans',sans-serif",
-                  fontWeight: 800,
-                  fontSize: isHorizontal ? 44 : 56,
-                  lineHeight: 1.1,
-                  letterSpacing: "-0.02em",
-                }}
+                style={descriptionStyle}
               >
                 {issue.description}
               </div>
 
               <div
-                style={{ display: "flex", flexWrap: "wrap", gap: 16, opacity: 0.9, fontSize: 22 }}
+                style={metaRowStyle}
               >
                 <div>
                   📍 {[issue.area, issue.locality].filter(Boolean).join(", ") || "Mangaluru"}
@@ -246,51 +312,26 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
               {issue.authority && (
                 <div
-                  style={{
-                    marginTop: "auto",
-                    padding: 20,
-                    borderRadius: 20,
-                    background: "rgba(255,255,255,.08)",
-                    border: "1px solid rgba(255,255,255,.12)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 16,
-                  }}
+                  style={authorityRowStyle}
                 >
                   {logoSrc ? (
                     <img
                       src={logoSrc}
                       alt=""
-                      style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 14,
-                        objectFit: "cover",
-                        background: "white",
-                      }}
+                      style={authorityLogoStyle}
                     />
                   ) : (
                     <div
-                      style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 14,
-                        background: "rgba(255,255,255,.15)",
-                      }}
+                      style={authorityLogoPlaceholderStyle}
                     />
                   )}
-                  <div style={{ flex: 1 }}>
+                  <div style={authorityTextStyle}>
                     <div
-                      style={{
-                        fontSize: 16,
-                        opacity: 0.65,
-                        textTransform: "uppercase",
-                        letterSpacing: ".1em",
-                      }}
+                      style={authorityLabelStyle}
                     >
                       Assigned to
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: 26, marginTop: 2 }}>
+                    <div style={authorityNameStyle}>
                       {issue.authority.name}
                     </div>
                   </div>
@@ -298,30 +339,24 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                     <img
                       src={repSrc}
                       alt=""
-                      style={{ width: 56, height: 56, borderRadius: 999, objectFit: "cover" }}
+                      style={repPhotoStyle}
                     />
                   )}
                 </div>
               )}
 
-              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+              <div style={qrRowStyle}>
                 {qr && (
                   <img
                     src={qr}
                     alt="QR"
-                    style={{
-                      width: 120,
-                      height: 120,
-                      borderRadius: 14,
-                      background: "white",
-                      padding: 8,
-                    }}
+                    style={qrImageStyle}
                   />
                 )}
-                <div style={{ fontSize: 18, opacity: 0.85 }}>
+                <div style={qrCaptionStyle}>
                   Scan to view live status
                   <br />
-                  <span style={{ opacity: 0.7 }}>janfix.mangaluru</span>
+                  <span style={qrDomainStyle}>janfix.mangaluru</span>
                 </div>
               </div>
             </div>
@@ -346,10 +381,7 @@ function ShareButtons({ url, text }: { url: string; text: string }) {
   const enc = encodeURIComponent;
   const links = [
     { label: "WhatsApp", href: `https://wa.me/?text=${enc(text + " " + url)}` },
-    {
-      label: "Twitter",
-      href: `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}`,
-    },
+    { label: "Twitter", href: `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}` },
     { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}` },
     { label: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}` },
   ];
