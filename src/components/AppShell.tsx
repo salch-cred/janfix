@@ -1,5 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, Plus, Map, Building2, Home, Megaphone, ArrowRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Location01Icon,
+  Add01Icon,
+  MapsLocation01Icon,
+  Building02Icon,
+  Home01Icon,
+  Megaphone01Icon,
+  ArrowRight01Icon,
+} from "@hugeicons/core-free-icons";
 import { Disclaimer } from "./Disclaimer";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -17,13 +26,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 function AnnouncementBar() {
   return (
     <div className="hidden items-center justify-center gap-2 bg-foreground px-4 py-2 text-center text-xs font-medium text-background md:flex">
-      <Megaphone className="h-3.5 w-3.5" />
+      <HugeiconsIcon icon={Megaphone01Icon} size={14} strokeWidth={1.5} />
       <span>Now live in Mangaluru \u2014 report a civic issue in under 60 seconds.</span>
       <Link
         to="/report"
         className="ml-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2"
       >
-        Report now <ArrowRight className="h-3 w-3" />
+        Report now <HugeiconsIcon icon={ArrowRight01Icon} size={12} strokeWidth={1.5} />
       </Link>
     </div>
   );
@@ -35,7 +44,7 @@ function TopBar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <MapPin className="h-4 w-4" />
+            <HugeiconsIcon icon={Location01Icon} size={16} strokeWidth={1.5} />
           </div>
           <div className="leading-tight">
             <div className="font-display text-base font-extrabold tracking-tight">JanFix</div>
@@ -60,7 +69,7 @@ function TopBar() {
             to="/report"
             className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-sm transition hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> Report an issue
+            <HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.5} /> Report an issue
           </Link>
         </div>
       </div>
@@ -82,16 +91,15 @@ function NavItem({ to, label }: { to: string; label: string }) {
 
 function MobileTabBar() {
   const tabs = [
-    { to: "/", label: "Home", icon: Home },
-    { to: "/explore", label: "Explore", icon: Map },
-    { to: "/report", label: "Report", icon: Plus, accent: true },
-    { to: "/authorities", label: "Authorities", icon: Building2 },
+    { to: "/", label: "Home", icon: Home01Icon },
+    { to: "/explore", label: "Explore", icon: MapsLocation01Icon },
+    { to: "/report", label: "Report", icon: Add01Icon, accent: true },
+    { to: "/authorities", label: "Authorities", icon: Building02Icon },
   ];
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur md:hidden">
       <ul className="mx-auto grid max-w-md grid-cols-5 px-1 py-2">
         {tabs.map((t) => {
-          const Icon = t.icon;
           return (
             <li key={t.to} className="flex items-center justify-center">
               <Link
@@ -103,7 +111,7 @@ function MobileTabBar() {
                 }
                 activeProps={t.accent ? {} : { className: "text-primary" }}
               >
-                <Icon className={t.accent ? "h-5 w-5" : "h-5 w-5"} />
+                <HugeiconsIcon icon={t.icon} size={20} strokeWidth={1.5} />
                 {!t.accent && <span>{t.label}</span>}
               </Link>
             </li>
