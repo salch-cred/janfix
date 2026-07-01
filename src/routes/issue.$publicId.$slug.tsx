@@ -73,6 +73,22 @@ function IssuePage() {
     incrementViewFn({ data: { issue_id: q.data.issue.id } }).catch(() => {});
   }, [q.data?.issue?.id, publicId]);
 
+  // ensure URL slug matches (canonical) — must run unconditionally on every
+  // render (not after an early return) to avoid a Rules-of-Hooks violation.
+  useEffect(() => {
+    if (!q.data?.issue) return;
+    const canon = q.data.issue.slug || slugify(q.data.issue.description);
+    const last = (location.pathname.split("/").pop() ?? "").trim();
+    if (canon && last && last !== canon) {
+      navigate({
+        to: "/issue/$publicId/$slug",
+        params: { publicId, slug: canon },
+        replace: true,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.data?.issue?.slug, q.data?.issue?.description, publicId]);
+
   if (q.isLoading) {
     return (
       <AppShell>
@@ -95,20 +111,6 @@ function IssuePage() {
   const categoryBadgeStyle = { background: (cat as any).color ?? "#64748b" };
   const issueLocation = { lat: i.lat, lng: i.lng };
   const extraPhotos = (payload as any).photos ?? [];
-
-  // ensure URL slug matches (canonical)
-  useEffect(() => {
-    const canon = i.slug || slugify(i.description);
-    const last = (location.pathname.split("/").pop() ?? "").trim();
-    if (canon && last && last !== canon) {
-      navigate({
-        to: "/issue/$publicId/$slug",
-        params: { publicId, slug: canon },
-        replace: true,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     try {
