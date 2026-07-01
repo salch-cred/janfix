@@ -95,6 +95,7 @@ function useImageDataUrls(urls: (string | null | undefined)[]): Map<string, stri
 export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; publicUrl: string }) {
   const [size, setSize] = useState<keyof typeof SIZES>("instagram");
   const [qr, setQr] = useState<string>("");
+  const [downloading, setDownloading] = useState(false);
   const posterRef = useRef<HTMLDivElement>(null);
   const cat = issue.category ?? categoryBySlug("others");
   const status = STATUS_META[issue.status] ?? STATUS_META.reported;
@@ -115,19 +116,31 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   }, [publicUrl]);
 
   const download = async () => {
-    if (!posterRef.current) return;
-    const node = posterRef.current;
-    const data = await toPng(node, {
-      cacheBust: true,
-      pixelRatio: 2,
-      width: dims.w,
-      height: dims.h,
-      backgroundColor: "#ffffff",
-    });
-    const a = document.createElement("a");
-    a.href = data;
-    a.download = `JanFix-${issue.public_id}-${size}.png`;
-    a.click();
+    if (!posterRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const node = posterRef.current;
+      // node itself is rendered at full resolution (dims.w x dims.h) with no
+      // scale transform on it — only its preview wrapper is scaled down for
+      // on-screen display — so this always captures a full-size, non-cropped PNG.
+      const data = await toPng(node, {
+        cacheBust: true,
+        pixelRatio: 2,
+        width: dims.w,
+        height: dims.h,
+        backgroundColor: "#ffffff",
+      });
+      const a = document.createElement("a");
+      a.href = data;
+      a.download = `JanFix-${issue.public_id}-${size}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error("Poster download failed", err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const scale = 360 / dims.w; // preview width 360px
@@ -149,12 +162,20 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     : issue.public_id;
   const shortLink = `janfix.in/${idTail}`;
 
-  const previewFrameStyle: CSSProperties = { width: dims.w * scale, height: dims.h * scale };
-  const posterOuterStyle: CSSProperties = {
+  const previewFrameStyle: CSSProperties = {
+    width: dims.w * scale,
+    height: dims.h * scale,
+    overflow: "hidden",
+  };
+  const previewScaleWrapperStyle: CSSProperties = {
     width: dims.w,
     height: dims.h,
     transform: `scale(${scale})`,
     transformOrigin: "top left",
+  };
+  const posterOuterStyle: CSSProperties = {
+    width: dims.w,
+    height: dims.h,
     background: "#ffffff",
     color: "#0f172a",
     fontFamily: "Inter, sans-serif",
@@ -490,167 +511,169 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
       <div className="overflow-hidden rounded-xl border bg-muted/40 p-3">
         <div style={previewFrameStyle} className="mx-auto">
-          <div ref={posterRef} style={posterOuterStyle}>
-            <div style={headerBarStyle}>
-              <div style={brandRowStyle}>
-                <div style={brandMarkStyle}>
-                  <HugeiconsIcon icon={Location01Icon} size={isHorizontal ? 20 : 26} strokeWidth={1.5} />
-                </div>
-                <div>
-                  <div style={brandTitleStyle}>
-                    Jan<span style={brandGreenStyle}>Fix</span>
+          <div style={previewScaleWrapperStyle}>
+            <div ref={posterRef} style={posterOuterStyle}>
+              <div style={headerBarStyle}>
+                <div style={brandRowStyle}>
+                  <div style={brandMarkStyle}>
+                    <HugeiconsIcon icon={Location01Icon} size={isHorizontal ? 20 : 26} strokeWidth={1.5} />
                   </div>
-                  <div style={brandTaglineStyle}>Report. Track. Fix.</div>
-                </div>
-              </div>
-              <div style={sloganBlockStyle}>
-                <div style={sloganTitleStyle}>Let's Fix Mangaluru</div>
-                <div style={sloganKannadaStyle}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
-                <div style={sloganSubStyle}>Together for a Better City</div>
-              </div>
-            </div>
-
-            <div style={bodyRowStyle}>
-              <div style={photoWrapStyle}>
-                {imgSrc ? <img src={imgSrc} alt="" style={photoImgStyle} /> : null}
-                <div style={idBadgeStyle}>
-                  <div style={idBadgeLabelStyle}>ISSUE ID</div>
-                  <div style={idBadgeValueStyle}>{issue.public_id}</div>
-                </div>
-                <div style={statusBadgeStyle}>
-                  <Settings2 size={16} />
-                  <div style={statusBadgeTextWrapStyle}>
-                    <div style={statusBadgeLabelStyle}>STATUS</div>
-                    <div style={statusBadgeValueStyle}>{status.label.toUpperCase()}</div>
+                  <div>
+                    <div style={brandTitleStyle}>
+                      Jan<span style={brandGreenStyle}>Fix</span>
+                    </div>
+                    <div style={brandTaglineStyle}>Report. Track. Fix.</div>
                   </div>
+                </div>
+                <div style={sloganBlockStyle}>
+                  <div style={sloganTitleStyle}>Let's Fix Mangaluru</div>
+                  <div style={sloganKannadaStyle}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
+                  <div style={sloganSubStyle}>Together for a Better City</div>
                 </div>
               </div>
 
-              <div style={contentColumnStyle}>
-                <div style={titleDescBlockStyle}>
-                  <div style={categoryTitleStyle}>{cat.name_en}</div>
-                  <div style={descriptionStyle}>{issue.description}</div>
-                </div>
-
-                <div style={infoBarStyle}>
-                  <div style={infoItemStyle}>
-                    <div style={infoIconWrapStyle}>
-                      <MapPin size={16} />
-                    </div>
-                    <div>
-                      <div style={infoLabelStyle}>Location</div>
-                      <div style={infoValueStyle}>{locationLabel}</div>
-                    </div>
+              <div style={bodyRowStyle}>
+                <div style={photoWrapStyle}>
+                  {imgSrc ? <img src={imgSrc} alt="" style={photoImgStyle} /> : null}
+                  <div style={idBadgeStyle}>
+                    <div style={idBadgeLabelStyle}>ISSUE ID</div>
+                    <div style={idBadgeValueStyle}>{issue.public_id}</div>
                   </div>
-                  <div style={infoItemStyle}>
-                    <div style={infoIconWrapStyle}>
-                      <Building2 size={16} />
-                    </div>
-                    <div>
-                      <div style={infoLabelStyle}>Ward</div>
-                      <div style={infoValueStyle}>{wardLabel}</div>
-                    </div>
-                  </div>
-                  <div style={infoItemStyle}>
-                    <div style={infoIconWrapStyle}>
-                      <CalendarDays size={16} />
-                    </div>
-                    <div>
-                      <div style={infoLabelStyle}>Reported On</div>
-                      <div style={infoValueStyle}>
-                        {reportedDateLabel}
-                        {reportedTimeLabel ? ` \u00b7 ${reportedTimeLabel}` : ""}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={infoItemStyle}>
-                    <div style={infoIconWrapStyle}>
-                      <Eye size={16} />
-                    </div>
-                    <div>
-                      <div style={infoLabelStyle}>Supports</div>
-                      <div style={infoValueStyle}>
-                        {supportsCount} \u00b7 views {viewsCount}
-                      </div>
+                  <div style={statusBadgeStyle}>
+                    <Settings2 size={16} />
+                    <div style={statusBadgeTextWrapStyle}>
+                      <div style={statusBadgeLabelStyle}>STATUS</div>
+                      <div style={statusBadgeValueStyle}>{status.label.toUpperCase()}</div>
                     </div>
                   </div>
                 </div>
 
-                <div style={peopleRowStyle}>
-                  <div style={personBlockStyle}>
-                    <div style={personLabelStyle}>Responsible Authority</div>
-                    <div style={personRowStyle}>
-                      {logoSrc ? (
-                        <img src={logoSrc} alt="" style={personLogoStyle} />
-                      ) : (
-                        <div style={personPlaceholderStyle} />
-                      )}
-                      <div style={personTextWrapStyle}>
-                        <div style={personNameStyle}>{issue.authority?.name ?? "Unassigned"}</div>
-                        {(issue.authority?.department || issue.authority?.type) && (
-                          <div style={personSubStyle}>
-                            {[issue.authority?.department, issue.authority?.type]
-                              .filter(Boolean)
-                              .join(" \u00b7 ")}
-                          </div>
-                        )}
+                <div style={contentColumnStyle}>
+                  <div style={titleDescBlockStyle}>
+                    <div style={categoryTitleStyle}>{cat.name_en}</div>
+                    <div style={descriptionStyle}>{issue.description}</div>
+                  </div>
+
+                  <div style={infoBarStyle}>
+                    <div style={infoItemStyle}>
+                      <div style={infoIconWrapStyle}>
+                        <MapPin size={16} />
+                      </div>
+                      <div>
+                        <div style={infoLabelStyle}>Location</div>
+                        <div style={infoValueStyle}>{locationLabel}</div>
+                      </div>
+                    </div>
+                    <div style={infoItemStyle}>
+                      <div style={infoIconWrapStyle}>
+                        <Building2 size={16} />
+                      </div>
+                      <div>
+                        <div style={infoLabelStyle}>Ward</div>
+                        <div style={infoValueStyle}>{wardLabel}</div>
+                      </div>
+                    </div>
+                    <div style={infoItemStyle}>
+                      <div style={infoIconWrapStyle}>
+                        <CalendarDays size={16} />
+                      </div>
+                      <div>
+                        <div style={infoLabelStyle}>Reported On</div>
+                        <div style={infoValueStyle}>
+                          {reportedDateLabel}
+                          {reportedTimeLabel ? ` \u00b7 ${reportedTimeLabel}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={infoItemStyle}>
+                      <div style={infoIconWrapStyle}>
+                        <Eye size={16} />
+                      </div>
+                      <div>
+                        <div style={infoLabelStyle}>Supports</div>
+                        <div style={infoValueStyle}>
+                          {supportsCount} \u00b7 views {viewsCount}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  {issue.representative && (
+
+                  <div style={peopleRowStyle}>
                     <div style={personBlockStyle}>
-                      <div style={personLabelStyle}>Local Representative</div>
+                      <div style={personLabelStyle}>Responsible Authority</div>
                       <div style={personRowStyle}>
-                        {repSrc ? (
-                          <img src={repSrc} alt="" style={personPhotoStyle} />
+                        {logoSrc ? (
+                          <img src={logoSrc} alt="" style={personLogoStyle} />
                         ) : (
                           <div style={personPlaceholderStyle} />
                         )}
                         <div style={personTextWrapStyle}>
-                          <div style={personNameStyle}>{issue.representative.name}</div>
-                          <div style={personSubStyle}>{issue.representative.role}</div>
-                          {issue.representative.phone && (
-                            <div style={personPhoneRowStyle}>
-                              <Phone size={10} /> {issue.representative.phone}
+                          <div style={personNameStyle}>{issue.authority?.name ?? "Unassigned"}</div>
+                          {(issue.authority?.department || issue.authority?.type) && (
+                            <div style={personSubStyle}>
+                              {[issue.authority?.department, issue.authority?.type]
+                                .filter(Boolean)
+                                .join(" \u00b7 ")}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
-
-                <div style={footerSectionStyle}>
-                  <div style={footerLeftStyle}>
-                    <div style={footerLineOneStyle}>Your Small Report</div>
-                    <div style={footerLineTwoStyle}>Can Create a Big Change!</div>
-                    <div style={footerSubTextStyle}>
-                      Vote, share and help make Mangaluru a better place to live.
-                    </div>
+                    {issue.representative && (
+                      <div style={personBlockStyle}>
+                        <div style={personLabelStyle}>Local Representative</div>
+                        <div style={personRowStyle}>
+                          {repSrc ? (
+                            <img src={repSrc} alt="" style={personPhotoStyle} />
+                          ) : (
+                            <div style={personPlaceholderStyle} />
+                          )}
+                          <div style={personTextWrapStyle}>
+                            <div style={personNameStyle}>{issue.representative.name}</div>
+                            <div style={personSubStyle}>{issue.representative.role}</div>
+                            {issue.representative.phone && (
+                              <div style={personPhoneRowStyle}>
+                                <Phone size={10} /> {issue.representative.phone}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div style={footerRightStyle}>
-                    <div style={voteButtonsRowStyle}>
-                      <div style={voteButtonFixedStyle}>
-                        <ThumbsUp size={14} />
-                        <div style={voteButtonTextWrapStyle}>
-                          <div style={voteButtonTitleStyle}>ISSUE FIXED</div>
-                          <div style={voteButtonSubStyle}>Vote if resolved</div>
-                        </div>
-                      </div>
-                      <div style={voteButtonExistsStyle}>
-                        <ThumbsDown size={14} />
-                        <div style={voteButtonTextWrapStyle}>
-                          <div style={voteButtonTitleStyle}>STILL EXISTS</div>
-                          <div style={voteButtonSubStyle}>Vote if it persists</div>
-                        </div>
+
+                  <div style={footerSectionStyle}>
+                    <div style={footerLeftStyle}>
+                      <div style={footerLineOneStyle}>Your Small Report</div>
+                      <div style={footerLineTwoStyle}>Can Create a Big Change!</div>
+                      <div style={footerSubTextStyle}>
+                        Vote, share and help make Mangaluru a better place to live.
                       </div>
                     </div>
-                    <div style={qrBoxStyle}>
-                      {qr && <img src={qr} alt="QR" style={qrImageStyle} />}
-                      <div>
-                        <div style={qrTextTitleStyle}>SCAN TO VIEW & SUPPORT</div>
-                        <div style={qrTextSubStyle}>this issue or visit</div>
-                        <div style={qrTextLinkStyle}>{shortLink}</div>
+                    <div style={footerRightStyle}>
+                      <div style={voteButtonsRowStyle}>
+                        <div style={voteButtonFixedStyle}>
+                          <ThumbsUp size={14} />
+                          <div style={voteButtonTextWrapStyle}>
+                            <div style={voteButtonTitleStyle}>ISSUE FIXED</div>
+                            <div style={voteButtonSubStyle}>Vote if resolved</div>
+                          </div>
+                        </div>
+                        <div style={voteButtonExistsStyle}>
+                          <ThumbsDown size={14} />
+                          <div style={voteButtonTextWrapStyle}>
+                            <div style={voteButtonTitleStyle}>STILL EXISTS</div>
+                            <div style={voteButtonSubStyle}>Vote if it persists</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={qrBoxStyle}>
+                        {qr && <img src={qr} alt="QR" style={qrImageStyle} />}
+                        <div>
+                          <div style={qrTextTitleStyle}>SCAN TO VIEW & SUPPORT</div>
+                          <div style={qrTextSubStyle}>this issue or visit</div>
+                          <div style={qrTextLinkStyle}>{shortLink}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -662,8 +685,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={download} className="gap-2">
-          <Download className="h-4 w-4" /> Download PNG
+        <Button onClick={download} disabled={downloading} className="gap-2">
+          <Download className="h-4 w-4" /> {downloading ? "Preparing\u2026" : "Download PNG"}
         </Button>
         <ShareButtons
           url={publicUrl}
