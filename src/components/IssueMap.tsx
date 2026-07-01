@@ -78,7 +78,8 @@ export function IssueMap({
       LRef.current = L;
       const c = center ?? { lat: 12.9141, lng: 74.856 };
       const map = L.map(ref.current, { zoomControl: true }).setView([c.lat, c.lng], zoom);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      const tileUrlTemplate = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+      L.tileLayer(tileUrlTemplate, {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
       }).addTo(map);
