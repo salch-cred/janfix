@@ -94,6 +94,7 @@ function IssuePage() {
   const severity = SEVERITY_META[i.severity as keyof typeof SEVERITY_META] ?? SEVERITY_META.medium;
   const categoryBadgeStyle = { background: (cat as any).color ?? "#64748b" };
   const issueLocation = { lat: i.lat, lng: i.lng };
+  const extraPhotos = (payload as any).photos ?? [];
 
   // ensure URL slug matches (canonical)
   useEffect(() => {
@@ -194,6 +195,20 @@ function IssuePage() {
             />
           )}
         </div>
+
+        {extraPhotos.length > 0 && (
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {extraPhotos.map((p: any) => (
+              <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
+                <img
+                  src={p.url}
+                  alt=""
+                  className="aspect-square w-full rounded-xl border object-cover"
+                />
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Action bar */}
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
