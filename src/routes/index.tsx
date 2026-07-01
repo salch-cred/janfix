@@ -76,51 +76,117 @@ function Home() {
   return (
     <AppShell>
       {/* Hero */}
-      <section className="civic-gradient">
-        <div className="mx-auto max-w-6xl px-4 pt-14 pb-16 md:pt-24 md:pb-24">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-7xl">
-              Report it. Track it.
-              <br />
-              <span className="text-primary">Get it fixed.</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-              Pothole, garbage, broken streetlight \u2014 snap a photo and the right authority gets
-              notified. No login needed.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link to="/report">
-                <Button
-                  size="lg"
-                  className="gap-2 rounded-full bg-foreground px-7 text-background shadow-md hover:opacity-90"
-                >
-                  <HugeiconsIcon icon={Add01Icon} size={20} strokeWidth={1.5} /> Report an issue
-                </Button>
-              </Link>
-              <Link to="/explore">
-                <Button size="lg" variant="outline" className="gap-2 rounded-full px-7">
-                  <HugeiconsIcon icon={Location01Icon} size={20} strokeWidth={1.5} /> Explore the map
-                </Button>
-              </Link>
+      <section className="relative overflow-hidden bg-primary text-primary-foreground">
+        <div className="mx-auto max-w-6xl px-4 pt-14 pb-24 md:pt-20 md:pb-32">
+          <div className="grid items-center gap-12 md:grid-cols-2">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-4 py-2 text-xs font-semibold ring-1 ring-inset ring-primary-foreground/20">
+                <HugeiconsIcon icon={Location01Icon} size={14} strokeWidth={1.5} /> Ask JanFix. Where do
+                I report an issue?
+              </span>
+              <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-6xl">
+                Report it. Track it.
+                <br />
+                Get it fixed.
+              </h1>
+              <p className="mt-5 max-w-md text-base text-primary-foreground/80 md:text-lg">
+                Pothole, garbage, broken streetlight \u2014 snap a photo and the right civic
+                authority gets notified. No login needed.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link to="/report">
+                  <Button
+                    size="lg"
+                    className="gap-2 rounded-full bg-background px-7 text-foreground shadow-md hover:bg-background/90"
+                  >
+                    Report an issue{" "}
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.5} />
+                  </Button>
+                </Link>
+                <Link to="/explore">
+                  <Button
+                    size="lg"
+                    className="gap-2 rounded-full bg-primary-foreground/10 px-7 text-primary-foreground ring-1 ring-inset ring-primary-foreground/25 hover:bg-primary-foreground/15"
+                  >
+                    <HugeiconsIcon icon={Location01Icon} size={18} strokeWidth={1.5} /> Explore the map
+                  </Button>
+                </Link>
+              </div>
+
+              <dl className="mt-10 grid max-w-md grid-cols-3 gap-3">
+                <Stat label="Issues reported" value={analytics.data?.total ?? 0} />
+                <Stat label="Resolved" value={analytics.data?.resolved ?? 0} />
+                <Stat
+                  label="Avg. fix days"
+                  value={analytics.data?.avg_days ? analytics.data.avg_days.toFixed(1) : "\u2014"}
+                />
+              </dl>
             </div>
 
-            <dl className="mx-auto mt-10 grid max-w-lg grid-cols-3 gap-3 text-center">
-              <Stat label="Issues reported" value={analytics.data?.total ?? 0} />
-              <Stat label="Resolved" value={analytics.data?.resolved ?? 0} />
-              <Stat
-                label="Avg. fix days"
-                value={analytics.data?.avg_days ? analytics.data.avg_days.toFixed(1) : "\u2014"}
-              />
-            </dl>
-          </div>
-
-          <div className="mt-14">
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {(heat.data ?? []).slice(0, 4).map((it: any) => (
-                <IssueCard key={it.id} issue={it} />
-              ))}
+            <div className="relative mx-auto w-full max-w-[300px]">
+              <div className="overflow-hidden rounded-[2.5rem] border-[6px] border-foreground/90 bg-background text-foreground shadow-2xl">
+                <div className="flex items-center gap-2 border-b px-4 py-3">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <HugeiconsIcon icon={Location01Icon} size={12} strokeWidth={1.5} />
+                  </div>
+                  <span className="text-xs font-bold">janfix.app</span>
+                </div>
+                <div className="space-y-3 px-4 py-5">
+                  <div className="flex items-start gap-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <HugeiconsIcon icon={Notification03Icon} size={12} strokeWidth={1.5} />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-xs">
+                      Hi! What's the issue you'd like to report?
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-xs text-primary-foreground">
+                      Pothole near MG Road, outside the bus stop.
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <HugeiconsIcon icon={Notification03Icon} size={12} strokeWidth={1.5} />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-xs">
+                      Got it \u2014 routed to PWD Mangaluru for you.
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={1.5} />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-sm bg-success/10 px-3 py-2 text-xs text-success">
+                      Reported! Tracking ID #JF-4521.
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 border-t px-3 py-3">
+                  <div className="flex flex-1 items-center gap-2 rounded-full bg-muted px-3 py-2 text-[11px] text-muted-foreground">
+                    <HugeiconsIcon icon={Camera01Icon} size={14} strokeWidth={1.5} /> Attach a photo...
+                  </div>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={1.5} />
+                  </div>
+                </div>
+                <div className="border-t px-4 py-2 text-center text-[10px] text-muted-foreground">
+                  Powered by JanFix
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        <WaveDivider className="absolute inset-x-0 bottom-0 h-10 w-full text-background md:h-14" />
+      </section>
+
+      {/* Live snapshot */}
+      <section className="mx-auto max-w-6xl px-4 py-10">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {(heat.data ?? []).slice(0, 4).map((it: any) => (
+            <IssueCard key={it.id} issue={it} />
+          ))}
         </div>
       </section>
 
@@ -270,8 +336,19 @@ function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-xl border bg-background/70 px-3 py-2 backdrop-blur">
       <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-extrabold">{value}</dd>
+      <dd className="text-lg font-extrabold text-foreground">{value}</dd>
     </div>
+  );
+}
+
+function WaveDivider({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 200 20" preserveAspectRatio="none" className={className} aria-hidden="true">
+      <path
+        d="M0,10 C25,0 25,20 50,10 C75,0 75,20 100,10 C125,0 125,20 150,10 C175,0 175,20 200,10 L200,20 L0,20 Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 
