@@ -144,27 +144,31 @@ export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
 
 export const listCategoriesFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data } = await c.from("categories").select("*").order("sort_order").order("name_en");
+  const { data, error } = await c.from("categories").select("*").order("sort_order").order("name_en");
+  if (error) throw error;
   return data ?? [];
 });
 
 export const listWardsFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data } = await c.from("wards").select("*").order("number");
+  const { data, error } = await c.from("wards").select("*").order("number");
+  if (error) throw error;
   return data ?? [];
 });
 
 export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data: auths } = await c.from("authorities").select("*").order("name");
+  const { data: auths, error: authsError } = await c.from("authorities").select("*").order("name");
+  if (authsError) throw authsError;
   // PERF: Fetching ALL issues is expensive as the table grows.
   // Consider using a materialized view or aggregate table instead.
   // For now, limit to the last 10,000 issues to keep response times reasonable.
-  const { data: agg } = await c
+  const { data: agg, error: aggError } = await c
     .from("issues")
     .select("assigned_authority_id, status, created_at, updated_at")
     .order("created_at", { ascending: false })
     .limit(10000);
+  if (aggError) throw aggError;
 
   return (auths ?? []).map((a) => {
     const mine = (agg ?? []).filter((i) => i.assigned_authority_id === a.id);
@@ -194,11 +198,12 @@ export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async
 
 export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data } = await c
+  const { data, error } = await c
     .from("representatives")
     .select("*, authority:authorities(id, name), ward:wards(id, number, name)")
     .eq("active", true)
     .order("name");
+  if (error) throw error;
   return data ?? [];
 });
 
@@ -215,16 +220,18 @@ export const wardStatsFn = createServerFn({ method: "GET" })
       )
       .eq("visibility", "visible");
     if (data.ward_id) q = q.eq("ward_id", data.ward_id);
-    const { data: rows } = await q;
+    const { data: rows, error } = await q;
+    if (error) throw error;
     return rows ?? [];
   });
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data: rows } = await c
+  const { data: rows, error } = await c
     .from("issues")
     .select("status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id")
     .eq("visibility", "visible");
+  if (error) throw error;
   const list = rows ?? [];
   const now = Date.now();
   const dayAgo = now - 86400000;
