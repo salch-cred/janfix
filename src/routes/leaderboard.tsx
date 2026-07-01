@@ -34,6 +34,10 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: "wards", label: "Wards", icon: MapPin },
 ];
 
+function repProfileParams(r: any) {
+  return { repId: String(r.id) };
+}
+
 function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>("authorities");
 
@@ -180,7 +184,7 @@ function LeaderboardPage() {
               <Link
                 key={r.id}
                 to="/representatives/$repId"
-                params= repId: String(r.id) 
+                params={repProfileParams(r)}
                 className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition hover:bg-accent/50"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold overflow-hidden">
