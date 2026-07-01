@@ -4,7 +4,7 @@ import { useState } from "react";
 import { listAuthoritiesFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
-import { Search, ShieldCheck, Clock, CheckCircle2 } from "lucide-react";
+import { Search, ShieldCheck, Clock, CheckCircle2, Building2, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/authorities/")({
   component: AuthoritiesIndex,
@@ -29,6 +29,19 @@ function AuthoritiesIndex() {
             {auths.data?.length ?? 0} agencies · Track performance and accountability
           </p>
         </header>
+
+        {/* Mobile-only quick swap to Leaderboard (mirrors Leaderboard page's own Authorities tab) */}
+        <div className="mb-4 flex w-fit gap-1 rounded-full border bg-card p-1 text-xs font-medium md:hidden">
+          <span className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-primary-foreground">
+            <Building2 className="h-4 w-4" /> Authorities
+          </span>
+          <Link
+            to="/leaderboard"
+            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-muted-foreground transition hover:text-foreground"
+          >
+            <TrendingUp className="h-4 w-4" /> Leaderboard
+          </Link>
+        </div>
 
         <div className="relative mb-5">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
