@@ -9,6 +9,10 @@ function sb() {
   });
 }
 
+function isCorporator(role: unknown) {
+  return String(role ?? "").trim().toLowerCase() === "corporator";
+}
+
 export const listIssuesFn = createServerFn({ method: "POST" })
   .inputValidator(
     (d?: {
@@ -75,7 +79,13 @@ export const listIssuesFn = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await q;
     if (error) throw error;
-    return rows ?? [];
+    // Job-role "Corporator" placeholders (one auto-generated per ward, not a
+    // named individual) should never surface as an assigned representative.
+    return (rows ?? []).map((r: any) =>
+      r.representative && isCorporator(r.representative.role)
+        ? { ...r, representative: null }
+        : r,
+    );
   });
 
 export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
@@ -97,6 +107,10 @@ export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw error;
     if (!row) return null;
+
+    if ((row as any).representative && isCorporator((row as any).representative.role)) {
+      (row as any).representative = null;
+    }
 
     const [history, official, comments, votes, watchers, photos] = await Promise.all([
       c
@@ -202,6 +216,7 @@ export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(a
     .from("representatives")
     .select("*, authority:authorities(id, name), ward:wards(id, number, name)")
     .eq("active", true)
+    .not("role", "ilike", "corporator")
     .order("name");
   if (error) throw error;
   return data ?? [];
