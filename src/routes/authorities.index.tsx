@@ -45,7 +45,7 @@ function AuthoritiesIndex() {
             <Link
               key={a.id}
               to="/authorities/$authorityId"
-              params={{ authorityId: String(a.id) }}
+              params= authorityId: String(a.id) 
               className="rounded-2xl border bg-card p-4 transition hover:bg-accent hover:shadow-sm"
             >
               <div className="flex items-start gap-3">

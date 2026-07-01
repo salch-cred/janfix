@@ -159,11 +159,7 @@ function AdminDashboard() {
                   <XAxis dataKey="name" className="text-xs" />
                   <YAxis className="text-xs" allowDecimals={false} />
                   <Tooltip
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid var(--color-border)",
-                      background: "var(--color-card)",
-                    }}
+                    contentStyle= borderRadius: 8, fontSize: 12 
                   />
                   <Bar dataKey="value" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -199,7 +195,7 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
                 key={item.to}
                 to={item.to}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                activeProps={{ className: "bg-accent text-foreground" }}
+                activeProps= className: "bg-accent text-foreground" 
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
