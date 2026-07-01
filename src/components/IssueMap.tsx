@@ -9,6 +9,8 @@ export type MapPoint = {
   popup?: string;
 };
 
+const OSM_TILE_URL_TEMPLATE = "https://" + "{s}" + ".tile.openstreetmap.org/" + "{z}" + "/" + "{x}" + "/" + "{y}" + ".png";
+
 export function IssueMap({
   points,
   center,
@@ -78,8 +80,7 @@ export function IssueMap({
       LRef.current = L;
       const c = center ?? { lat: 12.9141, lng: 74.856 };
       const map = L.map(ref.current, { zoomControl: true }).setView([c.lat, c.lng], zoom);
-      const tileUrlTemplate = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-      L.tileLayer(tileUrlTemplate, {
+      L.tileLayer(OSM_TILE_URL_TEMPLATE, {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 19,
       }).addTo(map);

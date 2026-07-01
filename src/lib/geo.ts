@@ -5,9 +5,12 @@ export type ReverseGeocodeResult = {
   pincode: string | null;
 };
 
+const NOMINATIM_REVERSE_BASE = "https://nominatim.openstreetmap.org/reverse";
+const NOMINATIM_SEARCH_BASE = "https://nominatim.openstreetmap.org/search";
+
 export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult> {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+    const url = NOMINATIM_REVERSE_BASE + "?format=jsonv2&lat=" + lat + "&lon=" + lng + "&zoom=18&addressdetails=1";
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
@@ -27,7 +30,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<ReverseG
   } catch {
     try {
       // Fallback: try with lower zoom
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`;
+      const url = NOMINATIM_REVERSE_BASE + "?format=jsonv2&lat=" + lat + "&lon=" + lng + "&zoom=14&addressdetails=1";
       const res = await fetch(url, {
         headers: {
           Accept: "application/json",
@@ -45,7 +48,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<ReverseG
         pincode: a.postcode ?? null,
       };
     } catch {
-      return { address: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, area: null, locality: "Mangaluru", pincode: null };
+      return { address: lat.toFixed(5) + ", " + lng.toFixed(5), area: null, locality: "Mangaluru", pincode: null };
     }
   }
 }
@@ -92,7 +95,7 @@ export async function forwardGeocode(
   query: string,
 ): Promise<{ lat: number; lng: number; address: string }[]> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+    const url = NOMINATIM_SEARCH_BASE + "?format=jsonv2&q=" + encodeURIComponent(query) + "&limit=5&addressdetails=1";
     const res = await fetch(url, {
       headers: {
         Accept: "application/json",
