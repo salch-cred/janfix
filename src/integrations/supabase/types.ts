@@ -242,6 +242,41 @@ export type Database = {
           },
         ];
       };
+      issue_photos: {
+        Row: {
+          created_at: string;
+          id: string;
+          issue_id: string;
+          path: string | null;
+          position: number;
+          url: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          issue_id: string;
+          path?: string | null;
+          position?: number;
+          url: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          issue_id?: string;
+          path?: string | null;
+          position?: number;
+          url?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "issue_photos_issue_id_fkey";
+            columns: ["issue_id"];
+            isOneToOne: false;
+            referencedRelation: "issues";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       issue_status_history: {
         Row: {
           by_admin: boolean;
