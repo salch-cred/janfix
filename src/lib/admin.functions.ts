@@ -79,6 +79,28 @@ export const adminUpdateIssueFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Permanently deletes an issue/report and all of its dependent rows (votes,
+// supporters, thanks, comments, status history, official updates, watchers,
+// photos cascade via FK ON DELETE CASCADE at the DB level). Admin/moderator
+// only. Uses the service-role client because the anon/authenticated Postgres
+// role has no DELETE grant on public.issues -- only service_role can delete.
+export const adminDeleteIssueFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { access_token: string; issue_id: string }) =>
+    z
+      .object({
+        access_token: z.string(),
+        issue_id: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin(data.access_token);
+    const c = service();
+    const { error } = await c.from("issues").delete().eq("id", data.issue_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
 export const adminPostOfficialFn = createServerFn({ method: "POST" })
   .inputValidator((d: { access_token: string; issue_id: string; body: string }) =>
     z
@@ -158,6 +180,30 @@ export const adminUpsertAuthorityFn = createServerFn({ method: "POST" })
     } else {
       await c.from("authorities").insert(rest);
     }
+    return { ok: true };
+  });
+
+// Deletes an authority. Uses the service-role client for the same reason as
+// adminDeleteIssueFn: public.authorities has no DELETE grant for the
+// anon/authenticated Postgres role, so a direct client-side
+// supabase.from("authorities").delete() call always fails with a permission
+// error, even for a logged-in admin. If the authority is still referenced by
+// an existing issue or assignment rule, the database's foreign key
+// constraint will reject the delete -- reassign or remove those first.
+export const adminDeleteAuthorityFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { access_token: string; id: number }) =>
+    z
+      .object({
+        access_token: z.string(),
+        id: z.number().int(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    await requireAdmin(data.access_token);
+    const c = service();
+    const { error } = await c.from("authorities").delete().eq("id", data.id);
+    if (error) throw error;
     return { ok: true };
   });
 
