@@ -95,7 +95,12 @@ function AuthoritiesIndex() {
             Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />
             ))}
-          {!auths.isLoading && filtered.length === 0 && (
+          {!auths.isLoading && auths.isError && (
+            <div className="col-span-full rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive">
+              Failed to load authorities. Please refresh, or try again shortly.
+            </div>
+          )}
+          {!auths.isLoading && !auths.isError && filtered.length === 0 && (
             <div className="col-span-full rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
               No authorities match your search.
             </div>
