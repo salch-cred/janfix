@@ -34,6 +34,7 @@ export function IssueMap({
   const draggableMarker = useRef<LeafletNS.Marker | null>(null);
   const [shouldLoad, setShouldLoad] = useState(loadOn === "eager");
   const [ready, setReady] = useState(false);
+  const containerStyle = { height };
 
   // Visibility-based lazy trigger
   useEffect(() => {
@@ -134,7 +135,7 @@ export function IssueMap({
   return (
     <div
       ref={ref}
-      style={{ height }}
+      style={containerStyle}
       className="w-full rounded-xl border bg-muted/30 relative overflow-hidden flex items-center justify-center"
     >
       {!shouldLoad && loadOn === "tap" && (

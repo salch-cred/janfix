@@ -27,10 +27,12 @@ export function IssueCard({ issue }: { issue: IssueCardData }) {
   const status = STATUS_META[issue.status] ?? STATUS_META.reported;
   const severity = SEVERITY_META[issue.severity] ?? SEVERITY_META.medium;
   const slug = issue.slug || slugify(issue.description);
+  const issueLinkParams = { publicId: issue.public_id, slug };
+  const categoryBadgeStyle = { background: issue.category?.color ?? "#64748b" };
   return (
     <Link
       to="/issue/$publicId/$slug"
-      params={{ publicId: issue.public_id, slug }}
+      params={issueLinkParams}
       className="group block overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
@@ -49,7 +51,7 @@ export function IssueCard({ issue }: { issue: IssueCardData }) {
         <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
           <span
             className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow"
-            style={{ background: issue.category?.color ?? "#334155" }}
+            style={categoryBadgeStyle}
           >
             {issue.category?.name_en ?? "Issue"}
           </span>
