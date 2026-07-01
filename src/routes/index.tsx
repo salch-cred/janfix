@@ -14,8 +14,6 @@ import {
   Camera01Icon,
   Notification03Icon,
   CheckmarkCircle02Icon,
-  MapsLocation01Icon,
-  Building02Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
@@ -59,46 +57,6 @@ const STEPS = [
   },
 ];
 
-const FEATURES = [
-  {
-    icon: Camera01Icon,
-    title: "60-second reporting",
-    description: "Snap a photo, drop a pin, and submit. No account, no forms, no friction.",
-  },
-  {
-    icon: MapsLocation01Icon,
-    title: "Live civic map",
-    description: "See every open issue in Mangaluru plotted on an interactive map in real time.",
-  },
-  {
-    icon: FireIcon,
-    title: "Heat-ranked issues",
-    description: "Reports are ranked by votes, age and severity so the worst problems surface first.",
-  },
-  {
-    icon: Building02Icon,
-    title: "Automatic routing",
-    description: "Every issue is routed straight to the exact department or authority responsible.",
-  },
-  {
-    icon: Shield01Icon,
-    title: "Public accountability",
-    description: "Authorities are scored on resolution speed and rate \u2014 fully visible to citizens.",
-  },
-  {
-    icon: SparklesIcon,
-    title: "Shareable posters",
-    description: "Turn any report into a shareable poster to raise awareness in your neighbourhood.",
-  },
-];
-
-const CHECKLIST = [
-  "No login or app download required to report an issue",
-  "Every report is routed to the correct civic authority automatically",
-  "Public leaderboard keeps authorities accountable for resolution speed",
-  "Track the full history of a report from submission to fix",
-];
-
 const heatSectionLink = { to: "/explore", label: "See all" };
 const recentSectionLink = { to: "/explore", label: "Browse" };
 const authoritiesSectionLink = { to: "/leaderboard", label: "Full leaderboard" };
@@ -121,10 +79,7 @@ function Home() {
       <section className="civic-gradient">
         <div className="mx-auto max-w-6xl px-4 pt-14 pb-16 md:pt-24 md:pb-24">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-xs font-semibold text-primary backdrop-blur">
-              <HugeiconsIcon icon={SparklesIcon} size={14} strokeWidth={1.5} /> Mangaluru civic accountability
-            </span>
-            <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-7xl">
+            <h1 className="font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-7xl">
               Report it. Track it.
               <br />
               <span className="text-primary">Get it fixed.</span>
@@ -159,9 +114,7 @@ function Home() {
             </dl>
           </div>
 
-          <div className="relative mt-14">
-            <div className="absolute -left-6 -top-10 hidden h-32 w-32 rounded-full bg-primary/15 blur-3xl md:block" />
-            <div className="absolute -bottom-8 -right-2 hidden h-40 w-40 rounded-full bg-success/15 blur-3xl md:block" />
+          <div className="mt-14">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {(heat.data ?? []).slice(0, 4).map((it: any) => (
                 <IssueCard key={it.id} issue={it} />
@@ -197,29 +150,6 @@ function Home() {
         </div>
       </section>
 
-      {/* Explore JanFix \u2014 feature grid */}
-      <section className="mx-auto max-w-6xl px-4 py-14 md:py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-bold uppercase tracking-widest text-primary">
-            Explore JanFix
-          </span>
-          <h2 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Everything you need to hold your city accountable.
-          </h2>
-        </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-3xl border bg-card p-6 shadow-sm transition hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <HugeiconsIcon icon={f.icon} size={20} strokeWidth={1.5} />
-              </div>
-              <h3 className="mt-4 font-display text-lg font-bold">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Trending */}
       <section className="mx-auto max-w-6xl px-4 py-14">
         <SectionHeader
@@ -252,34 +182,6 @@ function Home() {
           {(recent.data ?? []).map((it: any) => (
             <IssueCard key={it.id} issue={it} />
           ))}
-        </div>
-      </section>
-
-      {/* Problem solved \u2014 checklist */}
-      <section className="border-y bg-muted/20">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-2 md:py-20">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">
-              Why JanFix
-            </span>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
-              Civic problems, solved in the open.
-            </h2>
-            <p className="mt-3 max-w-md text-sm text-muted-foreground md:text-base">
-              JanFix removes every excuse for a civic issue to go unresolved \u2014 reporting is
-              instant, routing is automatic, and every authority's track record is public.
-            </p>
-          </div>
-          <ul className="space-y-4">
-            {CHECKLIST.map((item) => (
-              <li key={item} className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-sm">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
-                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} strokeWidth={1.5} />
-                </span>
-                <span className="text-sm font-medium">{item}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
@@ -332,8 +234,7 @@ function Home() {
             Seen something broken?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-background/70 md:text-base">
-            It takes less than a minute to report \u2014 no account, no forms, just a photo and a pin
-            on the map.
+            Less than a minute to report \u2014 no account needed, just a photo and a pin on the map.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <Link to="/report">
