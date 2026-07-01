@@ -51,11 +51,13 @@ export const Route = createFileRoute("/admin/issues")({
   ssr: false,
 });
 
+// Must match the `issue_status` Postgres enum exactly (see
+// src/integrations/supabase/types.ts) or updates/filters will fail.
 const STATUSES = [
   "reported",
-  "verified",
+  "community_verified",
   "assigned",
-  "in_progress",
+  "work_started",
   "resolved",
   "community_confirmed",
   "closed",
@@ -63,9 +65,9 @@ const STATUSES = [
 
 const statusColors: Record<string, string> = {
   reported: "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300",
-  verified: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  community_verified: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   assigned: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-  in_progress: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  work_started: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   resolved: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
   community_confirmed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
   closed: "bg-muted text-muted-foreground",
@@ -219,7 +221,7 @@ function AdminIssues() {
               <SelectItem value="low">Low</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
               <SelectItem value="high">High</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
+              <SelectItem value="dangerous">Dangerous</SelectItem>
             </SelectContent>
           </Select>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -294,7 +296,7 @@ function AdminIssues() {
                     <TableCell>
                       <span
                         className={`text-xs font-semibold ${
-                          issue.severity === "critical"
+                          issue.severity === "dangerous"
                             ? "text-destructive"
                             : issue.severity === "high"
                               ? "text-orange-500"
