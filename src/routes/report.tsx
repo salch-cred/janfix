@@ -13,7 +13,7 @@ import { createIssueFn, findDuplicatesFn, supportIssueFn } from "@/lib/issues.fu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, MapPin, Loader2, CheckCircle2, AlertTriangle, X } from "lucide-react";
+import { Camera, MapPin, Loader2, CheckCircle2, AlertTriangle, X, ImagePlus } from "lucide-react";
 
 export const Route = createFileRoute("/report")({
   component: ReportPage,
@@ -23,12 +23,16 @@ export const Route = createFileRoute("/report")({
 
 type Step = "photo" | "details" | "review" | "dupes";
 
+const MAX_EXTRA_PHOTOS = 3;
+
 function ReportPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("photo");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>("");
   const [phash, setPhash] = useState<string>("");
+  const [extraFiles, setExtraFiles] = useState<File[]>([]);
+  const [extraPreviews, setExtraPreviews] = useState<string[]>([]);
   const [loc, setLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [addr, setAddr] = useState<{
     address: string;
@@ -47,6 +51,7 @@ function ReportPage() {
   const [reportCount, setReportCount] = useState<number>(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const extraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -86,6 +91,34 @@ function ReportPage() {
     } finally {
       setWorking(false);
     }
+  };
+
+  const onPickExtraFile = async (f: File) => {
+    if (extraFiles.length >= MAX_EXTRA_PHOTOS) {
+      toast.error(`You can add up to ${MAX_EXTRA_PHOTOS} extra photos`);
+      return;
+    }
+    setWorking(true);
+    try {
+      const compressed = await imageCompression(f, {
+        maxSizeMB: 1.2,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: "image/jpeg",
+        initialQuality: 0.85,
+      });
+      setExtraFiles((prev) => [...prev, compressed]);
+      setExtraPreviews((prev) => [...prev, URL.createObjectURL(compressed)]);
+    } catch (e: any) {
+      toast.error("Could not process image: " + (e?.message ?? "unknown"));
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const removeExtraFile = (idx: number) => {
+    setExtraFiles((prev) => prev.filter((_, i) => i !== idx));
+    setExtraPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -189,6 +222,19 @@ function ReportPage() {
       });
       if (up.error) throw up.error;
 
+      // Upload any optional extra photos alongside the required primary one.
+      const extraPaths = await Promise.all(
+        extraFiles.map(async (ef, idx) => {
+          const p = `${device_id}/${Date.now()}-x${idx}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const extraUp = await supabase.storage.from("issue-photos").upload(p, ef, {
+            contentType: "image/jpeg",
+            cacheControl: "3600",
+          });
+          if (extraUp.error) throw extraUp.error;
+          return p;
+        }),
+      );
+
       const res = await createIssueFn({
         data: {
           device_id,
@@ -204,6 +250,7 @@ function ReportPage() {
           ward_id: null,
           image_path: path,
           image_phash: phash || null,
+          extra_image_paths: extraPaths.length > 0 ? extraPaths : null,
         },
       });
       toast.success("Reported! Tracking " + res.public_id);
@@ -354,6 +401,43 @@ function ReportPage() {
                   )}
                 </div>
 
+                <Field label={`Add more photos (optional, up to ${MAX_EXTRA_PHOTOS})`}>
+                  <div className="flex flex-wrap gap-2">
+                    {extraPreviews.map((src, idx) => (
+                      <div key={idx} className="relative h-16 w-16 overflow-hidden rounded-lg border">
+                        <img src={src} alt="" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeExtraFile(idx)}
+                          className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/60 text-white"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {extraFiles.length < MAX_EXTRA_PHOTOS && (
+                      <button
+                        type="button"
+                        onClick={() => extraInputRef.current?.click()}
+                        className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground transition hover:bg-accent/40"
+                      >
+                        <ImagePlus className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={extraInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onPickExtraFile(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </Field>
+
                 <Field label="Category">
                   <div className="-mx-1 flex w-full flex-wrap gap-1.5">
                     {CATEGORIES.map((c) => (
@@ -491,6 +575,12 @@ function ReportPage() {
                         {addr?.address ?? `${loc?.lat.toFixed(5)}, ${loc?.lng.toFixed(5)}`}
                       </span>
                     </li>
+                    {extraPreviews.length > 0 && (
+                      <li>
+                        Extra photos:{" "}
+                        <span className="font-medium text-foreground">{extraPreviews.length}</span>
+                      </li>
+                    )}
                   </ul>
                 </div>
                 <div className="flex gap-2">
