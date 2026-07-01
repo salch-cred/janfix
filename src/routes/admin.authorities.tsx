@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { listAuthoritiesFn } from "@/lib/queries.functions";
-import { adminUpsertAuthorityFn } from "@/lib/admin.functions";
+import { adminUpsertAuthorityFn, adminDeleteAuthorityFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,7 +97,9 @@ function AdminAuthorities() {
     open: boolean;
     id: number | null;
     name: string;
-  }>({ open: false, id: null, name: "" });
+    deleting: boolean;
+    error: string | null;
+  }>({ open: false, id: null, name: "", deleting: false, error: null });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -163,15 +165,31 @@ function AdminAuthorities() {
 
   const handleDelete = async () => {
     if (!deleteDialog.id) return;
+    setDeleteDialog((prev) => ({ ...prev, deleting: true, error: null }));
     try {
-      const { error } = await supabase.from("authorities").delete().eq("id", deleteDialog.id);
-      if (error) throw error;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      await adminDeleteAuthorityFn({
+        data: {
+          access_token: token,
+          id: deleteDialog.id,
+        },
+      });
 
       queryClient.invalidateQueries({ queryKey: ["admin-authorities"] });
       queryClient.invalidateQueries({ queryKey: ["authorities"] });
-      setDeleteDialog({ open: false, id: null, name: "" });
+      setDeleteDialog({ open: false, id: null, name: "", deleting: false, error: null });
     } catch (e: any) {
       console.error("Failed to delete authority", e);
+      setDeleteDialog((prev) => ({
+        ...prev,
+        deleting: false,
+        error:
+          e?.message ||
+          "Failed to delete authority. It may still have reports or rules assigned to it.",
+      }));
     }
   };
 
@@ -253,6 +271,8 @@ function AdminAuthorities() {
                               open: true,
                               id: auth.id,
                               name: auth.name,
+                              deleting: false,
+                              error: null,
                             })
                           }
                         >
@@ -379,7 +399,9 @@ function AdminAuthorities() {
 
       <AlertDialog
         open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}
+        onOpenChange={(open) =>
+          setDeleteDialog((prev) => (prev.deleting ? prev : { ...prev, open }))
+        }
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -389,12 +411,20 @@ function AdminAuthorities() {
               cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteDialog.error && (
+            <p className="text-sm text-destructive">{deleteDialog.error}</p>
+          )}
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteDialog.deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleteDialog.deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
+              {deleteDialog.deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
