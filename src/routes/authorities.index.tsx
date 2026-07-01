@@ -41,53 +41,56 @@ function AuthoritiesIndex() {
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((a: any) => (
-            <Link
-              key={a.id}
-              to="/authorities/$authorityId"
-              params= authorityId: String(a.id) 
-              className="rounded-2xl border bg-card p-4 transition hover:bg-accent hover:shadow-sm"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary text-lg">
-                  {a.logo_url ? (
-                    <img
-                      src={a.logo_url}
-                      className="h-full w-full rounded-xl object-cover"
-                      alt=""
-                    />
-                  ) : (
-                    a.name.slice(0, 2)
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{a.name}</div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-success" /> {a.resolved}/{a.total}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {a.avg_days ? `${a.avg_days.toFixed(1)}d` : "—"}
-                    </span>
+          {filtered.map((a: any) => {
+            const authorityLinkParams = { authorityId: String(a.id) };
+            return (
+              <Link
+                key={a.id}
+                to="/authorities/$authorityId"
+                params={authorityLinkParams}
+                className="rounded-2xl border bg-card p-4 transition hover:bg-accent hover:shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary text-lg">
+                    {a.logo_url ? (
+                      <img
+                        src={a.logo_url}
+                        className="h-full w-full rounded-xl object-cover"
+                        alt=""
+                      />
+                    ) : (
+                      a.name.slice(0, 2)
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold truncate">{a.name}</div>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3 text-success" /> {a.resolved}/{a.total}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> {a.avg_days ? `${a.avg_days.toFixed(1)}d` : "—"}
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold shrink-0 ${
+                      a.score >= 70
+                        ? "bg-success/15 text-success"
+                        : a.score >= 40
+                          ? "bg-warning/15 text-warning"
+                          : "bg-destructive/15 text-destructive"
+                    }`}
+                  >
+                    {a.score}%
                   </div>
                 </div>
-                <div
-                  className={`rounded-full px-2.5 py-1 text-xs font-bold shrink-0 ${
-                    a.score >= 70
-                      ? "bg-success/15 text-success"
-                      : a.score >= 40
-                        ? "bg-warning/15 text-warning"
-                        : "bg-destructive/15 text-destructive"
-                  }`}
-                >
-                  {a.score}%
-                </div>
-              </div>
-              {a.description && (
-                <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
-              )}
-            </Link>
-          ))}
+                {a.description && (
+                  <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
+                )}
+              </Link>
+            );
+          })}
           {auths.isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />

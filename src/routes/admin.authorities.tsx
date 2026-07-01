@@ -414,6 +414,8 @@ const navItems = [
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
 ];
 
+const navLinkActiveProps = { className: "bg-accent text-foreground" };
+
 function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   return (
     <div className="flex min-h-screen bg-background">
@@ -437,7 +439,7 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
                 key={item.to}
                 to={item.to}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                activeProps= className: "bg-accent text-foreground" 
+                activeProps={navLinkActiveProps}
               >
                 <Icon className="h-4 w-4" />
                 {item.label}

@@ -42,6 +42,9 @@ const navItems = [
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
 ];
 
+const navLinkActiveProps = { className: "bg-accent text-foreground" };
+const chartTooltipStyle = { borderRadius: 8, fontSize: 12 };
+
 function AdminDashboard() {
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
@@ -159,7 +162,7 @@ function AdminDashboard() {
                   <XAxis dataKey="name" className="text-xs" />
                   <YAxis className="text-xs" allowDecimals={false} />
                   <Tooltip
-                    contentStyle= borderRadius: 8, fontSize: 12 
+                    contentStyle={chartTooltipStyle}
                   />
                   <Bar dataKey="value" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -195,7 +198,7 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
                 key={item.to}
                 to={item.to}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                activeProps= className: "bg-accent text-foreground" 
+                activeProps={navLinkActiveProps}
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
