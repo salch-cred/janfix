@@ -1,55 +1,16 @@
-export type ReverseGeocodeResult = {
-  address: string;
-  area: string | null;
-  locality: string | null;
-  pincode: string | null;
-};
+import { reverseGeocodeFn, forwardGeocodeFn, type ReverseGeocodeResult } from "./geo.functions";
 
-const NOMINATIM_REVERSE_BASE = "https://nominatim.openstreetmap.org/reverse";
-const NOMINATIM_SEARCH_BASE = "https://nominatim.openstreetmap.org/search";
+export type { ReverseGeocodeResult };
 
+// Reverse/forward geocoding now runs through a server function backed by
+// LocationIQ (falling back to Nominatim automatically if no key is
+// configured) — see geo.functions.ts. Call signatures are unchanged so all
+// existing callers keep working without modification.
 export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult> {
   try {
-    const url = NOMINATIM_REVERSE_BASE + "?format=jsonv2&lat=" + lat + "&lon=" + lng + "&zoom=18&addressdetails=1";
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "JanFixMangaluru/1.0 (civic-accountability-platform)",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error("geocode failed");
-    const data: any = await res.json();
-    const a = data.address ?? {};
-    return {
-      address: data.display_name ?? "",
-      area: a.suburb ?? a.neighbourhood ?? a.city_district ?? a.village ?? null,
-      locality: a.city ?? a.town ?? a.village ?? a.county ?? null,
-      pincode: a.postcode ?? null,
-    };
+    return await reverseGeocodeFn({ data: { lat, lng } });
   } catch {
-    try {
-      // Fallback: try with lower zoom
-      const url = NOMINATIM_REVERSE_BASE + "?format=jsonv2&lat=" + lat + "&lon=" + lng + "&zoom=14&addressdetails=1";
-      const res = await fetch(url, {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "JanFixMangaluru/1.0 (civic-accountability-platform)",
-        },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!res.ok) throw new Error("geocode fallback failed");
-      const data: any = await res.json();
-      const a = data.address ?? {};
-      return {
-        address: data.display_name ?? "",
-        area: a.city_district ?? a.municipality ?? a.county ?? null,
-        locality: a.city ?? a.town ?? a.village ?? null,
-        pincode: a.postcode ?? null,
-      };
-    } catch {
-      return { address: lat.toFixed(5) + ", " + lng.toFixed(5), area: null, locality: "Mangaluru", pincode: null };
-    }
+    return { address: lat.toFixed(5) + ", " + lng.toFixed(5), area: null, locality: "Mangaluru", pincode: null };
   }
 }
 
@@ -95,21 +56,7 @@ export async function forwardGeocode(
   query: string,
 ): Promise<{ lat: number; lng: number; address: string }[]> {
   try {
-    const url = NOMINATIM_SEARCH_BASE + "?format=jsonv2&q=" + encodeURIComponent(query) + "&limit=5&addressdetails=1";
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "JanFixMangaluru/1.0 (civic-accountability-platform)",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error("search failed");
-    const data: any[] = await res.json();
-    return data.map((d) => ({
-      lat: parseFloat(d.lat),
-      lng: parseFloat(d.lon),
-      address: d.display_name,
-    }));
+    return await forwardGeocodeFn({ data: { query } });
   } catch {
     return [];
   }
