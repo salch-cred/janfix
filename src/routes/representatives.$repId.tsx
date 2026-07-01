@@ -5,13 +5,15 @@ import { listRepresentativesFn, listIssuesFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { IssueCard } from "@/components/IssueCard";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, MapPin, ShieldCheck, Building2, AlertCircle } from "lucide-react";
+import { Phone, Mail, MapPin, ShieldCheck, Building2, AlertCircle, ThumbsUp, CheckCircle2, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/representatives/$repId")({
   component: RepresentativeDetail,
   ssr: false,
   pendingComponent: () => <div className="min-h-screen" />,
 });
+
+const COMPLETED_STATUSES = ["resolved", "community_confirmed", "closed"];
 
 function RepresentativeDetail() {
   const { repId } = Route.useParams();
@@ -29,15 +31,28 @@ function RepresentativeDetail() {
     [issues.data, repId],
   );
 
+  const completedIssues = useMemo(
+    () => repIssues.filter((i: any) => COMPLETED_STATUSES.includes(i.status)),
+    [repIssues],
+  );
+
+  const pendingIssues = useMemo(
+    () => repIssues.filter((i: any) => !COMPLETED_STATUSES.includes(i.status)),
+    [repIssues],
+  );
+
+  const totalVotes = useMemo(
+    () => repIssues.reduce((sum: number, i: any) => sum + (i.supporters_count ?? 0), 0),
+    [repIssues],
+  );
+
   const stats = useMemo(() => {
     const total = repIssues.length;
-    const resolved = repIssues.filter((i: any) =>
-      ["resolved", "community_confirmed", "closed"].includes(i.status),
-    ).length;
-    const pending = total - resolved;
+    const resolved = completedIssues.length;
+    const pending = pendingIssues.length;
     const score = total ? Math.round((resolved / total) * 100) : 0;
     return { total, resolved, pending, score };
-  }, [repIssues]);
+  }, [repIssues, completedIssues, pendingIssues]);
 
   if (reps.isLoading) {
     return (
@@ -135,7 +150,7 @@ function RepresentativeDetail() {
         )}
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           <div className="rounded-2xl border bg-card p-4">
             <div className="text-xs text-muted-foreground">Total issues</div>
             <div className="mt-1 font-display text-2xl font-extrabold tracking-tight">
@@ -143,15 +158,21 @@ function RepresentativeDetail() {
             </div>
           </div>
           <div className="rounded-2xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">Resolved</div>
+            <div className="text-xs text-muted-foreground">Completed</div>
             <div className="mt-1 font-display text-2xl font-extrabold tracking-tight text-success">
               {stats.resolved}
             </div>
           </div>
           <div className="rounded-2xl border bg-card p-4">
-            <div className="text-xs text-muted-foreground">Pending</div>
+            <div className="text-xs text-muted-foreground">Not completed</div>
             <div className="mt-1 font-display text-2xl font-extrabold tracking-tight text-warning">
               {stats.pending}
+            </div>
+          </div>
+          <div className="rounded-2xl border bg-card p-4">
+            <div className="text-xs text-muted-foreground">People's votes</div>
+            <div className="mt-1 flex items-center gap-1.5 font-display text-2xl font-extrabold tracking-tight text-primary">
+              <ThumbsUp className="h-5 w-5" /> {totalVotes}
             </div>
           </div>
         </div>
@@ -162,20 +183,43 @@ function RepresentativeDetail() {
           This score is based only on publicly visible reports and community verification.
         </div>
 
-        {/* Issues feed */}
+        {/* Completed works */}
         <section className="mt-8">
-          <h2 className="font-display text-lg font-bold">Issues ({repIssues.length})</h2>
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+            <CheckCircle2 className="h-5 w-5 text-success" /> Completed works ({completedIssues.length})
+          </h2>
           <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {repIssues.slice(0, 16).map((it: any) => (
+            {completedIssues.slice(0, 16).map((it: any) => (
               <IssueCard key={it.id} issue={it} />
             ))}
             {issues.isLoading &&
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />
               ))}
-            {!issues.isLoading && repIssues.length === 0 && (
+            {!issues.isLoading && completedIssues.length === 0 && (
               <div className="col-span-full rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
-                No issues associated with this representative yet.
+                No completed issues yet.
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Not completed / pending works */}
+        <section className="mt-8">
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+            <Clock className="h-5 w-5 text-warning" /> Not completed works ({pendingIssues.length})
+          </h2>
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+            {pendingIssues.slice(0, 16).map((it: any) => (
+              <IssueCard key={it.id} issue={it} />
+            ))}
+            {issues.isLoading &&
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />
+              ))}
+            {!issues.isLoading && pendingIssues.length === 0 && (
+              <div className="col-span-full rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
+                No pending issues — all caught up!
               </div>
             )}
           </div>
