@@ -99,6 +99,10 @@ const CHECKLIST = [
   "Track the full history of a report from submission to fix",
 ];
 
+const heatSectionLink = { to: "/explore", label: "See all" };
+const recentSectionLink = { to: "/explore", label: "Browse" };
+const authoritiesSectionLink = { to: "/leaderboard", label: "Full leaderboard" };
+
 function Home() {
   const heat = useQuery({
     queryKey: ["issues", "heat"],
@@ -223,7 +227,7 @@ function Home() {
           icon={<HugeiconsIcon icon={FireIcon} size={20} className="text-warning" strokeWidth={1.5} />}
           title="Hottest in Mangaluru"
           subtitle="Ranked by heat score \u2014 votes, age, severity & duplicates."
-          link= to: "/explore", label: "See all" 
+          link={heatSectionLink}
         />
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {(heat.data ?? []).map((it: any) => (
@@ -242,7 +246,7 @@ function Home() {
           eyebrow="Fresh reports"
           icon={<HugeiconsIcon icon={SparklesIcon} size={20} className="text-primary" strokeWidth={1.5} />}
           title="Just reported"
-          link= to: "/explore", label: "Browse" 
+          link={recentSectionLink}
         />
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {(recent.data ?? []).map((it: any) => (
@@ -286,7 +290,7 @@ function Home() {
           icon={<HugeiconsIcon icon={Shield01Icon} size={20} className="text-success" strokeWidth={1.5} />}
           title="Authority leaderboard"
           subtitle="Who is fixing \u2014 and who isn't."
-          link= to: "/leaderboard", label: "Full leaderboard" 
+          link={authoritiesSectionLink}
         />
         <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {(auths.data ?? []).slice(0, 6).map((a: any) => (

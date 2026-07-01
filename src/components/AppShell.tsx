@@ -11,6 +11,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Disclaimer } from "./Disclaimer";
 
+const navItemActiveProps = { className: "bg-background text-foreground shadow-sm" };
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +84,7 @@ function NavItem({ to, label }: { to: string; label: string }) {
     <Link
       to={to}
       className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-      activeProps= className: "bg-background text-foreground shadow-sm" 
+      activeProps={navItemActiveProps}
     >
       {label}
     </Link>
