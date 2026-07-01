@@ -33,6 +33,7 @@ import {
   Megaphone,
   Image as ImgIcon,
   Share2,
+  ArrowRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/issue/$publicId/$slug")({
@@ -54,6 +55,10 @@ export const Route = createFileRoute("/issue/$publicId/$slug")({
     </AppShell>
   ),
 });
+
+function repProfileLinkParams(repId: string | number) {
+  return { repId: String(repId) };
+}
 
 function IssuePage() {
   const { publicId } = Route.useParams();
@@ -302,30 +307,47 @@ function IssuePage() {
                 )}
               </div>
               {/* Representative */}
-              <div className="p-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-primary/20">
-                    {i.representative?.photo_url ? (
-                      <img src={i.representative.photo_url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-muted text-lg font-bold text-muted-foreground">
-                        {i.representative?.name?.slice(0, 1) ?? "?"}
+              {i.representative ? (
+                <Link
+                  to="/representatives/$repId"
+                  params={repProfileLinkParams(i.representative.id)}
+                  className="group block p-5 transition hover:bg-primary/5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-primary/20">
+                      {i.representative?.photo_url ? (
+                        <img src={i.representative.photo_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-muted text-lg font-bold text-muted-foreground">
+                          {i.representative?.name?.slice(0, 1) ?? "?"}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Local representative</div>
+                      <div className="truncate text-base font-bold group-hover:underline">{i.representative.name}</div>
+                      <div className="text-xs text-muted-foreground">{i.representative.role}{i.representative.constituency ? ` · ${i.representative.constituency}` : ""}</div>
+                      <div className="mt-1 flex items-center gap-0.5 text-[11px] font-semibold text-primary">
+                        View profile <ArrowRight className="h-3 w-3" />
                       </div>
-                    )}
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Local representative</div>
-                    {i.representative ? (
-                      <>
-                        <div className="truncate text-base font-bold">{i.representative.name}</div>
-                        <div className="text-xs text-muted-foreground">{i.representative.role}{i.representative.constituency ? ` · ${i.representative.constituency}` : ""}</div>
-                      </>
-                    ) : (
+                </Link>
+              ) : (
+                <div className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-primary/20">
+                      <div className="flex h-full w-full items-center justify-center bg-muted text-lg font-bold text-muted-foreground">
+                        ?
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Local representative</div>
                       <p className="text-sm text-muted-foreground">Not mapped yet</p>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </section>
