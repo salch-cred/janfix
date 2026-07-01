@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Location01Icon } from "@hugeicons/core-free-icons";
 import {
   Download,
   Share2,
@@ -491,7 +493,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
           <div ref={posterRef} style={posterOuterStyle}>
             <div style={headerBarStyle}>
               <div style={brandRowStyle}>
-                <div style={brandMarkStyle}>J</div>
+                <div style={brandMarkStyle}>
+                  <HugeiconsIcon icon={Location01Icon} size={isHorizontal ? 20 : 26} strokeWidth={1.5} />
+                </div>
                 <div>
                   <div style={brandTitleStyle}>
                     Jan<span style={brandGreenStyle}>Fix</span>
