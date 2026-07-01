@@ -9,6 +9,7 @@ import {
   Megaphone01Icon,
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
+import { Sparkles } from "lucide-react";
 import { Disclaimer } from "./Disclaimer";
 
 const navItemActiveProps = { className: "bg-background text-foreground shadow-sm" };
@@ -59,6 +60,7 @@ function TopBar() {
           <NavItem to="/explore" label="Explore" />
           <NavItem to="/authorities" label="Authorities" />
           <NavItem to="/leaderboard" label="Leaderboard" />
+          <NavItem to="/assistant" label="Assistant" />
         </nav>
         <div className="hidden items-center gap-2 md:flex">
           <a
@@ -91,17 +93,27 @@ function NavItem({ to, label }: { to: string; label: string }) {
   );
 }
 
+type MobileTab = {
+  to: string;
+  label: string;
+  accent?: boolean;
+  hugeIcon?: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  lucideIcon?: typeof Sparkles;
+};
+
 function MobileTabBar() {
-  const tabs = [
-    { to: "/", label: "Home", icon: Home01Icon },
-    { to: "/explore", label: "Explore", icon: MapsLocation01Icon },
-    { to: "/report", label: "Report", icon: Add01Icon, accent: true },
-    { to: "/authorities", label: "Authorities", icon: Building02Icon },
+  const tabs: MobileTab[] = [
+    { to: "/", label: "Home", hugeIcon: Home01Icon },
+    { to: "/explore", label: "Explore", hugeIcon: MapsLocation01Icon },
+    { to: "/report", label: "Report", hugeIcon: Add01Icon, accent: true },
+    { to: "/authorities", label: "Authorities", hugeIcon: Building02Icon },
+    { to: "/assistant", label: "Assistant", lucideIcon: Sparkles },
   ];
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur md:hidden">
       <ul className="mx-auto grid max-w-md grid-cols-5 px-1 py-2">
         {tabs.map((t) => {
+          const LucideIcon = t.lucideIcon;
           return (
             <li key={t.to} className="flex items-center justify-center">
               <Link
@@ -113,7 +125,11 @@ function MobileTabBar() {
                 }
                 activeProps={t.accent ? {} : { className: "text-primary" }}
               >
-                <HugeiconsIcon icon={t.icon} size={20} strokeWidth={1.5} />
+                {t.hugeIcon ? (
+                  <HugeiconsIcon icon={t.hugeIcon} size={20} strokeWidth={1.5} />
+                ) : LucideIcon ? (
+                  <LucideIcon className="h-5 w-5" />
+                ) : null}
                 {!t.accent && <span>{t.label}</span>}
               </Link>
             </li>
@@ -141,6 +157,7 @@ function Footer() {
           <div className="flex gap-4 text-xs">
             <Link to="/explore">Explore</Link>
             <Link to="/leaderboard">Leaderboard</Link>
+            <Link to="/assistant">Assistant</Link>
             <a href="/auth">Admin</a>
           </div>
         </div>
