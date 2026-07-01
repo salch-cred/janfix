@@ -92,6 +92,8 @@ function IssuePage() {
   const cat = i.category ?? categoryBySlug("others");
   const status = STATUS_META[i.status as keyof typeof STATUS_META] ?? STATUS_META.reported;
   const severity = SEVERITY_META[i.severity as keyof typeof SEVERITY_META] ?? SEVERITY_META.medium;
+  const categoryBadgeStyle = { background: (cat as any).color ?? "#64748b" };
+  const issueLocation = { lat: i.lat, lng: i.lng };
 
   // ensure URL slug matches (canonical)
   useEffect(() => {
@@ -153,7 +155,7 @@ function IssuePage() {
           <div className="flex flex-wrap items-center gap-2">
             <span
               className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
-              style={{ background: cat.color ?? "#334155" }}
+              style={categoryBadgeStyle}
             >
               {cat.name_en}
             </span>
@@ -382,9 +384,9 @@ function IssuePage() {
           <div className="mt-3">
             <IssueMap
               height={260}
-              center={{ lat: i.lat, lng: i.lng }}
+              center={issueLocation}
               zoom={16}
-              marker={{ lat: i.lat, lng: i.lng }}
+              marker={issueLocation}
             />
           </div>
         </section>

@@ -105,6 +105,8 @@ function AuthorityDetail() {
     },
   ];
 
+  const chartTickStyle = { fontSize: 11 };
+
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl px-4 py-6">
@@ -194,8 +196,8 @@ function AuthorityDetail() {
             {resolutionTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={resolutionTrend}>
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <XAxis dataKey="month" tick={chartTickStyle} />
+                  <YAxis tick={chartTickStyle} allowDecimals={false} />
                   <Tooltip />
                   <Bar
                     dataKey="reported"
