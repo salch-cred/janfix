@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import {
@@ -177,8 +177,10 @@ function LeaderboardPage() {
         {tab === "representatives" && (
           <div className="mt-6 space-y-2">
             {repLeaderboard.map((r: any, idx: number) => (
-              <div
+              <Link
                 key={r.id}
+                to="/representatives/$repId"
+                params= repId: String(r.id) 
                 className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition hover:bg-accent/50"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold overflow-hidden">
@@ -202,7 +204,7 @@ function LeaderboardPage() {
                     {r.score}%
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
             {reps.isLoading &&
               Array.from({ length: 5 }).map((_, i) => (
