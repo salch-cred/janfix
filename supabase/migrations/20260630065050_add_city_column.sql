@@ -1,0 +1,5 @@
+
+ALTER TABLE public.wards ADD COLUMN IF NOT EXISTS city TEXT NOT NULL DEFAULT 'Mangaluru';
+ALTER TABLE public.issues ADD COLUMN IF NOT EXISTS city TEXT NOT NULL DEFAULT 'Mangaluru';
+ALTER TABLE public.authorities ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE public.representatives ADD COLUMN IF NOT EXISTS city TEXT;
