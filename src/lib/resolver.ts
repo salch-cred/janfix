@@ -98,9 +98,11 @@ const WARD_NAMES: Record<string, { number: number; area: string }> = {
 
 // Extra locality/area keywords → ward number + constituency override
 const EXTRA_MAPPINGS: AreaMapping[] = [
-  // Valachil area → Deralakatte ward (19) + Mangaluru City South
-  { keyword: "valachil",     ward_id: 19, constituency: "Mangaluru City South", city: "Mangaluru", priority: 15 },
-  { keyword: "bangalagudde", ward_id: 19, constituency: "Mangaluru City South", city: "Mangaluru", priority: 15 },
+  // Valachil / Bangalagudde are hamlets near Farangipet (pincode 574143), which is
+  // administratively in Bantwal taluk — NOT part of Mangaluru City Corporation limits
+  // or the Deralakatte ward. They fall under the Bantwal assembly constituency.
+  { keyword: "valachil",     ward_id: null, constituency: "Bantwal", city: null, priority: 15 },
+  { keyword: "bangalagudde", ward_id: null, constituency: "Bantwal", city: null, priority: 15 },
   // Rural DK taluk names → constituency only (no ward)
   { keyword: "bantwal",      ward_id: null, constituency: "Bantwal",     city: null, priority: 5 },
   { keyword: "puttur",       ward_id: null, constituency: "Puttur",      city: null, priority: 5 },
@@ -259,7 +261,8 @@ function resolveRepByConstituency(reps: Rep[], locationText: string, prematchedC
 
   // Known area→constituency overrides for places not in any constituency name
   const AREA_CONSTITUENCY_OVERRIDE: Record<string, string> = {
-    valachil: "Mangaluru City South",
+    valachil: "Bantwal",
+    bangalagudde: "Bantwal",
   };
   let enriched = locationText;
   for (const [area, constituency] of Object.entries(AREA_CONSTITUENCY_OVERRIDE)) {
