@@ -98,7 +98,7 @@ export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
     if (error) throw error;
     if (!row) return null;
 
-    const [history, official, comments, votes, watchers] = await Promise.all([
+    const [history, official, comments, votes, watchers, photos] = await Promise.all([
       c
         .from("issue_status_history")
         .select("*")
@@ -121,6 +121,11 @@ export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
         .from("issue_watchers")
         .select("device_id", { count: "exact", head: true })
         .eq("issue_id", row.id),
+      c
+        .from("issue_photos")
+        .select("*")
+        .eq("issue_id", row.id)
+        .order("position", { ascending: true }),
     ]);
 
     return {
@@ -128,6 +133,7 @@ export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
       history: history.data ?? [],
       official: official.data ?? [],
       comments: comments.data ?? [],
+      photos: photos.data ?? [],
       votes: {
         exists: votes.data?.filter((v) => v.vote === "exists").length ?? 0,
         fixed: votes.data?.filter((v) => v.vote === "fixed").length ?? 0,

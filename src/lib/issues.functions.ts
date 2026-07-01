@@ -24,6 +24,9 @@ const createIssueInput = z.object({
   ward_id: z.number().int().optional().nullable(),
   image_path: z.string().min(3),
   image_phash: z.string().optional().nullable(),
+  // Up to 4 optional additional photos, uploaded to storage by the caller;
+  // these are stored in issue_photos alongside the required primary photo.
+  extra_image_paths: z.array(z.string().min(3)).max(4).optional().nullable(),
 });
 
 async function signUrl(sb: ReturnType<typeof serverClient>, bucket: string, path: string) {
@@ -125,6 +128,20 @@ export const createIssueFn = createServerFn({ method: "POST" })
       by_admin: false,
       by_device_id: data.device_id,
     });
+
+    // Optional extra photos beyond the required primary one.
+    const extraPaths = (data.extra_image_paths ?? []).slice(0, 4);
+    if (extraPaths.length > 0) {
+      const extraRows = await Promise.all(
+        extraPaths.map(async (p, idx) => ({
+          issue_id: ins.id,
+          url: await signUrl(sb, "issue-photos", p),
+          path: p,
+          position: idx + 1,
+        })),
+      );
+      await sb.from("issue_photos").insert(extraRows);
+    }
 
     return { public_id: ins.public_id, slug: ins.slug ?? "" };
   });
