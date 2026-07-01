@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { listIssuesFn, listCategoriesFn, listWardsFn } from "@/lib/queries.functions";
-import { adminUpdateIssueFn } from "@/lib/admin.functions";
+import { adminUpdateIssueFn, adminDeleteIssueFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Loader2,
   LogOut,
   Shield,
@@ -44,6 +54,7 @@ import {
   Tags,
   GitBranch,
   Search,
+  Trash2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/issues")({
@@ -75,6 +86,7 @@ const statusColors: Record<string, string> = {
 
 function AdminIssues() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<any>(null);
   const [checking, setChecking] = useState(true);
 
@@ -102,6 +114,13 @@ function AdminIssues() {
     note: string;
     updating: boolean;
   }>({ open: false, issue: null, newStatus: "", note: "", updating: false });
+
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    issue: any;
+    deleting: boolean;
+    error: string | null;
+  }>({ open: false, issue: null, deleting: false, error: null });
 
   const issues = useQuery({
     queryKey: ["admin-issues", search, statusFilter, severityFilter, categoryFilter, wardFilter],
@@ -143,6 +162,10 @@ function AdminIssues() {
     });
   };
 
+  const openDeleteDialog = (issue: any) => {
+    setDeleteDialog({ open: true, issue, deleting: false, error: null });
+  };
+
   const handleUpdateStatus = async () => {
     if (!updateDialog.issue || !updateDialog.newStatus) return;
     setUpdateDialog((prev) => ({ ...prev, updating: true }));
@@ -170,6 +193,33 @@ function AdminIssues() {
       });
     } catch (e: any) {
       setUpdateDialog((prev) => ({ ...prev, updating: false }));
+    }
+  };
+
+  const handleDeleteIssue = async () => {
+    if (!deleteDialog.issue) return;
+    setDeleteDialog((prev) => ({ ...prev, deleting: true, error: null }));
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      await adminDeleteIssueFn({
+        data: {
+          access_token: token,
+          issue_id: deleteDialog.issue.id,
+        },
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["admin-issues"] });
+      queryClient.invalidateQueries({ queryKey: ["issues"] });
+      setDeleteDialog({ open: false, issue: null, deleting: false, error: null });
+    } catch (e: any) {
+      setDeleteDialog((prev) => ({
+        ...prev,
+        deleting: false,
+        error: e?.message || "Failed to delete report",
+      }));
     }
   };
 
@@ -316,9 +366,19 @@ function AdminIssues() {
                       {issue.created_at ? new Date(issue.created_at).toLocaleDateString() : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => openUpdateDialog(issue)}>
-                        Update
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="outline" size="sm" onClick={() => openUpdateDialog(issue)}>
+                          Update
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteDialog(issue)}
+                          title="Delete report"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -400,6 +460,41 @@ function AdminIssues() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) =>
+          setDeleteDialog((prev) => (prev.deleting ? prev : { ...prev, open }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete report</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialog.issue?.public_id
+                ? `Are you sure you want to permanently delete report ${deleteDialog.issue.public_id}? This also removes its votes, comments, status history, and updates. This action cannot be undone.`
+                : "Are you sure you want to permanently delete this report? This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteDialog.error && (
+            <p className="text-sm text-destructive">{deleteDialog.error}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteDialog.deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteIssue();
+              }}
+              disabled={deleteDialog.deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteDialog.deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
