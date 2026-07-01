@@ -62,6 +62,10 @@ const emptyForm = {
   sort_order: "",
 };
 
+function swatchStyle(color: string): React.CSSProperties {
+  return { backgroundColor: color };
+}
+
 function AdminCategories() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -250,7 +254,7 @@ function AdminCategories() {
                         <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
                           <span
                             className="h-3 w-3 rounded-full border"
-                            style= backgroundColor: cat.color 
+                            style={swatchStyle(cat.color)}
                           />
                           {cat.color}
                         </span>
@@ -444,4 +448,38 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
               <Link
                 key={item.to}
                 to={item.to}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                activeProps={navLinkActiveProps}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="border-t p-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={onLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      </aside>
+
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-card px-6 md:hidden">
+          <span className="font-display text-sm font-bold">Admin</span>
+          <div className="flex-1" />
+          <Button variant="ghost" size="icon" onClick={onLogout}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </header>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
+      </div>
+    </div>
+  );
+}
