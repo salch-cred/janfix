@@ -16,6 +16,7 @@ import { Disclaimer } from "@/components/Disclaimer";
 import { IssueMap } from "@/components/IssueMap";
 import { PosterGenerator } from "@/components/PosterGenerator";
 import { JanFixLogo } from "@/components/JanFixLogo";
+import { AuthorityLogo } from "@/components/AuthorityLogo";
 import { STATUS_META, STATUS_ORDER, SEVERITY_META, categoryBySlug, slugify } from "@/lib/civic";
 import { getDeviceId, getDeviceName } from "@/lib/device";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,6 @@ import {
   Image as ImgIcon,
   Share2,
   ArrowRight,
-  Landmark,
 } from "lucide-react";
 
 export const Route = createFileRoute("/issue/$publicId/$slug")({
@@ -60,25 +60,6 @@ export const Route = createFileRoute("/issue/$publicId/$slug")({
 
 function repProfileLinkParams(repId: string | number) {
   return { repId: String(repId) };
-}
-
-function AuthorityLogo({ url }: { url?: string | null }) {
-  const [errored, setErrored] = useState(false);
-  if (url && !errored) {
-    return (
-      <img
-        src={url}
-        onError={() => setErrored(true)}
-        className="h-full w-full object-contain p-1.5"
-        alt=""
-      />
-    );
-  }
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
-      <Landmark className="h-7 w-7" strokeWidth={1.75} />
-    </div>
-  );
 }
 
 function IssuePage() {
