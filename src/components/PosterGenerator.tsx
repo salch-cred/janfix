@@ -172,7 +172,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
-    border: "2px solid #1d4ed8",
+    border: "4px solid #1d4ed8",
     overflow: "hidden",
   };
 
