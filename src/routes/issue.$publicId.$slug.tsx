@@ -35,6 +35,7 @@ import {
   Image as ImgIcon,
   Share2,
   ArrowRight,
+  Landmark,
 } from "lucide-react";
 
 export const Route = createFileRoute("/issue/$publicId/$slug")({
@@ -59,6 +60,25 @@ export const Route = createFileRoute("/issue/$publicId/$slug")({
 
 function repProfileLinkParams(repId: string | number) {
   return { repId: String(repId) };
+}
+
+function AuthorityLogo({ url }: { url?: string | null }) {
+  const [errored, setErrored] = useState(false);
+  if (url && !errored) {
+    return (
+      <img
+        src={url}
+        onError={() => setErrored(true)}
+        className="h-full w-full object-contain p-1.5"
+        alt=""
+      />
+    );
+  }
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
+      <Landmark className="h-7 w-7" strokeWidth={1.75} />
+    </div>
+  );
 }
 
 function IssuePage() {
@@ -288,11 +308,7 @@ function IssuePage() {
               <div className="border-b border-primary/20 p-5 md:border-b-0 md:border-r">
                 <div className="flex items-center gap-3">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-primary/10">
-                    {i.authority?.logo_url ? (
-                      <img src={i.authority.logo_url} className="h-full w-full object-contain p-1.5" alt="" />
-                    ) : (
-                      <JanFixLogo className="h-8 w-8" />
-                    )}
+                    <AuthorityLogo url={i.authority?.logo_url} />
                   </div>
                   <div className="min-w-0">
                     <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Assigned authority</div>
