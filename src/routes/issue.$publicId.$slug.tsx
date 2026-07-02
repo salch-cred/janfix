@@ -15,6 +15,7 @@ import { AppShell } from "@/components/AppShell";
 import { Disclaimer } from "@/components/Disclaimer";
 import { IssueMap } from "@/components/IssueMap";
 import { PosterGenerator } from "@/components/PosterGenerator";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import { STATUS_META, STATUS_ORDER, SEVERITY_META, categoryBySlug, slugify } from "@/lib/civic";
 import { getDeviceId, getDeviceName } from "@/lib/device";
 import { Button } from "@/components/ui/button";
@@ -290,7 +291,7 @@ function IssuePage() {
                     {i.authority?.logo_url ? (
                       <img src={i.authority.logo_url} className="h-full w-full object-contain p-1.5" alt="" />
                     ) : (
-                      <span className="text-lg font-bold text-primary">{i.authority?.name?.slice(0, 1) ?? "—"}</span>
+                      <JanFixLogo className="h-8 w-8" />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -313,7 +314,7 @@ function IssuePage() {
                         <img src={i.representative.photo_url} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-muted text-lg font-bold text-muted-foreground">
-                          {i.representative?.name?.slice(0, 1) ?? "?"}
+                          <JanFixLogo className="h-8 w-8" />
                         </div>
                       )}
                     </div>
