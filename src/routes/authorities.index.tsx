@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { listAuthoritiesFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import { Input } from "@/components/ui/input";
 import { Search, ShieldCheck, Clock, CheckCircle2, Building2, TrendingUp } from "lucide-react";
 
@@ -64,15 +65,15 @@ function AuthoritiesIndex() {
                 className="rounded-2xl border bg-card p-4 transition hover:bg-accent hover:shadow-sm"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary text-lg">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-primary/10 overflow-hidden font-bold text-primary text-lg">
                     {a.logo_url ? (
                       <img
                         src={a.logo_url}
-                        className="h-full w-full rounded-xl object-cover"
+                        className="h-full w-full rounded-xl object-contain p-1"
                         alt=""
                       />
                     ) : (
-                      a.name.slice(0, 2)
+                      <JanFixLogo className="h-8 w-8" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
