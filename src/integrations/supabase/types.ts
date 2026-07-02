@@ -169,6 +169,32 @@ export type Database = {
         };
         Relationships: [];
       };
+      gram_panchayats: {
+        Row: {
+          id: number;
+          name: string;
+          taluk_id: number | null;
+        };
+        Insert: {
+          id?: never;
+          name: string;
+          taluk_id?: number | null;
+        };
+        Update: {
+          id?: never;
+          name?: string;
+          taluk_id?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gram_panchayats_taluk_id_fkey";
+            columns: ["taluk_id"];
+            isOneToOne: false;
+            referencedRelation: "taluks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       issue_comments: {
         Row: {
           body: string;
@@ -452,9 +478,11 @@ export type Database = {
           id: string;
           image_phash: string | null;
           image_url: string | null;
+          jurisdiction_confidence: string | null;
           lat: number;
           lng: number;
           locality: string | null;
+          needs_review: boolean;
           pincode: string | null;
           public_id: string;
           severity: Database["public"]["Enums"]["issue_severity"];
@@ -484,9 +512,11 @@ export type Database = {
           id?: string;
           image_phash?: string | null;
           image_url?: string | null;
+          jurisdiction_confidence?: string | null;
           lat: number;
           lng: number;
           locality?: string | null;
+          needs_review?: boolean;
           pincode?: string | null;
           public_id: string;
           severity?: Database["public"]["Enums"]["issue_severity"];
@@ -516,9 +546,11 @@ export type Database = {
           id?: string;
           image_phash?: string | null;
           image_url?: string | null;
+          jurisdiction_confidence?: string | null;
           lat?: number;
           lng?: number;
           locality?: string | null;
+          needs_review?: boolean;
           pincode?: string | null;
           public_id?: string;
           severity?: Database["public"]["Enums"]["issue_severity"];
@@ -565,6 +597,67 @@ export type Database = {
             columns: ["ward_id"];
             isOneToOne: false;
             referencedRelation: "wards";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      jurisdiction_rules: {
+        Row: {
+          active: boolean;
+          authority_id: number | null;
+          category_id: number;
+          confidence: string;
+          created_at: string;
+          id: number;
+          notes: string | null;
+          priority: number;
+          scope_type: string;
+          taluk_id: number | null;
+        };
+        Insert: {
+          active?: boolean;
+          authority_id?: number | null;
+          category_id: number;
+          confidence?: string;
+          created_at?: string;
+          id?: never;
+          notes?: string | null;
+          priority?: number;
+          scope_type: string;
+          taluk_id?: number | null;
+        };
+        Update: {
+          active?: boolean;
+          authority_id?: number | null;
+          category_id?: number;
+          confidence?: string;
+          created_at?: string;
+          id?: never;
+          notes?: string | null;
+          priority?: number;
+          scope_type?: string;
+          taluk_id?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "jurisdiction_rules_authority_id_fkey";
+            columns: ["authority_id"];
+            isOneToOne: false;
+            referencedRelation: "authorities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jurisdiction_rules_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jurisdiction_rules_taluk_id_fkey";
+            columns: ["taluk_id"];
+            isOneToOne: false;
+            referencedRelation: "taluks";
             referencedColumns: ["id"];
           },
         ];
@@ -628,6 +721,66 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      road_segments: {
+        Row: {
+          id: number;
+          name: string;
+          notes: string | null;
+          owner_authority_id: number | null;
+          owner_type: string;
+          taluk_id: number | null;
+        };
+        Insert: {
+          id?: never;
+          name: string;
+          notes?: string | null;
+          owner_authority_id?: number | null;
+          owner_type: string;
+          taluk_id?: number | null;
+        };
+        Update: {
+          id?: never;
+          name?: string;
+          notes?: string | null;
+          owner_authority_id?: number | null;
+          owner_type?: string;
+          taluk_id?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "road_segments_owner_authority_id_fkey";
+            columns: ["owner_authority_id"];
+            isOneToOne: false;
+            referencedRelation: "authorities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "road_segments_taluk_id_fkey";
+            columns: ["taluk_id"];
+            isOneToOne: false;
+            referencedRelation: "taluks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      taluks: {
+        Row: {
+          id: number;
+          name: string;
+          sub_division: string | null;
+        };
+        Insert: {
+          id?: never;
+          name: string;
+          sub_division?: string | null;
+        };
+        Update: {
+          id?: never;
+          name?: string;
+          sub_division?: string | null;
+        };
+        Relationships: [];
       };
       user_roles: {
         Row: {
