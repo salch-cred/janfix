@@ -53,6 +53,7 @@ import {
   Map,
   Tags,
   GitBranch,
+  Compass,
   Search,
   Trash2,
 } from "lucide-react";
@@ -339,9 +340,16 @@ function AdminIssues() {
                       <p className="truncate text-sm">{issue.description}</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={statusColors[issue.status] ?? ""}>
-                        {issue.status.replace("_", " ")}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant="secondary" className={statusColors[issue.status] ?? ""}>
+                          {issue.status.replace("_", " ")}
+                        </Badge>
+                        {issue.needs_review && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Needs Review
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span
@@ -507,6 +515,7 @@ const navItems = [
   { to: "/admin/wards", label: "Wards", icon: Map },
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
+  { to: "/admin/jurisdiction", label: "Jurisdiction", icon: Compass },
 ];
 
 const navLinkActiveProps = { className: "bg-accent text-foreground" };
