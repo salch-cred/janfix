@@ -198,8 +198,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             <div ref={posterRef} style={posterOuterStyle}>
               
               {/* Header */}
-              <div style= display: "flex", alignItems: "center", justifyContent: "space-between", padding: isHorizontal ? "20px 30px" : "30px 40px", flexShrink: 0 >
-                <div style= display: "flex", alignItems: "center", gap: 20 >
+              <div style={ { display: "flex", alignItems: "center", justifyContent: "space-between", padding: isHorizontal ? "20px 30px" : "30px 40px", flexShrink: 0 } }>
+                <div style={ { display: "flex", alignItems: "center", gap: 20 } }>
                   <svg width="68" height="82" viewBox="0 0 24 28" fill="none">
                     <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 16 12 16s12-7.75 12-16C24 5.373 18.627 0 12 0z" fill="#1d4ed8"/>
                     <circle cx="12" cy="11" r="9" fill="white"/>
@@ -213,23 +213,23 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                       <path d="M14 15 c0-1.5 1-2 2-2 s2 0.5 2 2 v0.5 h-4 z" />
                     </g>
                   </svg>
-                  <div style= display: "flex", flexDirection: "column" >
-                    <div style= fontSize: 44, fontWeight: 800, color: "#1d4ed8", lineHeight: 1 >Jan<span style= color: "#16a34a" >Fix</span></div>
-                    <div style= fontSize: 18, fontWeight: 700, color: "#1d4ed8", letterSpacing: 1.5, marginTop: 4 >MANGALURU</div>
-                    <div style= fontSize: 16, color: "#0f172a", marginTop: 4, fontWeight: 500 >Report. Track. Fix.</div>
+                  <div style={ { display: "flex", flexDirection: "column" } }>
+                    <div style={ { fontSize: 44, fontWeight: 800, color: "#1d4ed8", lineHeight: 1 } }>Jan<span style={ { color: "#16a34a" } }>Fix</span></div>
+                    <div style={ { fontSize: 18, fontWeight: 700, color: "#1d4ed8", letterSpacing: 1.5, marginTop: 4 } }>MANGALURU</div>
+                    <div style={ { fontSize: 16, color: "#0f172a", marginTop: 4, fontWeight: 500 } }>Report. Track. Fix.</div>
                   </div>
                 </div>
 
-                <div style= width: 2, background: "#e2e8f0", height: 80, margin: "0 20px"  />
+                <div style={ { width: 2, background: "#e2e8f0", height: 80, margin: "0 20px" } } />
 
-                <div style= display: "flex", alignItems: "center", gap: 20, flexShrink: 0 >
-                  <div style= display: "flex", flexDirection: "column", textAlign: "left" >
-                    <div style= fontSize: 26, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 >Let's Fix Mangaluru</div>
-                    <div style= fontSize: 18, color: "#16a34a", fontWeight: 700, marginTop: 4 >ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
-                    <div style= fontSize: 16, color: "#475569", marginTop: 4, fontWeight: 500 >Together for a Better City</div>
+                <div style={ { display: "flex", alignItems: "center", gap: 20, flexShrink: 0 } }>
+                  <div style={ { display: "flex", flexDirection: "column", textAlign: "left" } }>
+                    <div style={ { fontSize: 26, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 } }>Let's Fix Mangaluru</div>
+                    <div style={ { fontSize: 18, color: "#16a34a", fontWeight: 700, marginTop: 4 } }>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
+                    <div style={ { fontSize: 16, color: "#475569", marginTop: 4, fontWeight: 500 } }>Together for a Better City</div>
                   </div>
                   {!isHorizontal && (
-                    <svg width="120" height="68" viewBox="0 0 96 52" style= flexShrink: 0 >
+                    <svg width="120" height="68" viewBox="0 0 96 52" style={ { flexShrink: 0 } }>
                       <g fill="none" stroke="#94a3b8" strokeWidth="1.2">
                         <rect x="2" y="26" width="14" height="26" />
                         <rect x="18" y="14" width="14" height="38" />
@@ -249,91 +249,91 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               </div>
 
               {/* Hero Image */}
-              <div style= position: "relative", flex: 1, margin: "0 24px", borderRadius: 24, overflow: "hidden", backgroundColor: "#e2e8f0", display: "flex" >
+              <div style={ { position: "relative", flex: 1, margin: "0 24px", borderRadius: 24, overflow: "hidden", backgroundColor: "#e2e8f0", display: "flex" } }>
                 {imgSrc ? (
-                  <img src={imgSrc} alt="" crossOrigin="anonymous" style= width: "100%", height: "100%", objectFit: "cover"  />
+                  <img src={imgSrc} alt="" crossOrigin="anonymous" style={ { width: "100%", height: "100%", objectFit: "cover" } } />
                 ) : null}
                 
                 {/* Gradient Overlay for Text */}
-                <div style= position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)"  />
+                <div style={ { position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)" } } />
 
                 {/* ID Badge */}
-                <div style= position: "absolute", top: 30, left: 0, background: "#dc2626", color: "white", padding: "14px 28px", borderRadius: "0 16px 16px 0" >
-                  <div style= fontSize: 13, fontWeight: 700, letterSpacing: 1, opacity: 0.9, textAlign: "center" >ISSUE ID</div>
-                  <div style= fontSize: 26, fontWeight: 900, marginTop: 2 >{issue.public_id.toUpperCase()}</div>
+                <div style={ { position: "absolute", top: 30, left: 0, background: "#dc2626", color: "white", padding: "14px 28px", borderRadius: "0 16px 16px 0" } }>
+                  <div style={ { fontSize: 13, fontWeight: 700, letterSpacing: 1, opacity: 0.9, textAlign: "center" } }>ISSUE ID</div>
+                  <div style={ { fontSize: 26, fontWeight: 900, marginTop: 2 } }>{issue.public_id.toUpperCase()}</div>
                 </div>
 
                 {/* Status Badge */}
-                <div style= position: "absolute", top: 30, right: 30, background: statusColors.bg, color: statusColors.fg, padding: "14px 24px", borderRadius: 16, display: "flex", alignItems: "center", gap: 12 >
+                <div style={ { position: "absolute", top: 30, right: 30, background: statusColors.bg, color: statusColors.fg, padding: "14px 24px", borderRadius: 16, display: "flex", alignItems: "center", gap: 12 } }>
                   <Settings size={28} />
                   <div>
-                    <div style= fontSize: 13, fontWeight: 700, letterSpacing: 1, opacity: 0.9 >STATUS</div>
-                    <div style= fontSize: 22, fontWeight: 900, marginTop: 2 >{status.label.toUpperCase()}</div>
+                    <div style={ { fontSize: 13, fontWeight: 700, letterSpacing: 1, opacity: 0.9 } }>STATUS</div>
+                    <div style={ { fontSize: 22, fontWeight: 900, marginTop: 2 } }>{status.label.toUpperCase()}</div>
                   </div>
                 </div>
 
                 {/* Title & Desc */}
-                <div style= position: "absolute", bottom: 80, left: 40, right: 40, color: "white" >
-                  <div style= fontSize: isHorizontal ? 48 : 64, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.1, textShadow: "0 2px 10px rgba(0,0,0,0.5)" >
+                <div style={ { position: "absolute", bottom: 80, left: 40, right: 40, color: "white" } }>
+                  <div style={ { fontSize: isHorizontal ? 48 : 64, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.1, textShadow: "0 2px 10px rgba(0,0,0,0.5)" } }>
                     {cat.name_en}
                   </div>
-                  <div style= fontSize: isHorizontal ? 20 : 24, marginTop: 8, opacity: 0.95, textShadow: "0 2px 10px rgba(0,0,0,0.5)", maxWidth: "80%" >
+                  <div style={ { fontSize: isHorizontal ? 20 : 24, marginTop: 8, opacity: 0.95, textShadow: "0 2px 10px rgba(0,0,0,0.5)", maxWidth: "80%" } }>
                     {issue.description}
                   </div>
                 </div>
               </div>
 
               {/* Floating Info Bar */}
-              <div style= margin: "-50px 48px 0", background: "white", borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.12)", position: "relative", zIndex: 10, display: "flex", alignItems: "center", padding: "24px 20px", border: "1px solid #f1f5f9" >
-                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+              <div style={ { margin: "-50px 48px 0", background: "white", borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.12)", position: "relative", zIndex: 10, display: "flex", alignItems: "center", padding: "24px 20px", border: "1px solid #f1f5f9" } }>
+                <div style={ { display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" } }>
                   <MapPin size={36} color="#1d4ed8" strokeWidth={2} />
                   <div>
-                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >LOCATION</div>
-                    <div style= fontSize: 16, fontWeight: 600, color: "#0f172a", marginTop: 4 >{locationLabel}</div>
+                    <div style={ { fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 } }>LOCATION</div>
+                    <div style={ { fontSize: 16, fontWeight: 600, color: "#0f172a", marginTop: 4 } }>{locationLabel}</div>
                   </div>
                 </div>
-                <div style= width: 1, background: "#e2e8f0", height: 50  />
-                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                <div style={ { width: 1, background: "#e2e8f0", height: 50 } } />
+                <div style={ { display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" } }>
                   <Building2 size={36} color="#1d4ed8" strokeWidth={2} />
                   <div>
-                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >WARD</div>
-                    <div style= fontSize: 24, fontWeight: 800, color: "#0f172a", marginTop: 2 >{wardLabel}</div>
+                    <div style={ { fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 } }>WARD</div>
+                    <div style={ { fontSize: 24, fontWeight: 800, color: "#0f172a", marginTop: 2 } }>{wardLabel}</div>
                   </div>
                 </div>
-                <div style= width: 1, background: "#e2e8f0", height: 50  />
-                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                <div style={ { width: 1, background: "#e2e8f0", height: 50 } } />
+                <div style={ { display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" } }>
                   <CalendarDays size={36} color="#1d4ed8" strokeWidth={2} />
                   <div>
-                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >REPORTED ON</div>
-                    <div style= fontSize: 16, fontWeight: 600, color: "#0f172a", marginTop: 4 >{reportedDateLabel}</div>
-                    {reportedTimeLabel && <div style= fontSize: 14, color: "#475569" >{reportedTimeLabel}</div>}
+                    <div style={ { fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 } }>REPORTED ON</div>
+                    <div style={ { fontSize: 16, fontWeight: 600, color: "#0f172a", marginTop: 4 } }>{reportedDateLabel}</div>
+                    {reportedTimeLabel && <div style={ { fontSize: 14, color: "#475569" } }>{reportedTimeLabel}</div>}
                   </div>
                 </div>
-                <div style= width: 1, background: "#e2e8f0", height: 50  />
-                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                <div style={ { width: 1, background: "#e2e8f0", height: 50 } } />
+                <div style={ { display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" } }>
                   <Eye size={36} color="#1d4ed8" strokeWidth={2} />
                   <div>
-                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >SUPPORTS</div>
-                    <div style= fontSize: 24, fontWeight: 800, color: "#0f172a", marginTop: 2 >{supportsCount}</div>
-                    <div style= fontSize: 13, color: "#475569", fontWeight: 600, textTransform: "uppercase" >Views {viewsCount}</div>
+                    <div style={ { fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 } }>SUPPORTS</div>
+                    <div style={ { fontSize: 24, fontWeight: 800, color: "#0f172a", marginTop: 2 } }>{supportsCount}</div>
+                    <div style={ { fontSize: 13, color: "#475569", fontWeight: 600, textTransform: "uppercase" } }>Views {viewsCount}</div>
                   </div>
                 </div>
               </div>
 
               {/* People Row */}
-              <div style= display: "flex", padding: "30px 48px", flexShrink: 0 >
-                <div style= flex: 1 >
-                  <div style= fontSize: 14, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >RESPONSIBLE AUTHORITY</div>
-                  <div style= display: "flex", alignItems: "center", gap: 20, marginTop: 16 >
+              <div style={ { display: "flex", padding: "30px 48px", flexShrink: 0 } }>
+                <div style={ { flex: 1 } }>
+                  <div style={ { fontSize: 14, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 } }>RESPONSIBLE AUTHORITY</div>
+                  <div style={ { display: "flex", alignItems: "center", gap: 20, marginTop: 16 } }>
                     {logoSrc ? (
-                      <img src={logoSrc} alt="" crossOrigin="anonymous" style= width: 72, height: 72, objectFit: "contain", borderRadius: 12, background: "white", border: "1px solid #e2e8f0", padding: 4  />
+                      <img src={logoSrc} alt="" crossOrigin="anonymous" style={ { width: 72, height: 72, objectFit: "contain", borderRadius: 12, background: "white", border: "1px solid #e2e8f0", padding: 4 } } />
                     ) : (
-                      <div style= width: 72, height: 72, borderRadius: 12, background: "#e2e8f0"  />
+                      <div style={ { width: 72, height: 72, borderRadius: 12, background: "#e2e8f0" } } />
                     )}
                     <div>
-                      <div style= fontSize: 22, fontWeight: 800, color: "#0f172a" >{issue.authority?.name ?? "Unassigned"}</div>
+                      <div style={ { fontSize: 22, fontWeight: 800, color: "#0f172a" } }>{issue.authority?.name ?? "Unassigned"}</div>
                       {(issue.authority?.department || issue.authority?.type) && (
-                        <div style= fontSize: 16, color: "#475569", marginTop: 4 >
+                        <div style={ { fontSize: 16, color: "#475569", marginTop: 4 } }>
                           {[issue.authority?.department, issue.authority?.type].filter(Boolean).join(" \u00b7 ")}
                         </div>
                       )}
@@ -343,20 +343,20 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                 
                 {issue.representative && (
                   <>
-                    <div style= width: 1, background: "#e2e8f0", margin: "0 30px"  />
-                    <div style= flex: 1 >
-                      <div style= fontSize: 14, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >LOCAL REPRESENTATIVE</div>
-                      <div style= display: "flex", alignItems: "center", gap: 20, marginTop: 16 >
+                    <div style={ { width: 1, background: "#e2e8f0", margin: "0 30px" } } />
+                    <div style={ { flex: 1 } }>
+                      <div style={ { fontSize: 14, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 } }>LOCAL REPRESENTATIVE</div>
+                      <div style={ { display: "flex", alignItems: "center", gap: 20, marginTop: 16 } }>
                         {repSrc ? (
-                          <img src={repSrc} alt="" crossOrigin="anonymous" style= width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0"  />
+                          <img src={repSrc} alt="" crossOrigin="anonymous" style={ { width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" } } />
                         ) : (
-                          <div style= width: 72, height: 72, borderRadius: "50%", background: "#e2e8f0"  />
+                          <div style={ { width: 72, height: 72, borderRadius: "50%", background: "#e2e8f0" } } />
                         )}
                         <div>
-                          <div style= fontSize: 20, fontWeight: 800, color: "#0f172a" >{issue.representative.name}</div>
-                          <div style= fontSize: 16, color: "#475569", marginTop: 4 >{issue.representative.role}</div>
+                          <div style={ { fontSize: 20, fontWeight: 800, color: "#0f172a" } }>{issue.representative.name}</div>
+                          <div style={ { fontSize: 16, color: "#475569", marginTop: 4 } }>{issue.representative.role}</div>
                           {issue.representative.phone && (
-                            <div style= display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "#475569", marginTop: 6, fontWeight: 500 >
+                            <div style={ { display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "#475569", marginTop: 6, fontWeight: 500 } }>
                               <Phone size={14} /> {issue.representative.phone}
                             </div>
                           )}
@@ -368,40 +368,40 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               </div>
 
               {/* Footer */}
-              <div style= background: "#1e3a8a", borderRadius: 24, margin: "0 24px 24px", padding: "30px 40px", display: "flex", justifyContent: "space-between", color: "white", flexShrink: 0 >
-                <div style= display: "flex", flexDirection: "column", justifyContent: "center" >
-                  <div style= fontSize: 26, fontWeight: 800, lineHeight: 1.2 >Your Small Report</div>
-                  <div style= fontSize: 26, fontWeight: 800, color: "#fde047", lineHeight: 1.2 >Can Create a Big Change!</div>
-                  <div style= width: 60, height: 2, background: "rgba(255,255,255,0.4)", margin: "16px 0"  />
-                  <div style= fontSize: 16, opacity: 0.9, maxWidth: 300, lineHeight: 1.4 >
+              <div style={ { background: "#1e3a8a", borderRadius: 24, margin: "0 24px 24px", padding: "30px 40px", display: "flex", justifyContent: "space-between", color: "white", flexShrink: 0 } }>
+                <div style={ { display: "flex", flexDirection: "column", justifyContent: "center" } }>
+                  <div style={ { fontSize: 26, fontWeight: 800, lineHeight: 1.2 } }>Your Small Report</div>
+                  <div style={ { fontSize: 26, fontWeight: 800, color: "#fde047", lineHeight: 1.2 } }>Can Create a Big Change!</div>
+                  <div style={ { width: 60, height: 2, background: "rgba(255,255,255,0.4)", margin: "16px 0" } } />
+                  <div style={ { fontSize: 16, opacity: 0.9, maxWidth: 300, lineHeight: 1.4 } }>
                     Vote, share and help make Mangaluru a better place to live.
                   </div>
                 </div>
                 
-                <div style= display: "flex", flexDirection: "column", gap: 16, alignItems: "flex-end" >
-                  <div style= display: "flex", gap: 12 >
-                    <div style= display: "flex", alignItems: "center", gap: 12, background: "#16a34a", padding: "12px 20px", borderRadius: 12 >
+                <div style={ { display: "flex", flexDirection: "column", gap: 16, alignItems: "flex-end" } }>
+                  <div style={ { display: "flex", gap: 12 } }>
+                    <div style={ { display: "flex", alignItems: "center", gap: 12, background: "#16a34a", padding: "12px 20px", borderRadius: 12 } }>
                       <ThumbsUp size={24} />
                       <div>
-                        <div style= fontSize: 14, fontWeight: 800 >ISSUE FIXED</div>
-                        <div style= fontSize: 11, opacity: 0.9 >Vote if the issue is resolved</div>
+                        <div style={ { fontSize: 14, fontWeight: 800 } }>ISSUE FIXED</div>
+                        <div style={ { fontSize: 11, opacity: 0.9 } }>Vote if the issue is resolved</div>
                       </div>
                     </div>
-                    <div style= display: "flex", alignItems: "center", gap: 12, background: "#dc2626", padding: "12px 20px", borderRadius: 12 >
+                    <div style={ { display: "flex", alignItems: "center", gap: 12, background: "#dc2626", padding: "12px 20px", borderRadius: 12 } }>
                       <ThumbsDown size={24} />
                       <div>
-                        <div style= fontSize: 14, fontWeight: 800 >STILL EXISTS</div>
-                        <div style= fontSize: 11, opacity: 0.9 >Vote if the issue still exists</div>
+                        <div style={ { fontSize: 14, fontWeight: 800 } }>STILL EXISTS</div>
+                        <div style={ { fontSize: 11, opacity: 0.9 } }>Vote if the issue still exists</div>
                       </div>
                     </div>
                   </div>
                   
-                  <div style= display: "flex", alignItems: "center", gap: 16, background: "white", borderRadius: 16, padding: "12px 20px", width: "100%" >
-                    {qr && <img src={qr} alt="QR" style= width: 72, height: 72, borderRadius: 8  />}
-                    <div style= color: "#0f172a" >
-                      <div style= fontSize: 13, fontWeight: 800 >SCAN TO VIEW & SUPPORT</div>
-                      <div style= fontSize: 13, color: "#475569", marginTop: 2 >this issue or visit</div>
-                      <div style= fontSize: 16, fontWeight: 800, color: "#1d4ed8", marginTop: 2 >{shortLink}</div>
+                  <div style={ { display: "flex", alignItems: "center", gap: 16, background: "white", borderRadius: 16, padding: "12px 20px", width: "100%" } }>
+                    {qr && <img src={qr} alt="QR" style={ { width: 72, height: 72, borderRadius: 8 } } />}
+                    <div style={ { color: "#0f172a" } }>
+                      <div style={ { fontSize: 13, fontWeight: 800 } }>SCAN TO VIEW & SUPPORT</div>
+                      <div style={ { fontSize: 13, color: "#475569", marginTop: 2 } }>this issue or visit</div>
+                      <div style={ { fontSize: 16, fontWeight: 800, color: "#1d4ed8", marginTop: 2 } }>{shortLink}</div>
                     </div>
                   </div>
                 </div>
