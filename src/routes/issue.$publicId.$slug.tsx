@@ -299,12 +299,6 @@ function IssuePage() {
                     {i.authority?.phone && <div className="text-xs text-muted-foreground">{i.authority.phone}</div>}
                   </div>
                 </div>
-                {i.assignment_reason && (
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    Routing: <span className="font-medium text-foreground">{i.assignment_reason}</span>
-                    {i.assignment_rule_version != null && <> · v{i.assignment_rule_version}</>}
-                  </div>
-                )}
               </div>
               {/* Representative */}
               {i.representative ? (
