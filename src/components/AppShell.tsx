@@ -46,11 +46,23 @@ function TopBar() {
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <HugeiconsIcon icon={Location01Icon} size={16} strokeWidth={1.5} />
+          <div className="flex h-10 w-10 items-center justify-center">
+            <svg width="32" height="38" viewBox="0 0 24 28" fill="none">
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 16 12 16s12-7.75 12-16C24 5.373 18.627 0 12 0z" fill="#1d4ed8"/>
+              <circle cx="12" cy="11" r="9" fill="white"/>
+              <path d="M12 5.5 c-1.5-2 -4.5-0.5 -4.5 2.5 0 2.5 4.5 5 4.5 5 s4.5-2.5 4.5-5 c0-3 -3-4.5 -4.5-2.5 z" fill="#dc2626"/>
+              <g fill="#1d4ed8">
+                <circle cx="12" cy="11.5" r="1.5" />
+                <path d="M9 16 c0-2 2-2.5 3-2.5 s3 0.5 3 2.5 v1 h-6 z" />
+                <circle cx="8" cy="12" r="1" />
+                <path d="M6 15 c0-1.5 1-2 2-2 s2 0.5 2 2 v0.5 h-4 z" />
+                <circle cx="16" cy="12" r="1" />
+                <path d="M14 15 c0-1.5 1-2 2-2 s2 0.5 2 2 v0.5 h-4 z" />
+              </g>
+            </svg>
           </div>
           <div className="leading-tight">
-            <div className="font-display text-base font-extrabold tracking-tight">JanFix</div>
+            <div className="font-display text-base font-extrabold tracking-tight">Jan<span className="text-green-600">Fix</span></div>
             <div className="-mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
               Mangaluru
             </div>
