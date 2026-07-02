@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import {
   Download,
   Share2,
@@ -328,7 +329,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                     {logoSrc ? (
                       <img src={logoSrc} alt="" crossOrigin="anonymous" style={ { width: 72, height: 72, objectFit: "contain", borderRadius: 12, background: "white", border: "1px solid #e2e8f0", padding: 4 } } />
                     ) : (
-                      <div style={ { width: 72, height: 72, borderRadius: 12, background: "#e2e8f0" } } />
+                      <div style={ { width: 72, height: 72, borderRadius: 12, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0" } }>
+                        <JanFixLogo style={ { width: 44, height: 44 } } />
+                      </div>
                     )}
                     <div>
                       <div style={ { fontSize: 22, fontWeight: 800, color: "#0f172a" } }>{issue.authority?.name ?? "Unassigned"}</div>
@@ -350,7 +353,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                         {repSrc ? (
                           <img src={repSrc} alt="" crossOrigin="anonymous" style={ { width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" } } />
                         ) : (
-                          <div style={ { width: 72, height: 72, borderRadius: "50%", background: "#e2e8f0" } } />
+                          <div style={ { width: 72, height: 72, borderRadius: "50%", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #e2e8f0" } }>
+                            <JanFixLogo style={ { width: 44, height: 44 } } />
+                          </div>
                         )}
                         <div>
                           <div style={ { fontSize: 20, fontWeight: 800, color: "#0f172a" } }>{issue.representative.name}</div>
