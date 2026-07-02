@@ -12,7 +12,7 @@ import {
   Eye,
   ThumbsUp,
   ThumbsDown,
-  Settings2,
+  Settings,
   Phone,
 } from "lucide-react";
 import { STATUS_META, categoryBySlug } from "@/lib/civic";
@@ -58,7 +58,7 @@ const STATUS_BADGE_COLORS: Record<string, { bg: string; fg: string }> = {
   reported: { bg: "#e2e8f0", fg: "#1e293b" },
   verified: { bg: "#bfdbfe", fg: "#1e3a8a" },
   assigned: { bg: "#fde68a", fg: "#78350f" },
-  in_progress: { bg: "#fbbf24", fg: "#78350f" },
+  in_progress: { bg: "#fde047", fg: "#0f172a" },
   resolved: { bg: "#86efac", fg: "#14532d" },
   community_confirmed: { bg: "#6ee7b7", fg: "#064e3b" },
   closed: { bg: "#cbd5e1", fg: "#334155" },
@@ -82,7 +82,7 @@ function useImageDataUrls(urls: (string | null | undefined)[]): Map<string, stri
             setTick((t) => t + 1);
           }
         } catch {
-          // fallback: keep original URL (rendered with crossOrigin="anonymous")
+          // fallback
         }
       }
     })();
@@ -97,6 +97,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const [qr, setQr] = useState<string>("");
   const [downloading, setDownloading] = useState(false);
   const posterRef = useRef<HTMLDivElement>(null);
+  
   const cat = issue.category ?? categoryBySlug("others");
   const status = STATUS_META[issue.status] ?? STATUS_META.reported;
   const statusColors = STATUS_BADGE_COLORS[issue.status] ?? STATUS_BADGE_COLORS.in_progress;
@@ -120,9 +121,6 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     setDownloading(true);
     try {
       const node = posterRef.current;
-      // node itself is rendered at full resolution (dims.w x dims.h) with no
-      // scale transform on it — only its preview wrapper is scaled down for
-      // on-screen display — so this always captures a full-size, non-cropped PNG.
       const data = await toPng(node, {
         cacheBust: true,
         pixelRatio: 2,
@@ -145,11 +143,10 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     }
   };
 
-  const scale = 360 / dims.w; // preview width 360px
+  const scale = 360 / dims.w; 
 
-  const locationLabel =
-    [issue.area, issue.locality].filter(Boolean).join(", ") || issue.address || "Mangaluru";
-  const wardLabel = issue.ward ? `Ward ${issue.ward.number}` : "\u2014";
+  const locationLabel = [issue.area, issue.locality].filter(Boolean).join(", ") || issue.address || "Mangaluru";
+  const wardLabel = issue.ward ? issue.ward.number.toString() : "\u2014";
   const reportedDate = issue.created_at ? new Date(issue.created_at) : null;
   const reportedDateLabel = reportedDate
     ? reportedDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
@@ -159,22 +156,12 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     : "";
   const supportsCount = issue.supporters_count ?? 0;
   const viewsCount = issue.views ?? 0;
-  const idTail = issue.public_id.includes("-")
-    ? issue.public_id.split("-").pop()
-    : issue.public_id;
+  const idTail = issue.public_id.includes("-") ? issue.public_id.split("-").pop() : issue.public_id;
   const shortLink = `janfix.in/${idTail}`;
 
-  const previewFrameStyle: CSSProperties = {
-    width: dims.w * scale,
-    height: dims.h * scale,
-    overflow: "hidden",
-  };
-  const previewScaleWrapperStyle: CSSProperties = {
-    width: dims.w,
-    height: dims.h,
-    transform: `scale(${scale})`,
-    transformOrigin: "top left",
-  };
+  const previewFrameStyle: CSSProperties = { width: dims.w * scale, height: dims.h * scale, overflow: "hidden" };
+  const previewScaleWrapperStyle: CSSProperties = { width: dims.w, height: dims.h, transform: `scale(${scale})`, transformOrigin: "top left" };
+  
   const posterOuterStyle: CSSProperties = {
     width: dims.w,
     height: dims.h,
@@ -185,340 +172,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
-    border: "10px solid #1d4ed8",
-    overflow: "hidden",
-  };
-
-  const headerBarStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 20,
-    padding: isHorizontal ? "18px 28px" : "24px 32px",
-    borderBottom: "2px solid #e2e8f0",
-    flexShrink: 0,
-  };
-  const brandRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14 };
-  const brandMarkWrapStyle: CSSProperties = { flexShrink: 0 };
-  const brandMarkStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: isHorizontal ? 40 : 52,
-    height: isHorizontal ? 40 : 52,
-    borderRadius: "50%",
-    background: "#1d4ed8",
-    flexShrink: 0,
-  };
-  const brandTitleStyle: CSSProperties = {
-    fontSize: isHorizontal ? 20 : 26,
-    fontWeight: 800,
-    lineHeight: 1.1,
-    color: "#0f172a",
-  };
-  const brandGreenStyle: CSSProperties = { color: "#16a34a" };
-  const brandCityStyle: CSSProperties = {
-    fontSize: isHorizontal ? 11 : 13,
-    fontWeight: 800,
-    color: "#1d4ed8",
-    letterSpacing: 1.5,
-    marginTop: 1,
-  };
-  const brandTaglineStyle: CSSProperties = {
-    fontSize: isHorizontal ? 11 : 13,
-    color: "#64748b",
-    fontWeight: 600,
-    marginTop: 2,
-  };
-  const brandDecorRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14 };
-  const skylineStyle: CSSProperties = { flexShrink: 0 };
-  const sloganBlockStyle: CSSProperties = {
-    textAlign: "right",
-    flexShrink: 0,
-  };
-  const sloganTitleStyle: CSSProperties = {
-    fontSize: isHorizontal ? 16 : 20,
-    fontWeight: 800,
-    color: "#0f172a",
-    lineHeight: 1.2,
-  };
-  const sloganKannadaStyle: CSSProperties = {
-    fontSize: isHorizontal ? 11 : 13,
-    color: "#16a34a",
-    fontWeight: 700,
-    marginTop: 2,
-  };
-  const sloganSubStyle: CSSProperties = {
-    fontSize: isHorizontal ? 10 : 12,
-    color: "#64748b",
-    marginTop: 2,
-  };
-
-  const bodyRowStyle: CSSProperties = {
-    display: "flex",
-    flexDirection: isHorizontal ? "row" : "column",
-    flex: 1,
-    minHeight: 0,
-    overflow: "hidden",
-  };
-  const photoWrapStyle: CSSProperties = {
-    position: "relative",
-    flex: isHorizontal ? "0 0 42%" : "0 0 44%",
-    overflow: "hidden",
-    background: "#0a0f1e",
-    minHeight: 0,
-  };
-  const photoImgStyle: CSSProperties = { width: "100%", height: "100%", objectFit: "cover" };
-  const idBadgeStyle: CSSProperties = {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    background: "#dc2626",
-    color: "white",
-    padding: "8px 16px",
-    borderRadius: 10,
-    lineHeight: 1.15,
-  };
-  const idBadgeLabelStyle: CSSProperties = {
-    fontSize: 11,
-    letterSpacing: 1,
-    opacity: 0.85,
-    fontWeight: 700,
-  };
-  const idBadgeValueStyle: CSSProperties = { fontSize: 18, fontWeight: 800, marginTop: 2 };
-  const statusBadgeStyle: CSSProperties = {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    background: statusColors.bg,
-    color: statusColors.fg,
-    padding: "8px 16px",
-    borderRadius: 10,
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  };
-  const statusBadgeTextWrapStyle: CSSProperties = { lineHeight: 1.15 };
-  const statusBadgeLabelStyle: CSSProperties = {
-    fontSize: 10,
-    letterSpacing: 1,
-    fontWeight: 700,
-    opacity: 0.85,
-  };
-  const statusBadgeValueStyle: CSSProperties = { fontSize: 14, fontWeight: 800, marginTop: 1 };
-
-  const contentColumnStyle: CSSProperties = {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    minWidth: 0,
-    minHeight: 0,
-    overflow: "hidden",
-  };
-  const titleDescBlockStyle: CSSProperties = {
-    padding: isHorizontal ? "18px 26px 12px" : "24px 32px 16px",
-    flexShrink: 0,
-  };
-  const categoryTitleStyle: CSSProperties = {
-    fontSize: isHorizontal ? 26 : 36,
-    fontWeight: 900,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    color: "#0f172a",
-    lineHeight: 1.05,
-  };
-  const descriptionStyle: CSSProperties = {
-    marginTop: 8,
-    fontSize: isHorizontal ? 13 : 17,
-    color: "#475569",
-    lineHeight: 1.4,
-  };
-
-  const infoBarStyle: CSSProperties = {
-    display: "flex",
-    flexWrap: "wrap",
-    background: "#eff6ff",
-    borderTop: "1px solid #e2e8f0",
-    borderBottom: "1px solid #e2e8f0",
-    padding: isHorizontal ? "12px 26px" : "16px 32px",
-    gap: isHorizontal ? 16 : 20,
-    flexShrink: 0,
-  };
-  const infoItemStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 8,
-    flex: "1 1 auto",
-    minWidth: 90,
-  };
-  const infoIconWrapStyle: CSSProperties = { color: "#1d4ed8", marginTop: 2, flexShrink: 0 };
-  const infoLabelStyle: CSSProperties = {
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    color: "#64748b",
-    fontWeight: 700,
-  };
-  const infoValueStyle: CSSProperties = {
-    fontSize: isHorizontal ? 12 : 14,
-    fontWeight: 700,
-    color: "#0f172a",
-    marginTop: 1,
-  };
-  const infoSubValueStyle: CSSProperties = {
-    fontSize: 10,
-    fontWeight: 600,
-    color: "#64748b",
-    marginTop: 1,
-  };
-
-  const peopleRowStyle: CSSProperties = {
-    display: "flex",
-    padding: isHorizontal ? "12px 26px" : "16px 32px",
-    gap: 16,
-    background: "#f8fafc",
-    borderBottom: "1px solid #e2e8f0",
-    flexShrink: 0,
-  };
-  const personDividerStyle: CSSProperties = {
-    width: 1,
-    alignSelf: "stretch",
-    background: "#e2e8f0",
-    flexShrink: 0,
-  };
-  const personBlockStyle: CSSProperties = { flex: 1, minWidth: 0 };
-  const personLabelStyle: CSSProperties = {
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    color: "#1d4ed8",
-    fontWeight: 800,
-    marginBottom: 6,
-  };
-  const personRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 10 };
-  const personLogoStyle: CSSProperties = {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    objectFit: "contain",
-    background: "white",
-    border: "1px solid #e2e8f0",
-    flexShrink: 0,
-  };
-  const personPhotoStyle: CSSProperties = {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    objectFit: "cover",
     border: "2px solid #1d4ed8",
-    flexShrink: 0,
-  };
-  const personPlaceholderStyle: CSSProperties = {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    background: "#e2e8f0",
-    flexShrink: 0,
-  };
-  const personTextWrapStyle: CSSProperties = { minWidth: 0 };
-  const personNameStyle: CSSProperties = {
-    fontSize: 14,
-    fontWeight: 800,
-    color: "#0f172a",
-    whiteSpace: "nowrap",
     overflow: "hidden",
-    textOverflow: "ellipsis",
   };
-  const personSubStyle: CSSProperties = { fontSize: 11, color: "#64748b", marginTop: 1 };
-  const personPhoneRowStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    fontSize: 11,
-    color: "#64748b",
-    marginTop: 2,
-  };
-
-  const footerSectionStyle: CSSProperties = {
-    flex: 1,
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-    padding: isHorizontal ? "16px 26px" : "22px 32px",
-    background: "linear-gradient(135deg,#1d4ed8 0%,#1e3a8a 100%)",
-    color: "white",
-    minHeight: 0,
-  };
-  const footerLeftStyle: CSSProperties = { minWidth: 180, flex: "1 1 220px" };
-  const footerLineOneStyle: CSSProperties = {
-    fontSize: isHorizontal ? 15 : 19,
-    fontWeight: 800,
-    color: "white",
-    lineHeight: 1.2,
-  };
-  const footerLineTwoStyle: CSSProperties = {
-    fontSize: isHorizontal ? 15 : 19,
-    fontWeight: 800,
-    color: "#fbbf24",
-    lineHeight: 1.2,
-  };
-  const footerDividerStyle: CSSProperties = {
-    width: 60,
-    height: 2,
-    background: "rgba(255,255,255,0.35)",
-    marginTop: 10,
-  };
-  const footerSubTextStyle: CSSProperties = {
-    marginTop: 10,
-    fontSize: 11,
-    opacity: 0.85,
-    maxWidth: 260,
-    lineHeight: 1.4,
-  };
-  const footerRightStyle: CSSProperties = {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 12,
-  };
-  const voteButtonsRowStyle: CSSProperties = { display: "flex", gap: 8 };
-  const voteButtonFixedStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "#16a34a",
-    color: "white",
-    borderRadius: 999,
-    padding: "8px 14px",
-  };
-  const voteButtonExistsStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "#dc2626",
-    color: "white",
-    borderRadius: 999,
-    padding: "8px 14px",
-  };
-  const voteButtonTextWrapStyle: CSSProperties = { lineHeight: 1.15 };
-  const voteButtonTitleStyle: CSSProperties = { fontSize: 11, fontWeight: 800 };
-  const voteButtonSubStyle: CSSProperties = { fontSize: 9, opacity: 0.85 };
-  const qrBoxStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    background: "white",
-    borderRadius: 14,
-    padding: 12,
-  };
-  const qrImageStyle: CSSProperties = { width: 64, height: 64, borderRadius: 8 };
-  const qrTextTitleStyle: CSSProperties = { fontSize: 11, fontWeight: 800, color: "#0f172a" };
-  const qrTextSubStyle: CSSProperties = { fontSize: 10, color: "#64748b", marginTop: 1 };
-  const qrTextLinkStyle: CSSProperties = { fontSize: 12, fontWeight: 800, color: "#1d4ed8", marginTop: 1 };
 
   return (
     <div className="space-y-3">
@@ -528,9 +184,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             key={k}
             onClick={() => setSize(k)}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              size === k
-                ? "bg-primary text-primary-foreground"
-                : "border bg-card text-muted-foreground"
+              size === k ? "bg-primary text-primary-foreground" : "border bg-card text-muted-foreground"
             }`}
           >
             {SIZES[k].label}
@@ -542,37 +196,41 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
         <div style={previewFrameStyle} className="mx-auto">
           <div style={previewScaleWrapperStyle}>
             <div ref={posterRef} style={posterOuterStyle}>
-              <div style={headerBarStyle}>
-                <div style={brandRowStyle}>
-                  <div style={brandMarkWrapStyle}>
-                    <div style={brandMarkStyle}>
-                      <svg
-                        width={isHorizontal ? 20 : 26}
-                        height={isHorizontal ? 20 : 26}
-                        viewBox="0 0 24 24"
-                        fill="white"
-                      >
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={brandTitleStyle}>
-                      Jan<span style={brandGreenStyle}>Fix</span>
-                    </div>
-                    <div style={brandCityStyle}>MANGALURU</div>
-                    <div style={brandTaglineStyle}>Report. Track. Fix.</div>
+              
+              {/* Header */}
+              <div style= display: "flex", alignItems: "center", justifyContent: "space-between", padding: isHorizontal ? "20px 30px" : "30px 40px", flexShrink: 0 >
+                <div style= display: "flex", alignItems: "center", gap: 20 >
+                  <svg width="68" height="82" viewBox="0 0 24 28" fill="none">
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 16 12 16s12-7.75 12-16C24 5.373 18.627 0 12 0z" fill="#1d4ed8"/>
+                    <circle cx="12" cy="11" r="9" fill="white"/>
+                    <path d="M12 5.5 c-1.5-2 -4.5-0.5 -4.5 2.5 0 2.5 4.5 5 4.5 5 s4.5-2.5 4.5-5 c0-3 -3-4.5 -4.5-2.5 z" fill="#dc2626"/>
+                    <g fill="#1d4ed8">
+                      <circle cx="12" cy="11.5" r="1.5" />
+                      <path d="M9 16 c0-2 2-2.5 3-2.5 s3 0.5 3 2.5 v1 h-6 z" />
+                      <circle cx="8" cy="12" r="1" />
+                      <path d="M6 15 c0-1.5 1-2 2-2 s2 0.5 2 2 v0.5 h-4 z" />
+                      <circle cx="16" cy="12" r="1" />
+                      <path d="M14 15 c0-1.5 1-2 2-2 s2 0.5 2 2 v0.5 h-4 z" />
+                    </g>
+                  </svg>
+                  <div style= display: "flex", flexDirection: "column" >
+                    <div style= fontSize: 44, fontWeight: 800, color: "#1d4ed8", lineHeight: 1 >Jan<span style= color: "#16a34a" >Fix</span></div>
+                    <div style= fontSize: 18, fontWeight: 700, color: "#1d4ed8", letterSpacing: 1.5, marginTop: 4 >MANGALURU</div>
+                    <div style= fontSize: 16, color: "#0f172a", marginTop: 4, fontWeight: 500 >Report. Track. Fix.</div>
                   </div>
                 </div>
-                <div style={brandDecorRowStyle}>
-                  <div style={sloganBlockStyle}>
-                    <div style={sloganTitleStyle}>Let's Fix Mangaluru</div>
-                    <div style={sloganKannadaStyle}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
-                    <div style={sloganSubStyle}>Together for a Better City</div>
+
+                <div style= width: 2, background: "#e2e8f0", height: 80, margin: "0 20px"  />
+
+                <div style= display: "flex", alignItems: "center", gap: 20, flexShrink: 0 >
+                  <div style= display: "flex", flexDirection: "column", textAlign: "left" >
+                    <div style= fontSize: 26, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 >Let's Fix Mangaluru</div>
+                    <div style= fontSize: 18, color: "#16a34a", fontWeight: 700, marginTop: 4 >ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
+                    <div style= fontSize: 16, color: "#475569", marginTop: 4, fontWeight: 500 >Together for a Better City</div>
                   </div>
-                  {isHorizontal ? null : (
-                    <svg width="78" height="44" viewBox="0 0 96 52" style={skylineStyle}>
-                      <g fill="none" stroke="#cbd5e1" strokeWidth="1.4">
+                  {!isHorizontal && (
+                    <svg width="120" height="68" viewBox="0 0 96 52" style= flexShrink: 0 >
+                      <g fill="none" stroke="#94a3b8" strokeWidth="1.2">
                         <rect x="2" y="26" width="14" height="26" />
                         <rect x="18" y="14" width="14" height="38" />
                         <polygon points="25,4 18,14 32,14" />
@@ -590,158 +248,165 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                 </div>
               </div>
 
-              <div style={bodyRowStyle}>
-                <div style={photoWrapStyle}>
-                  {imgSrc ? (
-                    <img src={imgSrc} alt="" crossOrigin="anonymous" style={photoImgStyle} />
-                  ) : null}
-                  <div style={idBadgeStyle}>
-                    <div style={idBadgeLabelStyle}>ISSUE ID</div>
-                    <div style={idBadgeValueStyle}>{issue.public_id}</div>
-                  </div>
-                  <div style={statusBadgeStyle}>
-                    <Settings2 size={16} />
-                    <div style={statusBadgeTextWrapStyle}>
-                      <div style={statusBadgeLabelStyle}>STATUS</div>
-                      <div style={statusBadgeValueStyle}>{status.label.toUpperCase()}</div>
-                    </div>
+              {/* Hero Image */}
+              <div style= position: "relative", flex: 1, margin: "0 24px", borderRadius: 24, overflow: "hidden", backgroundColor: "#e2e8f0", display: "flex" >
+                {imgSrc ? (
+                  <img src={imgSrc} alt="" crossOrigin="anonymous" style= width: "100%", height: "100%", objectFit: "cover"  />
+                ) : null}
+                
+                {/* Gradient Overlay for Text */}
+                <div style= position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)"  />
+
+                {/* ID Badge */}
+                <div style= position: "absolute", top: 30, left: 0, background: "#dc2626", color: "white", padding: "14px 28px", borderRadius: "0 16px 16px 0" >
+                  <div style= fontSize: 13, fontWeight: 700, letterSpacing: 1, opacity: 0.9, textAlign: "center" >ISSUE ID</div>
+                  <div style= fontSize: 26, fontWeight: 900, marginTop: 2 >{issue.public_id.toUpperCase()}</div>
+                </div>
+
+                {/* Status Badge */}
+                <div style= position: "absolute", top: 30, right: 30, background: statusColors.bg, color: statusColors.fg, padding: "14px 24px", borderRadius: 16, display: "flex", alignItems: "center", gap: 12 >
+                  <Settings size={28} />
+                  <div>
+                    <div style= fontSize: 13, fontWeight: 700, letterSpacing: 1, opacity: 0.9 >STATUS</div>
+                    <div style= fontSize: 22, fontWeight: 900, marginTop: 2 >{status.label.toUpperCase()}</div>
                   </div>
                 </div>
 
-                <div style={contentColumnStyle}>
-                  <div style={titleDescBlockStyle}>
-                    <div style={categoryTitleStyle}>{cat.name_en}</div>
-                    <div style={descriptionStyle}>{issue.description}</div>
+                {/* Title & Desc */}
+                <div style= position: "absolute", bottom: 80, left: 40, right: 40, color: "white" >
+                  <div style= fontSize: isHorizontal ? 48 : 64, fontWeight: 900, textTransform: "uppercase", lineHeight: 1.1, textShadow: "0 2px 10px rgba(0,0,0,0.5)" >
+                    {cat.name_en}
                   </div>
+                  <div style= fontSize: isHorizontal ? 20 : 24, marginTop: 8, opacity: 0.95, textShadow: "0 2px 10px rgba(0,0,0,0.5)", maxWidth: "80%" >
+                    {issue.description}
+                  </div>
+                </div>
+              </div>
 
-                  <div style={infoBarStyle}>
-                    <div style={infoItemStyle}>
-                      <div style={infoIconWrapStyle}>
-                        <MapPin size={16} />
-                      </div>
-                      <div>
-                        <div style={infoLabelStyle}>Location</div>
-                        <div style={infoValueStyle}>{locationLabel}</div>
-                      </div>
-                    </div>
-                    <div style={infoItemStyle}>
-                      <div style={infoIconWrapStyle}>
-                        <Building2 size={16} />
-                      </div>
-                      <div>
-                        <div style={infoLabelStyle}>Ward</div>
-                        <div style={infoValueStyle}>{wardLabel}</div>
-                      </div>
-                    </div>
-                    <div style={infoItemStyle}>
-                      <div style={infoIconWrapStyle}>
-                        <CalendarDays size={16} />
-                      </div>
-                      <div>
-                        <div style={infoLabelStyle}>Reported On</div>
-                        <div style={infoValueStyle}>
-                          {reportedDateLabel}
-                          {reportedTimeLabel ? ` \u00b7 ${reportedTimeLabel}` : ""}
+              {/* Floating Info Bar */}
+              <div style= margin: "-50px 48px 0", background: "white", borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.12)", position: "relative", zIndex: 10, display: "flex", alignItems: "center", padding: "24px 20px", border: "1px solid #f1f5f9" >
+                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                  <MapPin size={36} color="#1d4ed8" strokeWidth={2} />
+                  <div>
+                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >LOCATION</div>
+                    <div style= fontSize: 16, fontWeight: 600, color: "#0f172a", marginTop: 4 >{locationLabel}</div>
+                  </div>
+                </div>
+                <div style= width: 1, background: "#e2e8f0", height: 50  />
+                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                  <Building2 size={36} color="#1d4ed8" strokeWidth={2} />
+                  <div>
+                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >WARD</div>
+                    <div style= fontSize: 24, fontWeight: 800, color: "#0f172a", marginTop: 2 >{wardLabel}</div>
+                  </div>
+                </div>
+                <div style= width: 1, background: "#e2e8f0", height: 50  />
+                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                  <CalendarDays size={36} color="#1d4ed8" strokeWidth={2} />
+                  <div>
+                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >REPORTED ON</div>
+                    <div style= fontSize: 16, fontWeight: 600, color: "#0f172a", marginTop: 4 >{reportedDateLabel}</div>
+                    {reportedTimeLabel && <div style= fontSize: 14, color: "#475569" >{reportedTimeLabel}</div>}
+                  </div>
+                </div>
+                <div style= width: 1, background: "#e2e8f0", height: 50  />
+                <div style= display: "flex", alignItems: "center", gap: 16, flex: 1, justifyContent: "center" >
+                  <Eye size={36} color="#1d4ed8" strokeWidth={2} />
+                  <div>
+                    <div style= fontSize: 13, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >SUPPORTS</div>
+                    <div style= fontSize: 24, fontWeight: 800, color: "#0f172a", marginTop: 2 >{supportsCount}</div>
+                    <div style= fontSize: 13, color: "#475569", fontWeight: 600, textTransform: "uppercase" >Views {viewsCount}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* People Row */}
+              <div style= display: "flex", padding: "30px 48px", flexShrink: 0 >
+                <div style= flex: 1 >
+                  <div style= fontSize: 14, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >RESPONSIBLE AUTHORITY</div>
+                  <div style= display: "flex", alignItems: "center", gap: 20, marginTop: 16 >
+                    {logoSrc ? (
+                      <img src={logoSrc} alt="" crossOrigin="anonymous" style= width: 72, height: 72, objectFit: "contain", borderRadius: 12, background: "white", border: "1px solid #e2e8f0", padding: 4  />
+                    ) : (
+                      <div style= width: 72, height: 72, borderRadius: 12, background: "#e2e8f0"  />
+                    )}
+                    <div>
+                      <div style= fontSize: 22, fontWeight: 800, color: "#0f172a" >{issue.authority?.name ?? "Unassigned"}</div>
+                      {(issue.authority?.department || issue.authority?.type) && (
+                        <div style= fontSize: 16, color: "#475569", marginTop: 4 >
+                          {[issue.authority?.department, issue.authority?.type].filter(Boolean).join(" \u00b7 ")}
                         </div>
-                      </div>
-                    </div>
-                    <div style={infoItemStyle}>
-                      <div style={infoIconWrapStyle}>
-                        <Eye size={16} />
-                      </div>
-                      <div>
-                        <div style={infoLabelStyle}>Supports</div>
-                        <div style={infoValueStyle}>{supportsCount}</div>
-                        <div style={infoSubValueStyle}>Views {viewsCount}</div>
-                      </div>
+                      )}
                     </div>
                   </div>
-
-                  <div style={peopleRowStyle}>
-                    <div style={personBlockStyle}>
-                      <div style={personLabelStyle}>Responsible Authority</div>
-                      <div style={personRowStyle}>
-                        {logoSrc ? (
-                          <img src={logoSrc} alt="" crossOrigin="anonymous" style={personLogoStyle} />
+                </div>
+                
+                {issue.representative && (
+                  <>
+                    <div style= width: 1, background: "#e2e8f0", margin: "0 30px"  />
+                    <div style= flex: 1 >
+                      <div style= fontSize: 14, fontWeight: 700, color: "#1d4ed8", letterSpacing: 0.5 >LOCAL REPRESENTATIVE</div>
+                      <div style= display: "flex", alignItems: "center", gap: 20, marginTop: 16 >
+                        {repSrc ? (
+                          <img src={repSrc} alt="" crossOrigin="anonymous" style= width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0"  />
                         ) : (
-                          <div style={personPlaceholderStyle} />
+                          <div style= width: 72, height: 72, borderRadius: "50%", background: "#e2e8f0"  />
                         )}
-                        <div style={personTextWrapStyle}>
-                          <div style={personNameStyle}>{issue.authority?.name ?? "Unassigned"}</div>
-                          {(issue.authority?.department || issue.authority?.type) && (
-                            <div style={personSubStyle}>
-                              {[issue.authority?.department, issue.authority?.type]
-                                .filter(Boolean)
-                                .join(" \u00b7 ")}
+                        <div>
+                          <div style= fontSize: 20, fontWeight: 800, color: "#0f172a" >{issue.representative.name}</div>
+                          <div style= fontSize: 16, color: "#475569", marginTop: 4 >{issue.representative.role}</div>
+                          {issue.representative.phone && (
+                            <div style= display: "flex", alignItems: "center", gap: 6, fontSize: 15, color: "#475569", marginTop: 6, fontWeight: 500 >
+                              <Phone size={14} /> {issue.representative.phone}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    {issue.representative && (
-                      <>
-                        <div style={personDividerStyle} />
-                        <div style={personBlockStyle}>
-                          <div style={personLabelStyle}>Local Representative</div>
-                          <div style={personRowStyle}>
-                            {repSrc ? (
-                              <img src={repSrc} alt="" crossOrigin="anonymous" style={personPhotoStyle} />
-                            ) : (
-                              <div style={personPlaceholderStyle} />
-                            )}
-                            <div style={personTextWrapStyle}>
-                              <div style={personNameStyle}>{issue.representative.name}</div>
-                              <div style={personSubStyle}>{issue.representative.role}</div>
-                              {issue.representative.phone && (
-                                <div style={personPhoneRowStyle}>
-                                  <Phone size={10} /> {issue.representative.phone}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  </>
+                )}
+              </div>
 
-                  <div style={footerSectionStyle}>
-                    <div style={footerLeftStyle}>
-                      <div style={footerLineOneStyle}>Your Small Report</div>
-                      <div style={footerLineTwoStyle}>Can Create a Big Change!</div>
-                      <div style={footerDividerStyle} />
-                      <div style={footerSubTextStyle}>
-                        Vote, share and help make Mangaluru a better place to live.
+              {/* Footer */}
+              <div style= background: "#1e3a8a", borderRadius: 24, margin: "0 24px 24px", padding: "30px 40px", display: "flex", justifyContent: "space-between", color: "white", flexShrink: 0 >
+                <div style= display: "flex", flexDirection: "column", justifyContent: "center" >
+                  <div style= fontSize: 26, fontWeight: 800, lineHeight: 1.2 >Your Small Report</div>
+                  <div style= fontSize: 26, fontWeight: 800, color: "#fde047", lineHeight: 1.2 >Can Create a Big Change!</div>
+                  <div style= width: 60, height: 2, background: "rgba(255,255,255,0.4)", margin: "16px 0"  />
+                  <div style= fontSize: 16, opacity: 0.9, maxWidth: 300, lineHeight: 1.4 >
+                    Vote, share and help make Mangaluru a better place to live.
+                  </div>
+                </div>
+                
+                <div style= display: "flex", flexDirection: "column", gap: 16, alignItems: "flex-end" >
+                  <div style= display: "flex", gap: 12 >
+                    <div style= display: "flex", alignItems: "center", gap: 12, background: "#16a34a", padding: "12px 20px", borderRadius: 12 >
+                      <ThumbsUp size={24} />
+                      <div>
+                        <div style= fontSize: 14, fontWeight: 800 >ISSUE FIXED</div>
+                        <div style= fontSize: 11, opacity: 0.9 >Vote if the issue is resolved</div>
                       </div>
                     </div>
-                    <div style={footerRightStyle}>
-                      <div style={voteButtonsRowStyle}>
-                        <div style={voteButtonFixedStyle}>
-                          <ThumbsUp size={14} />
-                          <div style={voteButtonTextWrapStyle}>
-                            <div style={voteButtonTitleStyle}>ISSUE FIXED</div>
-                            <div style={voteButtonSubStyle}>Vote if resolved</div>
-                          </div>
-                        </div>
-                        <div style={voteButtonExistsStyle}>
-                          <ThumbsDown size={14} />
-                          <div style={voteButtonTextWrapStyle}>
-                            <div style={voteButtonTitleStyle}>STILL EXISTS</div>
-                            <div style={voteButtonSubStyle}>Vote if it persists</div>
-                          </div>
-                        </div>
+                    <div style= display: "flex", alignItems: "center", gap: 12, background: "#dc2626", padding: "12px 20px", borderRadius: 12 >
+                      <ThumbsDown size={24} />
+                      <div>
+                        <div style= fontSize: 14, fontWeight: 800 >STILL EXISTS</div>
+                        <div style= fontSize: 11, opacity: 0.9 >Vote if the issue still exists</div>
                       </div>
-                      <div style={qrBoxStyle}>
-                        {qr && <img src={qr} alt="QR" style={qrImageStyle} />}
-                        <div>
-                          <div style={qrTextTitleStyle}>SCAN TO VIEW & SUPPORT</div>
-                          <div style={qrTextSubStyle}>this issue or visit</div>
-                          <div style={qrTextLinkStyle}>{shortLink}</div>
-                        </div>
-                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style= display: "flex", alignItems: "center", gap: 16, background: "white", borderRadius: 16, padding: "12px 20px", width: "100%" >
+                    {qr && <img src={qr} alt="QR" style= width: 72, height: 72, borderRadius: 8  />}
+                    <div style= color: "#0f172a" >
+                      <div style= fontSize: 13, fontWeight: 800 >SCAN TO VIEW & SUPPORT</div>
+                      <div style= fontSize: 13, color: "#475569", marginTop: 2 >this issue or visit</div>
+                      <div style= fontSize: 16, fontWeight: 800, color: "#1d4ed8", marginTop: 2 >{shortLink}</div>
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
