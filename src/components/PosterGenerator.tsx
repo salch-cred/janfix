@@ -207,7 +207,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     justifyContent: "center",
     width: isHorizontal ? 40 : 52,
     height: isHorizontal ? 40 : 52,
-    borderRadius: 16,
+    borderRadius: "50%",
     background: "#1d4ed8",
     color: "white",
     fontSize: isHorizontal ? 18 : 22,
@@ -360,6 +360,12 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     color: "#0f172a",
     marginTop: 1,
   };
+  const infoSubValueStyle: CSSProperties = {
+    fontSize: 10,
+    fontWeight: 600,
+    color: "#64748b",
+    marginTop: 1,
+  };
 
   const peopleRowStyle: CSSProperties = {
     display: "flex",
@@ -367,6 +373,12 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     gap: 16,
     background: "#f8fafc",
     borderBottom: "1px solid #e2e8f0",
+    flexShrink: 0,
+  };
+  const personDividerStyle: CSSProperties = {
+    width: 1,
+    alignSelf: "stretch",
+    background: "#e2e8f0",
     flexShrink: 0,
   };
   const personBlockStyle: CSSProperties = { flex: 1, minWidth: 0 };
@@ -456,9 +468,11 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   };
   const footerRightStyle: CSSProperties = {
     display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 12,
   };
   const voteButtonsRowStyle: CSSProperties = { display: "flex", gap: 8 };
   const voteButtonFixedStyle: CSSProperties = {
@@ -597,9 +611,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                       </div>
                       <div>
                         <div style={infoLabelStyle}>Supports</div>
-                        <div style={infoValueStyle}>
-                          {supportsCount} \u00b7 views {viewsCount}
-                        </div>
+                        <div style={infoValueStyle}>{supportsCount}</div>
+                        <div style={infoSubValueStyle}>Views {viewsCount}</div>
                       </div>
                     </div>
                   </div>
@@ -626,25 +639,28 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                       </div>
                     </div>
                     {issue.representative && (
-                      <div style={personBlockStyle}>
-                        <div style={personLabelStyle}>Local Representative</div>
-                        <div style={personRowStyle}>
-                          {repSrc ? (
-                            <img src={repSrc} alt="" crossOrigin="anonymous" style={personPhotoStyle} />
-                          ) : (
-                            <div style={personPlaceholderStyle} />
-                          )}
-                          <div style={personTextWrapStyle}>
-                            <div style={personNameStyle}>{issue.representative.name}</div>
-                            <div style={personSubStyle}>{issue.representative.role}</div>
-                            {issue.representative.phone && (
-                              <div style={personPhoneRowStyle}>
-                                <Phone size={10} /> {issue.representative.phone}
-                              </div>
+                      <>
+                        <div style={personDividerStyle} />
+                        <div style={personBlockStyle}>
+                          <div style={personLabelStyle}>Local Representative</div>
+                          <div style={personRowStyle}>
+                            {repSrc ? (
+                              <img src={repSrc} alt="" crossOrigin="anonymous" style={personPhotoStyle} />
+                            ) : (
+                              <div style={personPlaceholderStyle} />
                             )}
+                            <div style={personTextWrapStyle}>
+                              <div style={personNameStyle}>{issue.representative.name}</div>
+                              <div style={personSubStyle}>{issue.representative.role}</div>
+                              {issue.representative.phone && (
+                                <div style={personPhoneRowStyle}>
+                                  <Phone size={10} /> {issue.representative.phone}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
 
