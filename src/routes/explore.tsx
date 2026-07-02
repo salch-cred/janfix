@@ -5,7 +5,7 @@ import { listIssuesFn, listWardsFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { IssueCard } from "@/components/IssueCard";
 import { IssueMap } from "@/components/IssueMap";
-import { CATEGORIES, STATUS_META, SEVERITY_META, categoryBySlug } from "@/lib/civic";
+import { CATEGORIES, STATUS_META, SEVERITY_META, categoryBySlug, slugify } from "@/lib/civic";
 import { Input } from "@/components/ui/input";
 import { Search, Map as MapIcon, List } from "lucide-react";
 
@@ -14,6 +14,15 @@ export const Route = createFileRoute("/explore")({
   ssr: false,
   pendingComponent: () => <div className="min-h-screen" />,
 });
+
+function escapeHtml(input: string) {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function Explore() {
   const [view, setView] = useState<"list" | "map">("list");
@@ -43,13 +52,36 @@ function Explore() {
 
   const mapPoints = useMemo(
     () =>
-      (issues.data ?? []).map((i: any) => ({
-        id: i.id,
-        lat: i.lat,
-        lng: i.lng,
-        color: i.category?.color ?? "#1d4ed8",
-        popup: `<strong>${i.public_id}</strong><br/>${i.description}`,
-      })),
+      (issues.data ?? []).map((i: any) => {
+        const c = i.category ?? categoryBySlug("others");
+        const color = c.color ?? "#1d4ed8";
+        const statusMeta =
+          STATUS_META[i.status as keyof typeof STATUS_META] ?? STATUS_META.reported;
+        const slug = i.slug || slugify(i.description ?? "");
+        const href = `/issue/${encodeURIComponent(i.public_id)}/${encodeURIComponent(slug)}`;
+        const description = String(i.description ?? "");
+        const shortDescription =
+          description.length > 90 ? `${description.slice(0, 90)}…` : description;
+        const thumb = i.image_url
+          ? `<img src="${escapeHtml(i.image_url)}" alt="" style="width:100%;height:96px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />`
+          : "";
+        return {
+          id: i.id,
+          lat: i.lat,
+          lng: i.lng,
+          color,
+          popup: `
+            <div style="min-width:180px;max-width:220px;font-family:Inter,sans-serif;">
+              ${thumb}
+              <div style="font-size:11px;font-weight:700;color:${escapeHtml(color)};text-transform:uppercase;letter-spacing:.03em;">${escapeHtml(c.name_en ?? "Issue")}</div>
+              <div style="font-size:13px;font-weight:700;margin-top:2px;color:#0f172a;">${escapeHtml(i.public_id ?? "")}</div>
+              <div style="font-size:12px;color:#475569;margin-top:2px;line-height:1.35;">${escapeHtml(shortDescription)}</div>
+              <div style="margin-top:6px;font-size:11px;font-weight:700;color:#1e293b;">${escapeHtml(statusMeta.label)}</div>
+              <a href="${href}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#1d4ed8;text-decoration:none;">View full report \u2192</a>
+            </div>
+          `,
+        };
+      }),
     [issues.data],
   );
 
