@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { listAuthoritiesFn, listIssuesFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { IssueCard } from "@/components/IssueCard";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import { Badge } from "@/components/ui/badge";
 import {
   ShieldCheck,
@@ -119,15 +120,15 @@ function AuthorityDetail() {
 
         {/* Header */}
         <header className="flex flex-wrap items-start gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary/10 font-bold text-primary text-2xl">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-primary/10 overflow-hidden font-bold text-primary text-2xl">
             {authority.logo_url ? (
               <img
                 src={authority.logo_url}
-                className="h-full w-full rounded-2xl object-cover"
+                className="h-full w-full rounded-2xl object-contain p-1.5"
                 alt=""
               />
             ) : (
-              authority.name.slice(0, 2)
+              <JanFixLogo className="h-10 w-10" />
             )}
           </div>
           <div className="flex-1 min-w-0">
