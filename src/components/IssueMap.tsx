@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type * as MapLibreNS from "maplibre-gl";
+import { Maximize2, Minimize2 } from "lucide-react";
 
 export type MapPoint = {
   id: string;
@@ -45,7 +46,7 @@ export function IssueMap({
   const [shouldLoad, setShouldLoad] = useState(loadOn === "eager");
   const [ready, setReady] = useState(false);
   const [is3D, setIs3D] = useState(true);
-  const containerStyle = { height };
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Visibility-based lazy trigger
   useEffect(() => {
@@ -168,7 +169,7 @@ export function IssueMap({
       el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.25)";
       el.style.cursor = p.popup ? "pointer" : "default";
       const m = new ML.Marker({ element: el }).setLngLat([Number(p.lng), Number(p.lat)]);
-      if (p.popup) m.setPopup(new ML.Popup({ offset: 12 }).setHTML(p.popup));
+      if (p.popup) m.setPopup(new ML.Popup({ offset: 12, maxWidth: "240px" }).setHTML(p.popup));
       m.addTo(map);
       pointMarkersRef.current.push(m);
     });
@@ -196,6 +197,34 @@ export function IssueMap({
     if (ready) renderMarker(); /* eslint-disable-next-line */
   }, [marker, ready]);
 
+  // MapLibre doesn't observe container resizes automatically, so nudge it
+  // whenever the fullscreen state flips the container's dimensions.
+  useEffect(() => {
+    if (!ready) return;
+    const id = requestAnimationFrame(() => mapRef.current?.resize());
+    return () => cancelAnimationFrame(id);
+  }, [fullscreen, ready]);
+
+  // Lock page scroll while viewing the map full width/height.
+  useEffect(() => {
+    if (typeof document === "undefined" || !fullscreen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [fullscreen]);
+
+  // Let Escape close the full width view.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+
   const toggle3D = () => {
     const map = mapRef.current;
     if (!map) return;
@@ -207,8 +236,12 @@ export function IssueMap({
   return (
     <div
       ref={ref}
-      style={containerStyle}
-      className="w-full rounded-xl border bg-muted/30 relative overflow-hidden flex items-center justify-center"
+      style={fullscreen ? undefined : { height }}
+      className={
+        fullscreen
+          ? "fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-background"
+          : "w-full rounded-xl border bg-muted/30 relative overflow-hidden flex items-center justify-center"
+      }
     >
       {!shouldLoad && loadOn === "tap" && (
         <button
@@ -224,13 +257,28 @@ export function IssueMap({
       )}
       {shouldLoad && !ready && <span className="text-xs text-muted-foreground">Loading map…</span>}
       {ready && (
-        <button
-          type="button"
-          onClick={toggle3D}
-          className="absolute bottom-2 left-2 z-10 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
-        >
-          {is3D ? "2D view" : "3D view"}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={toggle3D}
+            className="absolute bottom-2 left-2 z-10 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
+          >
+            {is3D ? "2D view" : "3D view"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFullscreen((f) => !f)}
+            aria-label={fullscreen ? "Exit full width view" : "View map full width"}
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
+          >
+            {fullscreen ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+            {fullscreen ? "Close" : "Full width"}
+          </button>
+        </>
       )}
     </div>
   );
