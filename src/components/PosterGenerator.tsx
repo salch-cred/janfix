@@ -200,6 +200,16 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   };
   const brandRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14 };
   const brandMarkWrapStyle: CSSProperties = { flexShrink: 0 };
+  const brandMarkStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: isHorizontal ? 40 : 52,
+    height: isHorizontal ? 40 : 52,
+    borderRadius: "50%",
+    background: "#1d4ed8",
+    flexShrink: 0,
+  };
   const brandTitleStyle: CSSProperties = {
     fontSize: isHorizontal ? 20 : 26,
     fontWeight: 800,
@@ -535,25 +545,16 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               <div style={headerBarStyle}>
                 <div style={brandRowStyle}>
                   <div style={brandMarkWrapStyle}>
-                    <svg
-                      width={isHorizontal ? 40 : 52}
-                      height={isHorizontal ? 40 : 52}
-                      viewBox="0 0 64 64"
-                    >
-                      <rect x="4" y="4" width="56" height="56" rx="16" fill="#1d4ed8" />
-                      <path
-                        d="M32 26c-2.5-4.5-9-5-11.5-1-2 3.2-0.7 7.3 3.3 10.1L32 41l8.2-5.9c4-2.8 5.3-6.9 3.3-10.1-2.5-4-9-3.5-11.5 1z"
-                        fill="#ef4444"
-                      />
-                      <g fill="white">
-                        <circle cx="18" cy="41" r="5" />
-                        <path d="M18 48c-4.5 0-8 3-8 6.5V58h16v-3.5c0-3.5-3.5-6.5-8-6.5z" />
-                        <circle cx="46" cy="41" r="5" />
-                        <path d="M46 48c-4.5 0-8 3-8 6.5V58h16v-3.5c0-3.5-3.5-6.5-8-6.5z" />
-                        <circle cx="32" cy="39" r="6" />
-                        <path d="M32 47c-6 0-11 3.8-11 8.5V58h22v-2.5c0-4.7-5-8.5-11-8.5z" />
-                      </g>
-                    </svg>
+                    <div style={brandMarkStyle}>
+                      <svg
+                        width={isHorizontal ? 20 : 26}
+                        height={isHorizontal ? 20 : 26}
+                        viewBox="0 0 24 24"
+                        fill="white"
+                      >
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                      </svg>
+                    </div>
                   </div>
                   <div>
                     <div style={brandTitleStyle}>
