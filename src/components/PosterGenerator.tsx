@@ -14,8 +14,6 @@ import {
   ThumbsDown,
   Settings2,
   Phone,
-  Users,
-  Heart,
 } from "lucide-react";
 import { STATUS_META, categoryBySlug } from "@/lib/civic";
 
@@ -201,33 +199,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     flexShrink: 0,
   };
   const brandRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14 };
-  const brandMarkWrapStyle: CSSProperties = { position: "relative", flexShrink: 0 };
-  const brandMarkStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: isHorizontal ? 40 : 52,
-    height: isHorizontal ? 40 : 52,
-    borderRadius: "50%",
-    background: "#1d4ed8",
-    color: "white",
-    fontSize: isHorizontal ? 18 : 22,
-    fontWeight: 800,
-    flexShrink: 0,
-  };
-  const brandHeartBadgeStyle: CSSProperties = {
-    position: "absolute",
-    top: -3,
-    right: -3,
-    width: 18,
-    height: 18,
-    borderRadius: "50%",
-    background: "#dc2626",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "2px solid white",
-  };
+  const brandMarkWrapStyle: CSSProperties = { flexShrink: 0 };
   const brandTitleStyle: CSSProperties = {
     fontSize: isHorizontal ? 20 : 26,
     fontWeight: 800,
@@ -563,12 +535,25 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               <div style={headerBarStyle}>
                 <div style={brandRowStyle}>
                   <div style={brandMarkWrapStyle}>
-                    <div style={brandMarkStyle}>
-                      <Users size={isHorizontal ? 18 : 22} color="white" strokeWidth={2} />
-                    </div>
-                    <div style={brandHeartBadgeStyle}>
-                      <Heart size={9} color="white" fill="white" />
-                    </div>
+                    <svg
+                      width={isHorizontal ? 40 : 52}
+                      height={isHorizontal ? 40 : 52}
+                      viewBox="0 0 64 64"
+                    >
+                      <rect x="4" y="4" width="56" height="56" rx="16" fill="#1d4ed8" />
+                      <path
+                        d="M32 26c-2.5-4.5-9-5-11.5-1-2 3.2-0.7 7.3 3.3 10.1L32 41l8.2-5.9c4-2.8 5.3-6.9 3.3-10.1-2.5-4-9-3.5-11.5 1z"
+                        fill="#ef4444"
+                      />
+                      <g fill="white">
+                        <circle cx="18" cy="41" r="5" />
+                        <path d="M18 48c-4.5 0-8 3-8 6.5V58h16v-3.5c0-3.5-3.5-6.5-8-6.5z" />
+                        <circle cx="46" cy="41" r="5" />
+                        <path d="M46 48c-4.5 0-8 3-8 6.5V58h16v-3.5c0-3.5-3.5-6.5-8-6.5z" />
+                        <circle cx="32" cy="39" r="6" />
+                        <path d="M32 47c-6 0-11 3.8-11 8.5V58h22v-2.5c0-4.7-5-8.5-11-8.5z" />
+                      </g>
+                    </svg>
                   </div>
                   <div>
                     <div style={brandTitleStyle}>
