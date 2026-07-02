@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Location01Icon } from "@hugeicons/core-free-icons";
@@ -75,14 +76,15 @@ function useImageDataUrls(urls: (string | null | undefined)[]): Map<string, stri
       for (const url of urls) {
         if (!url || cache.current.has(url)) continue;
         try {
-          const res = await fetch(url);
+          const res = await fetch(url, { mode: "cors", cache: "no-store" });
+          if (!res.ok) continue;
           const blob = await res.blob();
           if (!cancelled) {
             cache.current.set(url, URL.createObjectURL(blob));
             setTick((t) => t + 1);
           }
         } catch {
-          // fallback: keep original URL
+          // fallback: keep original URL (rendered with crossOrigin="anonymous")
         }
       }
     })();
@@ -136,8 +138,10 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
       document.body.appendChild(a);
       a.click();
       a.remove();
+      toast.success("Poster downloaded");
     } catch (err) {
       console.error("Poster download failed", err);
+      toast.error("Couldn't download the poster. Please try again in a moment.");
     } finally {
       setDownloading(false);
     }
@@ -534,7 +538,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
               <div style={bodyRowStyle}>
                 <div style={photoWrapStyle}>
-                  {imgSrc ? <img src={imgSrc} alt="" style={photoImgStyle} /> : null}
+                  {imgSrc ? (
+                    <img src={imgSrc} alt="" crossOrigin="anonymous" style={photoImgStyle} />
+                  ) : null}
                   <div style={idBadgeStyle}>
                     <div style={idBadgeLabelStyle}>ISSUE ID</div>
                     <div style={idBadgeValueStyle}>{issue.public_id}</div>
@@ -603,7 +609,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                       <div style={personLabelStyle}>Responsible Authority</div>
                       <div style={personRowStyle}>
                         {logoSrc ? (
-                          <img src={logoSrc} alt="" style={personLogoStyle} />
+                          <img src={logoSrc} alt="" crossOrigin="anonymous" style={personLogoStyle} />
                         ) : (
                           <div style={personPlaceholderStyle} />
                         )}
@@ -624,7 +630,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                         <div style={personLabelStyle}>Local Representative</div>
                         <div style={personRowStyle}>
                           {repSrc ? (
-                            <img src={repSrc} alt="" style={personPhotoStyle} />
+                            <img src={repSrc} alt="" crossOrigin="anonymous" style={personPhotoStyle} />
                           ) : (
                             <div style={personPlaceholderStyle} />
                           )}
