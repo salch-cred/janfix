@@ -43,7 +43,7 @@ export const listIssuesFn = createServerFn({ method: "POST" })
       .select(
         `
         id, public_id, slug, description, severity, status, lat, lng,
-        area, locality, address, ward_id, image_url, supporters_count,
+        area, locality, address, ward_id, needs_review, image_url, supporters_count,
         thanked_count, views, heat_score, created_at, updated_at,
         category:categories(id, slug, name_en, icon, color),
         authority:authorities!issues_assigned_authority_id_fkey(id, name, logo_url),
@@ -166,6 +166,15 @@ export const listCategoriesFn = createServerFn({ method: "GET" }).handler(async 
 export const listWardsFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
   const { data, error } = await c.from("wards").select("*").order("number");
+  if (error) throw error;
+  return data ?? [];
+});
+
+// DK's 9 taluks (see the governance knowledge base). Used by the admin
+// jurisdiction-rules editor and available for any future taluk-aware UI.
+export const listTaluksFn = createServerFn({ method: "GET" }).handler(async () => {
+  const c = sb();
+  const { data, error } = await c.from("taluks").select("*").order("name");
   if (error) throw error;
   return data ?? [];
 });
