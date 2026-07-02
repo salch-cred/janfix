@@ -7,6 +7,7 @@ import { adminUpsertAuthorityFn, adminDeleteAuthorityFn } from "@/lib/admin.func
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import {
   Table,
   TableBody,
@@ -222,12 +223,12 @@ function AdminAuthorities() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Logo</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Jurisdiction</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -247,6 +248,15 @@ function AdminAuthorities() {
               ) : (
                 (authorities.data ?? []).map((auth: any) => (
                   <TableRow key={auth.id}>
+                    <TableCell>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 overflow-hidden font-bold text-primary">
+                        {auth.logo_url ? (
+                          <img src={auth.logo_url} className="h-full w-full object-contain p-1" alt="" />
+                        ) : (
+                          <JanFixLogo className="h-5 w-5" />
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">{auth.name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {auth.type ?? "—"}
@@ -256,9 +266,6 @@ function AdminAuthorities() {
                     </TableCell>
                     <TableCell className="text-sm">{auth.phone ?? "—"}</TableCell>
                     <TableCell className="text-sm">{auth.email ?? "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {auth.jurisdiction ?? "—"}
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(auth)}>
