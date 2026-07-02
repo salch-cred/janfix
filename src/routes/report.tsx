@@ -25,6 +25,26 @@ type Step = "photo" | "details" | "review" | "dupes";
 
 const MAX_EXTRA_PHOTOS = 3;
 
+function promptPosterShare() {
+  // Give the route transition a moment to finish before nudging the user
+  // towards the poster/share section of the newly-created issue page.
+  setTimeout(() => {
+    toast.message("Download your poster & share it \ud83d\udce3", {
+      description:
+        "Get more support for your report \u2014 download a shareable poster and post it on WhatsApp, Instagram, or Twitter.",
+      duration: 8000,
+      action: {
+        label: "View poster",
+        onClick: () => {
+          document
+            .getElementById("poster-share")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+      },
+    });
+  }, 700);
+}
+
 function ReportPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("photo");
@@ -258,6 +278,7 @@ function ReportPage() {
         to: "/issue/$publicId/$slug",
         params: { publicId: res.public_id, slug: res.slug || slugify(desc) },
       });
+      promptPosterShare();
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to submit");
     } finally {
