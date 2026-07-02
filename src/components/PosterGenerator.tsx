@@ -3,8 +3,6 @@ import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Location01Icon } from "@hugeicons/core-free-icons";
 import {
   Download,
   Share2,
@@ -16,6 +14,8 @@ import {
   ThumbsDown,
   Settings2,
   Phone,
+  Users,
+  Heart,
 } from "lucide-react";
 import { STATUS_META, categoryBySlug } from "@/lib/civic";
 
@@ -201,6 +201,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     flexShrink: 0,
   };
   const brandRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14 };
+  const brandMarkWrapStyle: CSSProperties = { position: "relative", flexShrink: 0 };
   const brandMarkStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
@@ -214,6 +215,19 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     fontWeight: 800,
     flexShrink: 0,
   };
+  const brandHeartBadgeStyle: CSSProperties = {
+    position: "absolute",
+    top: -3,
+    right: -3,
+    width: 18,
+    height: 18,
+    borderRadius: "50%",
+    background: "#dc2626",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "2px solid white",
+  };
   const brandTitleStyle: CSSProperties = {
     fontSize: isHorizontal ? 20 : 26,
     fontWeight: 800,
@@ -221,6 +235,13 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     color: "#0f172a",
   };
   const brandGreenStyle: CSSProperties = { color: "#16a34a" };
+  const brandCityStyle: CSSProperties = {
+    fontSize: isHorizontal ? 11 : 13,
+    fontWeight: 800,
+    color: "#1d4ed8",
+    letterSpacing: 1.5,
+    marginTop: 1,
+  };
   const brandTaglineStyle: CSSProperties = {
     fontSize: isHorizontal ? 11 : 13,
     color: "#64748b",
@@ -459,8 +480,14 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     color: "#fbbf24",
     lineHeight: 1.2,
   };
+  const footerDividerStyle: CSSProperties = {
+    width: 60,
+    height: 2,
+    background: "rgba(255,255,255,0.35)",
+    marginTop: 10,
+  };
   const footerSubTextStyle: CSSProperties = {
-    marginTop: 8,
+    marginTop: 10,
     fontSize: 11,
     opacity: 0.85,
     maxWidth: 260,
@@ -533,20 +560,45 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             <div ref={posterRef} style={posterOuterStyle}>
               <div style={headerBarStyle}>
                 <div style={brandRowStyle}>
-                  <div style={brandMarkStyle}>
-                    <HugeiconsIcon icon={Location01Icon} size={isHorizontal ? 20 : 26} strokeWidth={1.5} />
+                  <div style={brandMarkWrapStyle}>
+                    <div style={brandMarkStyle}>
+                      <Users size={isHorizontal ? 18 : 22} color="white" strokeWidth={2} />
+                    </div>
+                    <div style={brandHeartBadgeStyle}>
+                      <Heart size={9} color="white" fill="white" />
+                    </div>
                   </div>
                   <div>
                     <div style={brandTitleStyle}>
                       Jan<span style={brandGreenStyle}>Fix</span>
                     </div>
+                    <div style={brandCityStyle}>MANGALURU</div>
                     <div style={brandTaglineStyle}>Report. Track. Fix.</div>
                   </div>
                 </div>
-                <div style={sloganBlockStyle}>
-                  <div style={sloganTitleStyle}>Let's Fix Mangaluru</div>
-                  <div style={sloganKannadaStyle}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
-                  <div style={sloganSubStyle}>Together for a Better City</div>
+                <div style= display: "flex", alignItems: "center", gap: 14 >
+                  <div style={sloganBlockStyle}>
+                    <div style={sloganTitleStyle}>Let's Fix Mangaluru</div>
+                    <div style={sloganKannadaStyle}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
+                    <div style={sloganSubStyle}>Together for a Better City</div>
+                  </div>
+                  {isHorizontal ? null : (
+                    <svg width="78" height="44" viewBox="0 0 96 52" style= flexShrink: 0 >
+                      <g fill="none" stroke="#cbd5e1" strokeWidth="1.4">
+                        <rect x="2" y="26" width="14" height="26" />
+                        <rect x="18" y="14" width="14" height="38" />
+                        <polygon points="25,4 18,14 32,14" />
+                        <rect x="34" y="20" width="12" height="32" />
+                        <circle cx="40" cy="14" r="6" />
+                        <rect x="48" y="30" width="12" height="22" />
+                        <rect x="62" y="10" width="14" height="42" />
+                        <path d="M62 10 L69 2 L76 10" />
+                        <rect x="78" y="24" width="14" height="28" />
+                        <path d="M4 8 q3 -3 6 0" />
+                        <path d="M12 4 q3 -3 6 0" />
+                      </g>
+                    </svg>
+                  )}
                 </div>
               </div>
 
@@ -668,6 +720,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                     <div style={footerLeftStyle}>
                       <div style={footerLineOneStyle}>Your Small Report</div>
                       <div style={footerLineTwoStyle}>Can Create a Big Change!</div>
+                      <div style={footerDividerStyle} />
                       <div style={footerSubTextStyle}>
                         Vote, share and help make Mangaluru a better place to live.
                       </div>
