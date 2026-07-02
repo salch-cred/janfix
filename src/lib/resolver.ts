@@ -18,11 +18,27 @@ export type ResolveResult = {
   reason: string;
   version: number;
   resolved_ward_id: number | null;
+  // Set when the resolution relied on a low-confidence, admin-flagged
+  // jurisdiction_rules row (ambiguous jurisdiction) rather than a confirmed
+  // ward/category assignment. Surfaced to admins on the Issues page.
+  needs_review?: boolean;
+  jurisdiction_confidence?: string | null;
 };
 
 type AreaMapping = { keyword: string; ward_id: number | null; constituency: string | null; city: string | null; priority: number };
 type AssignmentRule = { authority_id: number; representative_id: number | null; version: number; ward_id: number | null };
 type Rep = { id: number; name: string; role: string; constituency: string | null; city: string | null; ward_id: number | null };
+type JurisdictionRule = {
+  id: number;
+  category_id: number;
+  scope_type: string;
+  taluk_id: number | null;
+  authority_id: number | null;
+  confidence: string;
+  notes: string | null;
+  priority: number;
+  active: boolean;
+};
 
 // ── Embedded area→ward/constituency/city mapping (no DB table needed) ──
 // Ward numbers map to:
@@ -98,11 +114,13 @@ const WARD_NAMES: Record<string, { number: number; area: string }> = {
 
 // Extra locality/area keywords → ward number + constituency override
 const EXTRA_MAPPINGS: AreaMapping[] = [
-  // Valachil / Bangalagudde are hamlets near Farangipet (pincode 574143), which is
-  // administratively in Bantwal taluk — NOT part of Mangaluru City Corporation limits
-  // or the Deralakatte ward. They fall under the Bantwal assembly constituency.
-  { keyword: "valachil",     ward_id: null, constituency: "Bantwal", city: null, priority: 15 },
-  { keyword: "bangalagudde", ward_id: null, constituency: "Bantwal", city: null, priority: 15 },
+  // User-requested override: route Valachil / Bangalagudde issues to the
+  // Mangaluru City North MLA (Dr. Bharath Shetty Y.) instead of Bantwal.
+  // Note: official DK district records associate the Valachil/Farangipet
+  // (PIN 574143) locality with Bantwal taluk, but this reflects an explicit
+  // correction requested by the workspace owner.
+  { keyword: "valachil",     ward_id: null, constituency: "Mangaluru City North", city: "Mangaluru", priority: 20 },
+  { keyword: "bangalagudde", ward_id: null, constituency: "Mangaluru City North", city: "Mangaluru", priority: 20 },
   // Rural DK taluk names → constituency only (no ward)
   { keyword: "bantwal",      ward_id: null, constituency: "Bantwal",     city: null, priority: 5 },
   { keyword: "puttur",       ward_id: null, constituency: "Puttur",      city: null, priority: 5 },
@@ -112,12 +130,41 @@ const EXTRA_MAPPINGS: AreaMapping[] = [
   { keyword: "mulki",        ward_id: null, constituency: "Mangaluru",   city: null, priority: 5 },
 ];
 
+// ── Rural taluk keyword detection (for scope-aware jurisdiction rules) ──
+// See the governance knowledge base: DK's 9 taluks. Used only to pick a
+// jurisdiction_rules scope (mcc / rural / state_highway / national_highway)
+// when no ward has been resolved -- this does NOT override area_mappings.
+const TALUK_KEYWORDS: Record<string, string> = {
+  bantwal: "Bantwal",
+  puttur: "Puttur",
+  sullia: "Sullia",
+  belthangady: "Belthangady",
+  moodabidri: "Moodabidri",
+  ullala: "Ullala",
+  ullal: "Ullala",
+  mulki: "Mulki",
+  kadaba: "Kadaba",
+};
+
+function detectScope(
+  locationText: string,
+  hasWard: boolean,
+): { scope: "mcc" | "rural" | "state_highway" | "national_highway" | "any"; taluk: string | null } {
+  if (/\bnh[\s-]?\d+\b|national highway/i.test(locationText)) return { scope: "national_highway", taluk: null };
+  if (/\bsh[\s-]?\d+\b|state highway/i.test(locationText)) return { scope: "state_highway", taluk: null };
+  if (hasWard) return { scope: "mcc", taluk: null };
+  for (const [kw, taluk] of Object.entries(TALUK_KEYWORDS)) {
+    if (locationText.includes(kw)) return { scope: "rural", taluk };
+  }
+  return { scope: "any", taluk: null };
+}
+
 export async function resolveIssue(sb: Sb, input: ResolveInput): Promise<ResolveResult> {
   const locationText = [input.area, input.locality, input.address].filter(Boolean).join(" ").toLowerCase();
   const parts: string[] = [];
 
-  // ── Load rules + reps in parallel ─────────────────────────────────
-  const [rulesRes, repsRes] = await Promise.all([
+  // ── Load rules + reps + scope-aware jurisdiction rules in parallel ──
+  const [rulesRes, repsRes, jrulesRes] = await Promise.all([
     sb.from("assignment_rules")
       .select("authority_id, representative_id, version, ward_id")
       .eq("category_id", input.category_id)
@@ -125,9 +172,14 @@ export async function resolveIssue(sb: Sb, input: ResolveInput): Promise<Resolve
     sb.from("representatives")
       .select("id, name, role, constituency, city, ward_id")
       .eq("active", true),
+    sb.from("jurisdiction_rules")
+      .select("id, category_id, scope_type, taluk_id, authority_id, confidence, notes, priority, active")
+      .eq("category_id", input.category_id)
+      .eq("active", true),
   ]);
   const rules: AssignmentRule[] = rulesRes.data ?? [];
   const reps: Rep[] = repsRes.data ?? [];
+  const jrules: JurisdictionRule[] = jrulesRes.data ?? [];
 
   // ── Build area mapping from embedded data ──────────────────────────
   const mappings: AreaMapping[] = [...EXTRA_MAPPINGS];
@@ -199,10 +251,32 @@ export async function resolveIssue(sb: Sb, input: ResolveInput): Promise<Resolve
     }
   }
 
-  // ── LAYER 4: Generic category rule ─────────────────────────────────
+  // ── LAYER 4: Scope-aware jurisdiction rule, then generic category rule ──
+  // jurisdiction_rules is an admin-editable overlay (see governance
+  // knowledge base) that only kicks in when no ward-specific assignment_rule
+  // exists. It never overrides an explicit ward rule from Layers 1-3.
+  const { scope } = detectScope(locationText, !!resolvedWardId);
+  const scopeMatches = jrules.filter((r) => r.scope_type === scope);
+  const anyMatches = jrules.filter((r) => r.scope_type === "any");
+  const jurisdictionRule =
+    (scopeMatches.length ? scopeMatches : anyMatches).sort((a, b) => b.priority - a.priority)[0] ?? null;
+
   const genericRule = rules.find((r) => r.ward_id === null);
-  const authorityId = genericRule?.authority_id ?? null;
-  if (!parts.some((p) => p.startsWith("Area="))) parts.push(`Category rule`);
+  const authorityId = genericRule?.authority_id ?? jurisdictionRule?.authority_id ?? null;
+
+  let needsReview = false;
+  let jurisdictionConfidence: string | null = null;
+  if (jurisdictionRule) {
+    jurisdictionConfidence = jurisdictionRule.confidence;
+    if (jurisdictionRule.confidence === "low") {
+      needsReview = true;
+      parts.push(`Needs review (${scope}): ${jurisdictionRule.notes ?? "ambiguous jurisdiction"}`);
+    } else if (!parts.some((p) => p.startsWith("Area="))) {
+      parts.push(`Jurisdiction=${scope}`);
+    }
+  } else if (!parts.some((p) => p.startsWith("Area="))) {
+    parts.push(`Category rule`);
+  }
 
   // ── LAYER 5: Constituency scoring ──────────────────────────────────
   let repId: number | null = genericRule?.representative_id ?? null;
@@ -243,6 +317,8 @@ export async function resolveIssue(sb: Sb, input: ResolveInput): Promise<Resolve
     reason: parts.join(", "),
     version: genericRule?.version ?? 1,
     resolved_ward_id: resolvedWardId,
+    needs_review: needsReview,
+    jurisdiction_confidence: jurisdictionConfidence,
   };
 }
 
@@ -261,8 +337,8 @@ function resolveRepByConstituency(reps: Rep[], locationText: string, prematchedC
 
   // Known area→constituency overrides for places not in any constituency name
   const AREA_CONSTITUENCY_OVERRIDE: Record<string, string> = {
-    valachil: "Bantwal",
-    bangalagudde: "Bantwal",
+    valachil: "Mangaluru City North",
+    bangalagudde: "Mangaluru City North",
   };
   let enriched = locationText;
   for (const [area, constituency] of Object.entries(AREA_CONSTITUENCY_OVERRIDE)) {
