@@ -20,6 +20,12 @@ function isFiniteNumber(n: unknown): n is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
+// Classic teardrop "pin point" marker icon, anchored at its bottom tip so it
+// points exactly at the report's coordinates. Color is per-category.
+function pinSvg(color: string) {
+  return `<svg width="26" height="34" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))"><path d="M12 0C5.373 0 0 5.373 0 12c0 8.5 10.2 18.6 11.3 19.6a1 1 0 0 0 1.4 0C13.8 30.6 24 20.5 24 12c0-6.627-5.373-12-12-12z" fill="${color}" stroke="white" stroke-width="1.5"/><circle cx="12" cy="12" r="4.5" fill="white"/></svg>`;
+}
+
 export function IssueMap({
   points,
   center,
@@ -161,15 +167,12 @@ export function IssueMap({
       if (!isFiniteNumber(p.lat) || !isFiniteNumber(p.lng)) return;
       const color = p.color ?? "#1d4ed8";
       const el = document.createElement("div");
-      el.style.width = "16px";
-      el.style.height = "16px";
-      el.style.borderRadius = "9999px";
-      el.style.background = color;
-      el.style.border = "2px solid white";
-      el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.25)";
+      el.style.width = "26px";
+      el.style.height = "34px";
       el.style.cursor = p.popup ? "pointer" : "default";
-      const m = new ML.Marker({ element: el }).setLngLat([Number(p.lng), Number(p.lat)]);
-      if (p.popup) m.setPopup(new ML.Popup({ offset: 12, maxWidth: "240px" }).setHTML(p.popup));
+      el.innerHTML = pinSvg(color);
+      const m = new ML.Marker({ element: el, anchor: "bottom" }).setLngLat([Number(p.lng), Number(p.lat)]);
+      if (p.popup) m.setPopup(new ML.Popup({ offset: 30, maxWidth: "240px" }).setHTML(p.popup));
       m.addTo(map);
       pointMarkersRef.current.push(m);
     });
