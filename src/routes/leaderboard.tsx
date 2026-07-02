@@ -9,6 +9,7 @@ import {
 } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { JanFixLogo } from "@/components/JanFixLogo";
+import { AuthorityLogo } from "@/components/AuthorityLogo";
 import {
   Building2,
   Users,
@@ -125,15 +126,7 @@ function LeaderboardPage() {
                   className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition hover:bg-accent/50"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary overflow-hidden">
-                    {a.logo_url ? (
-                      <img
-                        src={a.logo_url}
-                        className="h-full w-full rounded-xl object-contain p-1"
-                        alt=""
-                      />
-                    ) : (
-                      <JanFixLogo className="h-6 w-6" />
-                    )}
+                    <AuthorityLogo url={a.logo_url} className="h-full w-full rounded-xl object-contain p-1" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold truncate">{a.name}</div>
