@@ -8,6 +8,7 @@ import {
   wardStatsFn,
 } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import {
   Building2,
   Users,
@@ -123,15 +124,15 @@ function LeaderboardPage() {
                   key={a.id}
                   className="flex items-center gap-4 rounded-2xl border bg-card p-4 transition hover:bg-accent/50"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary overflow-hidden">
                     {a.logo_url ? (
                       <img
                         src={a.logo_url}
-                        className="h-full w-full rounded-xl object-cover"
+                        className="h-full w-full rounded-xl object-contain p-1"
                         alt=""
                       />
                     ) : (
-                      a.name.slice(0, 2)
+                      <JanFixLogo className="h-6 w-6" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -191,7 +192,7 @@ function LeaderboardPage() {
                   {r.photo_url ? (
                     <img src={r.photo_url} className="h-full w-full object-cover" alt="" />
                   ) : (
-                    r.name.slice(0, 2)
+                    <JanFixLogo className="h-6 w-6" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
