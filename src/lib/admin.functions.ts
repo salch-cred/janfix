@@ -280,6 +280,82 @@ export const adminListRulesFn = createServerFn({ method: "POST" })
 		return rows ?? [];
 	});
 
+// Admin-only listing of scope-aware jurisdiction rules (see the governance
+// knowledge base) with resolved names for display. Unlike assignment_rules
+// (ward-specific), these are keyed by category + scope (mcc / rural / state
+// highway / national highway / any) and only apply as a fallback when no
+// ward-specific assignment_rules row matches.
+export const adminListJurisdictionRulesFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { data: rows, error } = await c
+			.from("jurisdiction_rules")
+			.select(
+				"*, category:categories(id, name_en), taluk:taluks(id, name), authority:authorities(id, name)",
+			)
+			.order("category_id")
+			.order("priority", { ascending: false });
+		if (error) throw error;
+		return rows ?? [];
+	});
+
+export const adminUpsertJurisdictionRuleFn = createServerFn({ method: "POST" })
+	.inputValidator(
+		(d: {
+			access_token: string;
+			id?: number;
+			category_id: number;
+			scope_type: string;
+			taluk_id?: number | null;
+			authority_id?: number | null;
+			confidence?: string;
+			notes?: string | null;
+			priority?: number;
+			active?: boolean;
+		}) =>
+			z
+				.object({
+					access_token: z.string(),
+					id: z.number().int().optional(),
+					category_id: z.number().int(),
+					scope_type: z.enum(["mcc", "rural", "state_highway", "national_highway", "any"]),
+					taluk_id: z.number().int().nullable().optional(),
+					authority_id: z.number().int().nullable().optional(),
+					confidence: z.enum(["high", "medium", "low"]).optional(),
+					notes: z.string().nullable().optional(),
+					priority: z.number().int().optional(),
+					active: z.boolean().optional(),
+				})
+				.parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { id, access_token: _t, ...rest } = data;
+		if (id) {
+			await c.from("jurisdiction_rules").update(rest).eq("id", id);
+		} else {
+			await c.from("jurisdiction_rules").insert(rest);
+		}
+		return { ok: true };
+	});
+
+// Deletes a jurisdiction rule. Service-role client for the usual permission
+// reason.
+export const adminDeleteJurisdictionRuleFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string; id: number }) =>
+		z.object({ access_token: z.string(), id: z.number().int() }).parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { error } = await c.from("jurisdiction_rules").delete().eq("id", data.id);
+		if (error) throw error;
+		return { ok: true };
+	});
+
 // Admin-only listing of ALL representatives (including inactive ones and
 // Corporator placeholders), unlike the public listRepresentativesFn which
 // filters those out for citizen-facing display.
