@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type * as LeafletNS from "leaflet";
+import type * as MapLibreNS from "maplibre-gl";
 
 export type MapPoint = {
   id: string;
@@ -9,7 +9,15 @@ export type MapPoint = {
   popup?: string;
 };
 
-const OSM_TILE_URL_TEMPLATE = "https://" + "{s}" + ".tile.openstreetmap.org/" + "{z}" + "/" + "{x}" + "/" + "{y}" + ".png";
+// OpenFreeMap: fully free vector-tile hosting, no API key, no request limits.
+const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+const MAPLIBRE_CSS_URL = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const BUILDINGS_LAYER_ID = "jf-3d-buildings";
+
+function isFiniteNumber(n: unknown): n is number {
+  const v = typeof n === "string" ? Number(n) : n;
+  return typeof v === "number" && Number.isFinite(v);
+}
 
 export function IssueMap({
   points,
@@ -30,12 +38,13 @@ export function IssueMap({
   loadOn?: "visible" | "tap" | "eager";
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const LRef = useRef<typeof LeafletNS | null>(null);
-  const mapRef = useRef<LeafletNS.Map | null>(null);
-  const layerRef = useRef<LeafletNS.LayerGroup | null>(null);
-  const draggableMarker = useRef<LeafletNS.Marker | null>(null);
+  const MLRef = useRef<typeof MapLibreNS | null>(null);
+  const mapRef = useRef<MapLibreNS.Map | null>(null);
+  const pointMarkersRef = useRef<MapLibreNS.Marker[]>([]);
+  const pinMarkerRef = useRef<MapLibreNS.Marker | null>(null);
   const [shouldLoad, setShouldLoad] = useState(loadOn === "eager");
   const [ready, setReady] = useState(false);
+  const [is3D, setIs3D] = useState(true);
   const containerStyle = { height };
 
   // Visibility-based lazy trigger
@@ -67,32 +76,73 @@ export function IssueMap({
     (async () => {
       if (typeof window === "undefined") return;
       if (!ref.current || mapRef.current) return;
-      // Inject Leaflet CSS lazily, once
-      if (!document.getElementById("leaflet-css")) {
+      // Inject MapLibre CSS lazily, once
+      if (!document.getElementById("maplibre-css")) {
         const link = document.createElement("link");
-        link.id = "leaflet-css";
+        link.id = "maplibre-css";
         link.rel = "stylesheet";
-        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        link.href = MAPLIBRE_CSS_URL;
         document.head.appendChild(link);
       }
-      const L = (await import("leaflet")).default;
+      const ML = await import("maplibre-gl");
       if (cancelled || !ref.current) return;
-      LRef.current = L;
+      MLRef.current = ML;
       const c = center ?? { lat: 12.9141, lng: 74.856 };
-      const map = L.map(ref.current, { zoomControl: true }).setView([c.lat, c.lng], zoom);
-      L.tileLayer(OSM_TILE_URL_TEMPLATE, {
-        attribution: "© OpenStreetMap contributors",
-        maxZoom: 19,
-      }).addTo(map);
-      layerRef.current = L.layerGroup().addTo(map);
+      const map = new ML.Map({
+        container: ref.current,
+        style: MAP_STYLE_URL,
+        center: [c.lng, c.lat],
+        zoom,
+        pitch: 45,
+        bearing: -12,
+        attributionControl: { compact: true },
+      });
+      map.addControl(new ML.NavigationControl({ visualizePitch: true }), "top-right");
+      if (onClick) map.on("click", (e) => onClick(e.lngLat.lat, e.lngLat.lng));
+      map.on("load", () => {
+        if (cancelled) return;
+        try {
+          const style = map.getStyle() as any;
+          const sourceId = Object.keys(style?.sources ?? {}).find(
+            (id) => style.sources[id]?.type === "vector",
+          );
+          if (sourceId && !map.getLayer(BUILDINGS_LAYER_ID)) {
+            const labelLayer = (style?.layers ?? []).find(
+              (l: any) => l.type === "symbol" && l.layout?.["text-field"],
+            );
+            map.addLayer(
+              {
+                id: BUILDINGS_LAYER_ID,
+                source: sourceId,
+                "source-layer": "building",
+                type: "fill-extrusion",
+                minzoom: 13,
+                paint: {
+                  "fill-extrusion-color": "#c9d2dc",
+                  "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
+                  "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+                  "fill-extrusion-opacity": 0.85,
+                },
+              } as any,
+              labelLayer?.id,
+            );
+          }
+        } catch {
+          // 3D buildings are a visual enhancement only; ignore failures so the
+          // base map still works even if this style doesn't expose the layer.
+        }
+        renderPoints();
+        renderMarker();
+        setReady(true);
+      });
       mapRef.current = map;
-      if (onClick) map.on("click", (e) => onClick(e.latlng.lat, e.latlng.lng));
-      renderPoints();
-      renderMarker();
-      setReady(true);
     })();
     return () => {
       cancelled = true;
+      pointMarkersRef.current.forEach((m) => m.remove());
+      pointMarkersRef.current = [];
+      pinMarkerRef.current?.remove();
+      pinMarkerRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       setReady(false);
@@ -101,30 +151,42 @@ export function IssueMap({
   }, [shouldLoad]);
 
   const renderPoints = () => {
-    const L = LRef.current;
-    const layer = layerRef.current;
-    if (!L || !layer) return;
-    layer.clearLayers();
+    const ML = MLRef.current;
+    const map = mapRef.current;
+    if (!ML || !map) return;
+    pointMarkersRef.current.forEach((m) => m.remove());
+    pointMarkersRef.current = [];
     (points ?? []).forEach((p) => {
+      if (!isFiniteNumber(p.lat) || !isFiniteNumber(p.lng)) return;
       const color = p.color ?? "#1d4ed8";
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="width:14px;height:14px;border-radius:9999px;background:${color};border:2px solid white;box-shadow:0 0 0 1px rgba(0,0,0,.25)"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-      });
-      const m = L.marker([p.lat, p.lng], { icon }).addTo(layer);
-      if (p.popup) m.bindPopup(p.popup);
+      const el = document.createElement("div");
+      el.style.width = "16px";
+      el.style.height = "16px";
+      el.style.borderRadius = "9999px";
+      el.style.background = color;
+      el.style.border = "2px solid white";
+      el.style.boxShadow = "0 0 0 1px rgba(0,0,0,.25)";
+      el.style.cursor = p.popup ? "pointer" : "default";
+      const m = new ML.Marker({ element: el }).setLngLat([Number(p.lng), Number(p.lat)]);
+      if (p.popup) m.setPopup(new ML.Popup({ offset: 12 }).setHTML(p.popup));
+      m.addTo(map);
+      pointMarkersRef.current.push(m);
     });
   };
 
   const renderMarker = () => {
-    const L = LRef.current;
+    const ML = MLRef.current;
     const map = mapRef.current;
-    if (!L || !map || !marker) return;
-    if (draggableMarker.current) draggableMarker.current.remove();
-    draggableMarker.current = L.marker([marker.lat, marker.lng]).addTo(map);
-    map.setView([marker.lat, marker.lng], Math.max(map.getZoom(), 16));
+    if (!ML || !map) return;
+    if (pinMarkerRef.current) {
+      pinMarkerRef.current.remove();
+      pinMarkerRef.current = null;
+    }
+    if (!marker || !isFiniteNumber(marker.lat) || !isFiniteNumber(marker.lng)) return;
+    pinMarkerRef.current = new ML.Marker({ color: "#1d4ed8" })
+      .setLngLat([marker.lng, marker.lat])
+      .addTo(map);
+    map.flyTo({ center: [marker.lng, marker.lat], zoom: Math.max(map.getZoom(), 16) });
   };
 
   useEffect(() => {
@@ -133,6 +195,14 @@ export function IssueMap({
   useEffect(() => {
     if (ready) renderMarker(); /* eslint-disable-next-line */
   }, [marker, ready]);
+
+  const toggle3D = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = !is3D;
+    setIs3D(next);
+    map.easeTo({ pitch: next ? 45 : 0, bearing: next ? -12 : 0, duration: 500 });
+  };
 
   return (
     <div
@@ -153,6 +223,15 @@ export function IssueMap({
         <span className="text-xs text-muted-foreground">Loading map…</span>
       )}
       {shouldLoad && !ready && <span className="text-xs text-muted-foreground">Loading map…</span>}
+      {ready && (
+        <button
+          type="button"
+          onClick={toggle3D}
+          className="absolute bottom-2 left-2 z-10 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
+        >
+          {is3D ? "2D view" : "3D view"}
+        </button>
+      )}
     </div>
   );
 }
