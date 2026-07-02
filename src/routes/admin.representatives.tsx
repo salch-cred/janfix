@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import {
   Table,
   TableBody,
@@ -248,11 +249,11 @@ function AdminRepresentatives() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Photo</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Ward</TableHead>
                 <TableHead>Authority</TableHead>
-                <TableHead>Phone</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -273,6 +274,15 @@ function AdminRepresentatives() {
               ) : (
                 (representatives.data ?? []).map((rep: any) => (
                   <TableRow key={rep.id}>
+                    <TableCell>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 overflow-hidden font-bold text-primary">
+                        {rep.photo_url ? (
+                          <img src={rep.photo_url} className="h-full w-full object-cover" alt="" />
+                        ) : (
+                          <JanFixLogo className="h-5 w-5" />
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">{rep.name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{rep.role}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -281,7 +291,6 @@ function AdminRepresentatives() {
                     <TableCell className="text-sm text-muted-foreground">
                       {rep.authority?.name ?? "—"}
                     </TableCell>
-                    <TableCell className="text-sm">{rep.phone ?? "—"}</TableCell>
                     <TableCell>
                       <Badge variant={rep.active ? "secondary" : "outline"}>
                         {rep.active ? "Active" : "Inactive"}
