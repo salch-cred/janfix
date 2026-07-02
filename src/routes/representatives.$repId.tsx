@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { listRepresentativesFn, listIssuesFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { IssueCard } from "@/components/IssueCard";
+import { JanFixLogo } from "@/components/JanFixLogo";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Mail, MapPin, ShieldCheck, Building2, AlertCircle, ThumbsUp, CheckCircle2, Clock } from "lucide-react";
 
@@ -82,11 +83,11 @@ function RepresentativeDetail() {
         </Link>
 
         <header className="flex flex-wrap items-start gap-4">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl font-bold overflow-hidden">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-2 ring-primary/20 text-primary text-2xl font-bold overflow-hidden">
             {rep.photo_url ? (
               <img src={rep.photo_url} className="h-full w-full object-cover" alt="" />
             ) : (
-              rep.name.slice(0, 2)
+              <JanFixLogo className="h-12 w-12" />
             )}
           </div>
           <div className="flex-1 min-w-0">
