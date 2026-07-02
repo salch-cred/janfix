@@ -248,6 +248,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     fontWeight: 600,
     marginTop: 2,
   };
+  const brandDecorRowStyle: CSSProperties = { display: "flex", alignItems: "center", gap: 14 };
+  const skylineStyle: CSSProperties = { flexShrink: 0 };
   const sloganBlockStyle: CSSProperties = {
     textAlign: "right",
     flexShrink: 0,
@@ -576,14 +578,14 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                     <div style={brandTaglineStyle}>Report. Track. Fix.</div>
                   </div>
                 </div>
-                <div style= display: "flex", alignItems: "center", gap: 14 >
+                <div style={brandDecorRowStyle}>
                   <div style={sloganBlockStyle}>
                     <div style={sloganTitleStyle}>Let's Fix Mangaluru</div>
                     <div style={sloganKannadaStyle}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
                     <div style={sloganSubStyle}>Together for a Better City</div>
                   </div>
                   {isHorizontal ? null : (
-                    <svg width="78" height="44" viewBox="0 0 96 52" style= flexShrink: 0 >
+                    <svg width="78" height="44" viewBox="0 0 96 52" style={skylineStyle}>
                       <g fill="none" stroke="#cbd5e1" strokeWidth="1.4">
                         <rect x="2" y="26" width="14" height="26" />
                         <rect x="18" y="14" width="14" height="38" />
