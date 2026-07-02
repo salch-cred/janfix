@@ -114,6 +114,8 @@ export const createIssueFn = createServerFn({ method: "POST" })
         assigned_representative_id: resolution.representative_id,
         assignment_reason: reason,
         assignment_rule_version: resolution.version,
+        needs_review: resolution.needs_review ?? false,
+        jurisdiction_confidence: resolution.jurisdiction_confidence ?? null,
       })
       .select("id, public_id, slug")
       .single();
