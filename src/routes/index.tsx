@@ -47,7 +47,7 @@ const STEPS = [
   {
     icon: Notification03Icon,
     title: "Right authority notified",
-    description: "JanFix routes the report to the exact civic authority responsible, automatically.",
+    description: "The report reaches the exact authority responsible.",
   },
   {
     icon: CheckmarkCircle02Icon,
