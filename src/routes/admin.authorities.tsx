@@ -7,7 +7,7 @@ import { adminUpsertAuthorityFn, adminDeleteAuthorityFn } from "@/lib/admin.func
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { JanFixLogo } from "@/components/JanFixLogo";
+import { AuthorityLogo } from "@/components/AuthorityLogo";
 import {
   Table,
   TableBody,
@@ -250,11 +250,7 @@ function AdminAuthorities() {
                   <TableRow key={auth.id}>
                     <TableCell>
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 overflow-hidden font-bold text-primary">
-                        {auth.logo_url ? (
-                          <img src={auth.logo_url} className="h-full w-full object-contain p-1" alt="" />
-                        ) : (
-                          <JanFixLogo className="h-5 w-5" />
-                        )}
+                        <AuthorityLogo url={auth.logo_url} className="h-full w-full object-contain p-1" />
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{auth.name}</TableCell>
