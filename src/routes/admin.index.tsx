@@ -20,6 +20,7 @@ import {
   Map,
   Tags,
   GitBranch,
+  Compass,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -40,6 +41,7 @@ const navItems = [
   { to: "/admin/wards", label: "Wards", icon: Map },
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
+  { to: "/admin/jurisdiction", label: "Jurisdiction", icon: Compass },
 ];
 
 const navLinkActiveProps = { className: "bg-accent text-foreground" };
