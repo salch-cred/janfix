@@ -4,6 +4,7 @@ import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JanFixLogo } from "@/components/JanFixLogo";
+import { AUTHORITY_LOGO_FALLBACK_URL } from "@/components/AuthorityLogo";
 import {
   Download,
   Share2,
@@ -105,10 +106,12 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const dims = SIZES[size];
   const isHorizontal = dims.w > dims.h;
 
-  const imageUrls = [issue.image_url, issue.authority?.logo_url, issue.representative?.photo_url];
+  const imageUrls = [issue.image_url, issue.authority?.logo_url, issue.representative?.photo_url, AUTHORITY_LOGO_FALLBACK_URL];
   const dataUrls = useImageDataUrls(imageUrls);
   const imgSrc = issue.image_url ? (dataUrls.get(issue.image_url) ?? issue.image_url) : "";
-  const logoSrc = issue.authority?.logo_url ? (dataUrls.get(issue.authority.logo_url) ?? issue.authority.logo_url) : "";
+  const logoSrc = issue.authority?.logo_url
+    ? (dataUrls.get(issue.authority.logo_url) ?? issue.authority.logo_url)
+    : (dataUrls.get(AUTHORITY_LOGO_FALLBACK_URL) ?? AUTHORITY_LOGO_FALLBACK_URL);
   const repSrc = issue.representative?.photo_url ? (dataUrls.get(issue.representative.photo_url) ?? issue.representative.photo_url) : "";
 
   useEffect(() => {
