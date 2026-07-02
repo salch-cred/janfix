@@ -438,7 +438,7 @@ function IssuePage() {
         />
 
         {/* Poster + share */}
-        <section className="mt-10">
+        <section id="poster-share" className="mt-10">
           <div className="flex items-center gap-2">
             <Share2 className="h-4 w-4 text-primary" />
             <h2 className="font-display text-lg font-bold">Share / Poster</h2>
@@ -629,9 +629,6 @@ function Comments({
             <p className="mt-1">{c.body}</p>
           </li>
         ))}
-        {comments.length === 0 && (
-          <li className="text-sm text-muted-foreground">Be the first to comment.</li>
-        )}
       </ul>
     </section>
   );
