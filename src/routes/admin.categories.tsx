@@ -43,6 +43,7 @@ import {
   Map,
   Tags,
   GitBranch,
+  Compass,
   Plus,
   Pencil,
   Trash2,
@@ -422,6 +423,7 @@ const navItems = [
   { to: "/admin/wards", label: "Wards", icon: Map },
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
+  { to: "/admin/jurisdiction", label: "Jurisdiction", icon: Compass },
 ];
 
 const navLinkActiveProps = { className: "bg-accent text-foreground" };
