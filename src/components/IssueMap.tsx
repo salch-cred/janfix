@@ -238,7 +238,6 @@ export function IssueMap({
 
   return (
     <div
-      ref={ref}
       style={fullscreen ? undefined : { height }}
       className={
         fullscreen
@@ -246,19 +245,22 @@ export function IssueMap({
           : "w-full rounded-xl border bg-muted/30 relative overflow-hidden flex items-center justify-center"
       }
     >
+      {/* Nested MapLibre container to isolate MapLibre DOM updates from React reconciliation */}
+      <div ref={ref} className="absolute inset-0 h-full w-full" />
+
       {!shouldLoad && loadOn === "tap" && (
         <button
           type="button"
           onClick={() => setShouldLoad(true)}
-          className="absolute inset-0 flex items-center justify-center text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+          className="absolute inset-0 z-10 flex items-center justify-center text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
         >
           Tap to load map
         </button>
       )}
       {!shouldLoad && loadOn === "visible" && (
-        <span className="text-xs text-muted-foreground">Loading map…</span>
+        <span className="z-10 text-xs text-muted-foreground">Loading map…</span>
       )}
-      {shouldLoad && !ready && <span className="text-xs text-muted-foreground">Loading map…</span>}
+      {shouldLoad && !ready && <span className="z-10 text-xs text-muted-foreground">Loading map…</span>}
       {ready && (
         <>
           <button
