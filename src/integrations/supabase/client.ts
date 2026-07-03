@@ -29,6 +29,44 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+const safeLocalStorage = (() => {
+  const memoryStore: Record<string, string> = {};
+  return {
+    getItem(key: string): string | null {
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          return window.localStorage.getItem(key);
+        }
+      } catch (e) {
+        console.warn("localStorage.getItem blocked, using memory fallback", e);
+      }
+      return memoryStore[key] ?? null;
+    },
+    setItem(key: string, value: string): void {
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(key, value);
+          return;
+        }
+      } catch (e) {
+        console.warn("localStorage.setItem blocked, using memory fallback", e);
+      }
+      memoryStore[key] = value;
+    },
+    removeItem(key: string): void {
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.removeItem(key);
+          return;
+        }
+      } catch (e) {
+        console.warn("localStorage.removeItem blocked, using memory fallback", e);
+      }
+      delete memoryStore[key];
+    }
+  };
+})();
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -51,7 +89,7 @@ function createSupabaseClient() {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      storage: typeof window !== "undefined" ? localStorage : undefined,
+      storage: typeof window !== "undefined" ? safeLocalStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
     },
