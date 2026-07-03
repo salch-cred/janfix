@@ -22,8 +22,8 @@ export function getCurrentPosition(options?: PositionOptions): Promise<Geolocati
     }
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 60000,
+      timeout: 15000,
+      maximumAge: 0, // Force fresh GPS coordinates by default
       ...options,
     });
   });
@@ -31,13 +31,21 @@ export function getCurrentPosition(options?: PositionOptions): Promise<Geolocati
 
 export async function getPositionWithFallback(): Promise<{ lat: number; lng: number }> {
   try {
-    const pos = await getCurrentPosition();
+    // Stage 1: Try fresh high-accuracy pinpoint location (no caching allowed)
+    const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
     return { lat: pos.coords.latitude, lng: pos.coords.longitude };
   } catch (e: any) {
     if (e.code === 1) throw new Error("Location permission denied. Enable GPS and reload.");
-    // Fallback to low accuracy
-    const pos = await getCurrentPosition({ enableHighAccuracy: false, timeout: 10000 });
-    return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    
+    try {
+      // Stage 2: Retry high-accuracy but allow slightly cached reading (5 seconds) if GPS chip just locked
+      const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 8000, maximumAge: 5000 });
+      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch {
+      // Stage 3: Fall back to low accuracy / cellular tower location only if hardware GPS fails
+      const pos = await getCurrentPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 10000 });
+      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    }
   }
 }
 
