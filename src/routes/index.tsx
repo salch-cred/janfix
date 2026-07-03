@@ -86,11 +86,7 @@ function Home() {
               </span>
               <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md ring-1 ring-white/20 max-w-fit">
                 <span className="text-sm font-black uppercase tracking-wider text-yellow-300">
-                  Our City, Your Right
-                </span>
-                <span className="hidden sm:inline text-white/30">•</span>
-                <span className="text-xs sm:text-sm font-bold text-white/95">
-                  ನಮ್ಮ ನಗರ, ನಿಮ್ಮ ಹಕ್ಕು
+                  undu dada avassthe mare, yapa sari malpuni??
                 </span>
               </div>
               <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-6xl">

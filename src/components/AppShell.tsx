@@ -187,7 +187,7 @@ function Footer() {
             href="mailto:aflalarman@gmail.com"
             className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition duration-150"
           >
-            Send Email
+            Give a connect / Give feedback
           </a>
         </div>
 
