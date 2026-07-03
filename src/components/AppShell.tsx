@@ -30,7 +30,7 @@ function AnnouncementBar() {
   return (
     <div className="hidden items-center justify-center gap-2 bg-foreground px-4 py-2 text-center text-xs font-medium text-background md:flex">
       <HugeiconsIcon icon={Megaphone01Icon} size={14} strokeWidth={1.5} />
-      <span>Now live in Mangaluru \u2014 report a civic issue in under 60 seconds.</span>
+      <span>Now live in Mangaluru — report a civic issue in under 60 seconds.</span>
       <Link
         to="/report"
         className="ml-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2"
@@ -75,12 +75,12 @@ function TopBar() {
           <NavItem to="/assistant" label="Assistant" />
         </nav>
         <div className="hidden items-center gap-2 md:flex">
-          <a
-            href="/auth"
+          <Link
+            to="/auth"
             className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
           >
             Admin
-          </a>
+          </Link>
           <Link
             to="/report"
             className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-sm transition hover:opacity-90"
@@ -135,7 +135,7 @@ function MobileTabBar() {
                     ? "flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md"
                     : "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium text-muted-foreground"
                 }
-                activeProps={t.accent ? {} : { className: "text-primary" }}
+                activeProps={t.accent ? {} : { className: "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium text-primary" }}
               >
                 {t.hugeIcon ? (
                   <HugeiconsIcon icon={t.hugeIcon} size={20} strokeWidth={1.5} />
@@ -170,7 +170,7 @@ function Footer() {
             <Link to="/explore">Explore</Link>
             <Link to="/leaderboard">Leaderboard</Link>
             <Link to="/assistant">Assistant</Link>
-            <a href="/auth">Admin</a>
+            <Link to="/auth">Admin</Link>
           </div>
         </div>
 

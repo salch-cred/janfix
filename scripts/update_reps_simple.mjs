@@ -1,7 +1,35 @@
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const supabaseUrl = 'https://yhectwrnjmaxybfseadt.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloZWN0d3Juam1heHliZnNlYWR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjgwMzI3MiwiZXhwIjoyMDk4Mzc5MjcyfQ.Zt1SokyXYdj20R5K3vL-Pmtzk9MB_5oLwRXD9vhhRvw';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load environment variables from .env
+try {
+  const envPath = resolve(__dirname, '..', '.env');
+  const envContent = readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const parts = line.split('=');
+    if (parts.length >= 2) {
+      const key = parts[0].trim();
+      const val = parts.slice(1).join('=').trim().replace(/^['"]|['"]$/g, '');
+      if (key && !key.startsWith('#')) {
+        process.env[key] = val;
+      }
+    }
+  });
+} catch (e) {
+  // Ignore missing .env
+}
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in your .env file.');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } });
 

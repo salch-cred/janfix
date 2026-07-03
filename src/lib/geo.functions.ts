@@ -107,7 +107,7 @@ export const forwardGeocodeFn = createServerFn({ method: "POST" })
           LOCATIONIQ_SEARCH_BASE +
           "?key=" + apiKey +
           "&q=" + encodeURIComponent(query) +
-          "&format=json&limit=5&addressdetails=1";
+          "&format=json&limit=5&addressdetails=1&countrycodes=in&viewbox=74.75,13.20,75.70,12.45&bounded=1";
         const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(8000) });
         if (res.ok) {
           const results: any[] = await res.json();
@@ -125,7 +125,7 @@ export const forwardGeocodeFn = createServerFn({ method: "POST" })
 
     try {
       const url =
-        NOMINATIM_SEARCH_BASE + "?format=jsonv2&q=" + encodeURIComponent(query) + "&limit=5&addressdetails=1";
+        NOMINATIM_SEARCH_BASE + "?format=jsonv2&q=" + encodeURIComponent(query) + "&limit=5&addressdetails=1&countrycodes=in&viewbox=74.75,13.20,75.70,12.45&bounded=1";
       const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(8000) });
       if (!res.ok) throw new Error("search failed");
       const results: any[] = await res.json();

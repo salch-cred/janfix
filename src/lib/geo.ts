@@ -10,7 +10,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<ReverseG
   try {
     return await reverseGeocodeFn({ data: { lat, lng } });
   } catch {
-    return { address: lat.toFixed(5) + ", " + lng.toFixed(5), area: null, locality: "Mangaluru", pincode: null };
+    return { address: lat.toFixed(5) + ", " + lng.toFixed(5), area: null, locality: null, pincode: null };
   }
 }
 
@@ -70,9 +70,9 @@ export const MANGALURU_CENTER = { lat: 12.9141, lng: 74.856 };
  */
 export function isLocationInDakshinaKannada(lat: number, lng: number, address?: string | null): boolean {
   // 1. Coordinate check for Dakshina Kannada District bounding box:
-  // Latitude: ~12.45 to 13.20
-  // Longitude: ~74.75 to 75.70
-  const isWithinBox = lat >= 12.45 && lat <= 13.20 && lng >= 74.75 && lng <= 75.70;
+  // Latitude: ~12.45 to 13.15
+  // Longitude: ~74.75 to 75.55
+  const isWithinBox = lat >= 12.45 && lat <= 13.15 && lng >= 74.75 && lng <= 75.55;
   if (!isWithinBox) return false;
 
   // 2. Text-based verification if address is available (to block cases like Kasaragod, Bangalore, Udupi)
@@ -94,7 +94,9 @@ export function isLocationInDakshinaKannada(lat: number, lng: number, address?: 
       "hassan"
     ];
     for (const item of blacklist) {
-      if (addrLower.includes(item)) {
+      // Use word boundary check to avoid false matching substrings (e.g. "Mysurunagar" -> "mysuru")
+      const regex = new RegExp("\\b" + item + "\\b", "i");
+      if (regex.test(addrLower)) {
         return false;
       }
     }

@@ -3,8 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!supabaseUrl) throw new Error("Missing SUPABASE_URL environment variable");
+if (!supabaseKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+
 function sb() {
-  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  return createClient<Database>(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -19,6 +24,8 @@ export const listIssuesFn = createServerFn({ method: "POST" })
       sort?: "recent" | "heat";
       category_slug?: string;
       ward_id?: number;
+      authority_id?: number;
+      representative_id?: number;
       status?: string;
       severity?: string;
       q?: string;
@@ -29,6 +36,8 @@ export const listIssuesFn = createServerFn({ method: "POST" })
           sort: z.enum(["recent", "heat"]).optional(),
           category_slug: z.string().optional(),
           ward_id: z.number().int().optional(),
+          authority_id: z.number().int().optional(),
+          representative_id: z.number().int().optional(),
           status: z.string().optional(),
           severity: z.string().optional(),
           q: z.string().optional(),
@@ -60,6 +69,8 @@ export const listIssuesFn = createServerFn({ method: "POST" })
     if (data.status) q = q.eq("status", data.status as any);
     if (data.severity) q = q.eq("severity", data.severity as any);
     if (data.ward_id) q = q.eq("ward_id", data.ward_id);
+    if (data.authority_id) q = q.eq("assigned_authority_id", data.authority_id);
+    if (data.representative_id) q = q.eq("assigned_representative_id", data.representative_id);
     if (data.category_slug) {
       const { data: cat } = await c
         .from("categories")
@@ -69,7 +80,7 @@ export const listIssuesFn = createServerFn({ method: "POST" })
       if (cat) q = q.eq("category_id", cat.id);
     }
     if (data.q) {
-      const term = data.q.trim();
+      const term = data.q.trim().replace(/[(),.]/g, '\\$&');
       if (term.startsWith("MGR-")) q = q.eq("public_id", term);
       else
         q = q.or(
@@ -104,6 +115,7 @@ export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
       `,
       )
       .eq("public_id", data.public_id)
+      .eq("visibility", "visible")
       .maybeSingle();
     if (error) throw error;
     if (!row) return null;
@@ -206,11 +218,11 @@ export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async
     const avgDays = times.length
       ? times.reduce((x, y) => x + y, 0) / times.length / 86400000
       : null;
-    const total = mine.length || 1;
-    const score = Math.round((resolved.length / total) * 100);
+    const total = mine.length;
+    const score = total > 0 ? Math.round((resolved.length / total) * 100) : 0;
     return {
       ...a,
-      total: mine.length,
+      total,
       resolved: resolved.length,
       pending,
       avg_days: avgDays,

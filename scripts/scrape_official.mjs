@@ -203,8 +203,9 @@ async function main() {
   // Brijesh Chowta (MP)
   const brijeshUrl = await findBrijeshChowtaPhoto();
   if (brijeshUrl) {
-    await supabase.from('representatives').update({ photo_url: brijeshUrl }).eq('id', 1);
-    console.log('Updated Brijesh Chowta');
+    const { error } = await supabase.from('representatives').update({ photo_url: brijeshUrl }).ilike('name', '%Brijesh Chowta%');
+    if (error) console.error('Failed to update Brijesh Chowta:', error.message);
+    else console.log('Updated Brijesh Chowta');
   } else {
     console.log('No photo found for Brijesh Chowta');
   }
@@ -212,19 +213,25 @@ async function main() {
 
   // MLAs
   const mlas = [
-    { id: 2, name: 'D. Vedavyas Kamath', constituency: 'Karkala' },
-    { id: 3, name: 'Dr. Bharath Shetty', constituency: 'Mangaluru City South' },
-    { id: 4, name: 'Umanath A. Kotian', constituency: 'Mangaluru' },
-    { id: 5, name: 'Ashok Kumar Rai', constituency: 'Mangaluru City North' },
-    { id: 7, name: 'Harish Poonja', constituency: 'Bantwal' },
-    { id: 82, name: 'Bhagirathi Murulya', constituency: 'Sullia' },
+    { name: 'Vedavyas Kamath', constituency: 'Mangaluru City South' },
+    { name: 'Bharath Shetty', constituency: 'Mangaluru City North' },
+    { name: 'Umanatha A. Kotian', constituency: 'Moodabidri' },
+    { name: 'Ashok Kumar Rai', constituency: 'Puttur' },
+    { name: 'Harish Poonja', constituency: 'Belthangady' },
+    { name: 'Bhagirathi Murulya', constituency: 'Sullia (SC)' },
+    { name: 'U.T. Khader', constituency: 'Mangaluru' },
+    { name: 'Rajesh Naik U.', constituency: 'Bantwal' },
   ];
 
   for (const mla of mlas) {
     const url = await findMLAphoto(mla.name, mla.constituency);
     if (url) {
-      await supabase.from('representatives').update({ photo_url: url }).eq('id', mla.id);
-      console.log(`Updated ${mla.name}`);
+      const { error } = await supabase
+        .from('representatives')
+        .update({ photo_url: url })
+        .ilike('name', `%${mla.name}%`);
+      if (error) console.error(`Failed to update ${mla.name}:`, error.message);
+      else console.log(`Updated ${mla.name}`);
     } else {
       console.log(`No photo found for ${mla.name}`);
     }
@@ -233,9 +240,11 @@ async function main() {
 
   console.log('\n=== SUMMARY ===');
   const { data: allReps } = await supabase.from('representatives').select('id, name, photo_url').order('id');
-  for (const r of allReps) {
-    const isPlaceholder = r.photo_url?.includes('ui-avatars');
-    console.log(`${r.id}: ${r.name} → ${isPlaceholder ? '❌ PLACEHOLDER' : '✅ ' + r.photo_url?.substring(0, 60)}`);
+  if (allReps) {
+    for (const r of allReps) {
+      const isPlaceholder = r.photo_url?.includes('ui-avatars') || !r.photo_url;
+      console.log(`${r.id}: ${r.name} → ${isPlaceholder ? '❌ PLACEHOLDER' : '✅ ' + r.photo_url?.substring(0, 60)}`);
+    }
   }
 }
 

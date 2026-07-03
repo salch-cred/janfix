@@ -21,8 +21,8 @@ function RepresentativeDetail() {
 
   const reps = useQuery({ queryKey: ["representatives"], queryFn: () => listRepresentativesFn() });
   const issues = useQuery({
-    queryKey: ["issues", "recent"],
-    queryFn: () => listIssuesFn({ data: { limit: 50 } }),
+    queryKey: ["issues", "representative", repId],
+    queryFn: () => listIssuesFn({ data: { representative_id: Number(repId), limit: 50 } }),
   });
 
   const rep = (reps.data ?? []).find((r: any) => String(r.id) === repId);

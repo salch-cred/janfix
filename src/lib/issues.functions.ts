@@ -4,8 +4,13 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveIssue } from "@/lib/resolver";
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!supabaseUrl) throw new Error("Missing SUPABASE_URL environment variable");
+if (!supabaseKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+
 function serverClient() {
-  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  return createClient<Database>(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -71,24 +76,29 @@ export const createIssueFn = createServerFn({ method: "POST" })
     const reason = `Category=${cat.name_en}` + (resolution.reason ? `, ${resolution.reason}` : "");
 
     // upsert device + increment count
-    await sb
+    const { error: devUpsertErr } = await sb
       .from("devices")
       .upsert(
         { device_id: data.device_id, last_seen: new Date().toISOString() },
         { onConflict: "device_id" },
       );
-    const { data: dev } = await sb
+    if (devUpsertErr) throw devUpsertErr;
+
+    const { data: dev, error: devSelErr } = await sb
       .from("devices")
       .select("report_count")
       .eq("device_id", data.device_id)
       .single();
-    await sb
+    if (devSelErr) throw devSelErr;
+
+    const { error: devUpdErr } = await sb
       .from("devices")
       .update({
         report_count: (dev?.report_count ?? 0) + 1,
         last_seen: new Date().toISOString(),
       })
       .eq("device_id", data.device_id);
+    if (devUpdErr) throw devUpdErr;
 
     const image_url = await signUrl(sb, "issue-photos", data.image_path);
 
@@ -121,7 +131,7 @@ export const createIssueFn = createServerFn({ method: "POST" })
       .single();
     if (insErr || !ins) throw new Error(insErr?.message ?? "Failed to create");
 
-    await sb.from("issue_status_history").insert({
+    const { error: histErr } = await sb.from("issue_status_history").insert({
       issue_id: ins.id,
       status: "reported",
       note: "Issue reported by citizen",
@@ -130,6 +140,7 @@ export const createIssueFn = createServerFn({ method: "POST" })
       by_admin: false,
       by_device_id: data.device_id,
     });
+    if (histErr) throw histErr;
 
     // Optional extra photos beyond the required primary one.
     const extraPaths = (data.extra_image_paths ?? []).slice(0, 4);
@@ -142,7 +153,8 @@ export const createIssueFn = createServerFn({ method: "POST" })
           position: idx + 1,
         })),
       );
-      await sb.from("issue_photos").insert(extraRows);
+      const { error: extraErr } = await sb.from("issue_photos").insert(extraRows);
+      if (extraErr) throw extraErr;
     }
 
     return { public_id: ins.public_id, slug: ins.slug ?? "" };
@@ -197,18 +209,18 @@ export const supportIssueFn = createServerFn({ method: "POST" })
     const { error } = await sb
       .from("issue_supporters")
       .insert({ issue_id: data.issue_id, device_id: data.device_id });
-    // ignore unique violation
     if (error && !error.message.includes("duplicate")) throw error;
-    // recount
-    const { count } = await sb
-      .from("issue_supporters")
-      .select("*", { count: "exact", head: true })
-      .eq("issue_id", data.issue_id);
-    await sb
+    
+    // Count is automatically updated on the issues table by DB triggers.
+    // Query it from the issues table to return the correct count.
+    const { data: issueRow, error: getErr } = await sb
       .from("issues")
-      .update({ supporters_count: count ?? 0 })
-      .eq("id", data.issue_id);
-    return { ok: true, supporters: count ?? 0 };
+      .select("supporters_count")
+      .eq("id", data.issue_id)
+      .single();
+    if (getErr) throw getErr;
+
+    return { ok: true, supporters: issueRow?.supporters_count ?? 0 };
   });
 
 // Vote
@@ -282,15 +294,17 @@ export const thanksIssueFn = createServerFn({ method: "POST" })
       device_id: data.device_id,
     });
     if (error && !error.message.includes("duplicate")) throw error;
-    const { count } = await sb
-      .from("issue_thanks")
-      .select("*", { count: "exact", head: true })
-      .eq("issue_id", data.issue_id);
-    await sb
+
+    // Count is automatically updated on the issues table by DB triggers.
+    // Query it from the issues table to return the correct count.
+    const { data: issueRow, error: getErr } = await sb
       .from("issues")
-      .update({ thanked_count: count ?? 0 })
-      .eq("id", data.issue_id);
-    return { ok: true, thanks: count ?? 0 };
+      .select("thanked_count")
+      .eq("id", data.issue_id)
+      .single();
+    if (getErr) throw getErr;
+
+    return { ok: true, thanks: issueRow?.thanked_count ?? 0 };
   });
 
 export const commentIssueFn = createServerFn({ method: "POST" })
@@ -378,11 +392,7 @@ export const incrementViewFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string }) => z.object({ issue_id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const sb = serverClient();
-    const { data: row } = await sb.from("issues").select("views").eq("id", data.issue_id).single();
-    if (row)
-      await sb
-        .from("issues")
-        .update({ views: (row.views ?? 0) + 1 })
-        .eq("id", data.issue_id);
+    const { error } = await sb.rpc("increment_issue_views", { issue_id: data.issue_id });
+    if (error) throw error;
     return { ok: true };
   });

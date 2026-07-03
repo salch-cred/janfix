@@ -35,7 +35,7 @@ function AuthorityDetail() {
   const auths = useQuery({ queryKey: ["authorities"], queryFn: () => listAuthoritiesFn() });
   const issues = useQuery({
     queryKey: ["issues", "authority", authorityId],
-    queryFn: () => listIssuesFn({ data: { limit: 50 } }),
+    queryFn: () => listIssuesFn({ data: { authority_id: Number(authorityId), limit: 50 } }),
   });
 
   const authority = (auths.data ?? []).find((a: any) => String(a.id) === authorityId);
@@ -192,13 +192,6 @@ function AuthorityDetail() {
                   <XAxis dataKey="month" tick={chartTickStyle} />
                   <YAxis tick={chartTickStyle} allowDecimals={false} />
                   <Tooltip />
-                  <Bar
-                    dataKey="reported"
-                    name="Reported"
-                    stackId="a"
-                    fill="#ef4444"
-                    radius={[0, 0, 0, 0]}
-                  />
                   <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" />
                   <Bar
                     dataKey="resolved"

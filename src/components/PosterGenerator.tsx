@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useMemo, type CSSProperties } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
@@ -18,6 +18,8 @@ import {
   Phone,
 } from "lucide-react";
 import { STATUS_META, categoryBySlug } from "@/lib/civic";
+
+import { getBase64ImageFn } from "@/lib/proxy.functions";
 
 type IssueLike = {
   public_id: string;
@@ -85,34 +87,22 @@ function useImageDataUrls(urls: (string | null | undefined)[]): Map<string, stri
             continue;
           }
 
-          // Use cache-busting to bypass cached headers and ensure proper CORS behavior
-          const fetchUrl = url.includes("?") 
-            ? `${url}&cors=true` 
-            : `${url}?cors=true`;
-
-          const res = await fetch(fetchUrl, { mode: "cors" });
-          if (!res.ok) continue;
-          const blob = await res.blob();
-          
-          // Read blob as base64 data URL to prevent SVG foreignObject loading issues in browser download engines
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-
-          if (!cancelled) {
-            cache.current.set(url, dataUrl);
+          // Fetch the image base64 via our server-side proxy function to bypass CORS
+          const res = await getBase64ImageFn({ data: { url } });
+          if (res.base64 && !cancelled) {
+            cache.current.set(url, res.base64);
             setTick((t) => t + 1);
           }
         } catch (e) {
-          console.error("Failed to load image as data URL:", url, e);
+          console.error("Failed to proxy image:", url, e);
         }
       }
     })();
-    return () => { cancelled = true; };
-  }, [urls.join(",")]);
+    return () => {
+      cancelled = true;
+      cache.current.clear();
+    };
+  }, [JSON.stringify(urls)]);
 
   return cache.current;
 }
@@ -136,7 +126,12 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const dims = SIZES[size];
   const isHorizontal = dims.w > dims.h;
 
-  const imageUrls = [issue.image_url, issue.authority?.logo_url, issue.representative?.photo_url, AUTHORITY_LOGO_FALLBACK_URL];
+  const imageUrls = useMemo(() => [
+    issue.image_url, 
+    issue.authority?.logo_url, 
+    issue.representative?.photo_url, 
+    AUTHORITY_LOGO_FALLBACK_URL
+  ], [issue.image_url, issue.authority?.logo_url, issue.representative?.photo_url]);
   const dataUrls = useImageDataUrls(imageUrls);
 
   const imgSrc = issue.image_url ? (dataUrls.get(issue.image_url) ?? ISSUE_PLACEHOLDER) : ISSUE_PLACEHOLDER;
@@ -467,7 +462,11 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
       </div>
 
       {/* Offscreen element rendered at exact natural size for pixel-perfect downloading */}
-      <div style={{ position: "absolute", top: -99999, left: -99999, width: dims.w, height: dims.h, overflow: "hidden", pointerEvents: "none" }}>
+      <div 
+        aria-hidden="true"
+        tabIndex={-1}
+        style={{ position: "absolute", top: -99999, left: -99999, width: dims.w, height: dims.h, overflow: "hidden", pointerEvents: "none" }}
+      >
         <div ref={downloadRef} style={posterOuterStyle}>
           {renderPosterContent()}
         </div>
@@ -503,7 +502,7 @@ function ShareButtons({ url, text }: { url: string; text: string }) {
           key={l.label}
           href={l.href}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-xs font-semibold text-foreground transition hover:bg-accent"
         >
           <Share2 className="h-3.5 w-3.5" /> {l.label}

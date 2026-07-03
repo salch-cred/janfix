@@ -31,7 +31,7 @@ function promptPosterShare() {
   setTimeout(() => {
     toast.message("Download your poster & share it \ud83d\udce3", {
       description:
-        "Get more support for your report \u2014 download a shareable poster and post it on WhatsApp, Instagram, or Twitter.",
+        "Get more support for your report — download a shareable poster and post it on WhatsApp, Instagram, or Twitter.",
       duration: 8000,
       action: {
         label: "View poster",
@@ -89,6 +89,22 @@ function ReportPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const previewRef = useRef(preview);
+  const extraPreviewsRef = useRef(extraPreviews);
+  useEffect(() => {
+    previewRef.current = preview;
+    extraPreviewsRef.current = extraPreviews;
+  }, [preview, extraPreviews]);
+
+  useEffect(() => {
+    return () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      extraPreviewsRef.current.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
   const onPickFile = async (f: File) => {
     setWorking(true);
     try {
@@ -100,7 +116,10 @@ function ReportPage() {
         initialQuality: 0.85,
       });
       setFile(compressed);
-      setPreview(URL.createObjectURL(compressed));
+      setPreview((prevUrl) => {
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        return URL.createObjectURL(compressed);
+      });
       const ph = await computeImagePHash(compressed);
       setPhash(ph);
       // try GPS in parallel
@@ -137,6 +156,9 @@ function ReportPage() {
   };
 
   const removeExtraFile = (idx: number) => {
+    if (extraPreviews[idx]) {
+      URL.revokeObjectURL(extraPreviews[idx]);
+    }
     setExtraFiles((prev) => prev.filter((_, i) => i !== idx));
     setExtraPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
@@ -153,6 +175,8 @@ function ReportPage() {
       const res = await forwardGeocode(manualAddr + ", Mangaluru");
       setSearchResults(res);
       if (res.length === 0) toast.error("No results found");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to search location");
     } finally {
       setSearching(false);
     }
@@ -219,7 +243,7 @@ function ReportPage() {
           const dx = (c.lat - loc.lat) * 111000;
           const dy = (c.lng - loc.lng) * 111000 * Math.cos((loc.lat * Math.PI) / 180);
           const meters = Math.sqrt(dx * dx + dy * dy);
-          const geoSim = meters < 30 ? 1 : meters < 60 ? 0.6 : 0.2;
+          const geoSim = meters < 50 ? 1 : meters < 100 ? 0.7 : meters < 200 ? 0.4 : 0.1;
           const score = 0.45 * geoSim + 0.35 * phashSim + 0.2 * descSim;
           return { ...c, _score: score, _meters: meters };
         })
@@ -232,6 +256,8 @@ function ReportPage() {
       } else {
         setStep("review");
       }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Error checking for duplicate reports");
     } finally {
       setWorking(false);
     }
@@ -306,6 +332,8 @@ function ReportPage() {
           to: "/issue/$publicId/$slug",
           params: { publicId: found.public_id, slug: found.slug ?? "issue" },
         });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to add support to the existing report");
     } finally {
       setWorking(false);
     }
@@ -358,6 +386,7 @@ function ReportPage() {
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) onPickFile(f);
+                e.target.value = "";
               }}
             />
           </div>

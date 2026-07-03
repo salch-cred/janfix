@@ -49,6 +49,22 @@ export function QuickReportCard({
   const fileRef = useRef<HTMLInputElement>(null);
   const extraRef = useRef<HTMLInputElement>(null);
 
+  const previewRef = useRef(preview);
+  const extraPreviewsRef = useRef(extraPreviews);
+  useEffect(() => {
+    previewRef.current = preview;
+    extraPreviewsRef.current = extraPreviews;
+  }, [preview, extraPreviews]);
+
+  useEffect(() => {
+    return () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      extraPreviewsRef.current.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
   const onPickFile = async (f: File) => {
     setWorking(true);
     try {
@@ -60,7 +76,10 @@ export function QuickReportCard({
         initialQuality: 0.85,
       });
       setFile(compressed);
-      setPreview(URL.createObjectURL(compressed));
+      setPreview((prevUrl) => {
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        return URL.createObjectURL(compressed);
+      });
       const ph = await computeImagePHash(compressed);
       setPhash(ph);
       getGPS();
@@ -95,6 +114,9 @@ export function QuickReportCard({
   };
 
   const removeExtraFile = (idx: number) => {
+    if (extraPreviews[idx]) {
+      URL.revokeObjectURL(extraPreviews[idx]);
+    }
     setExtraFiles((prev) => prev.filter((_, i) => i !== idx));
     setExtraPreviews((prev) => prev.filter((_, i) => i !== idx));
   };

@@ -40,8 +40,8 @@ export const adminUpdateIssueFn = createServerFn({ method: "POST" })
 				.object({
 					access_token: z.string(),
 					issue_id: z.string().uuid(),
-					status: z.string().nullable().optional(),
-					visibility: z.string().nullable().optional(),
+					status: z.enum(["reported", "community_verified", "assigned", "work_started", "resolved", "community_confirmed", "closed"]).nullable().optional(),
+					visibility: z.enum(["visible", "hidden", "duplicate", "spam"]).nullable().optional(),
 					note: z.string().nullable().optional(),
 					photo_url: z.string().url().nullable().optional(),
 					photo_kind: z.enum(["report", "repair", "citizen_after"]).nullable().optional(),
@@ -55,8 +55,8 @@ export const adminUpdateIssueFn = createServerFn({ method: "POST" })
 		await requireAdmin(data.access_token);
 		const c = service();
 		const patch: TablesUpdate<"issues"> = {};
-		if (data.status) patch.status = data.status as Tables<"issues">["status"];
-		if (data.visibility) patch.visibility = data.visibility as Tables<"issues">["visibility"];
+		if (data.status !== undefined) patch.status = data.status as Tables<"issues">["status"];
+		if (data.visibility !== undefined) patch.visibility = data.visibility as Tables<"issues">["visibility"];
 		if (data.duplicate_of_id !== undefined) patch.duplicate_of_id = data.duplicate_of_id;
 		if (data.assigned_authority_id !== undefined)
 			patch.assigned_authority_id = data.assigned_authority_id;
@@ -67,7 +67,7 @@ export const adminUpdateIssueFn = createServerFn({ method: "POST" })
 			if (error) throw error;
 		}
 		if (data.status || data.note || data.photo_url) {
-			await c.from("issue_status_history").insert({
+			const { error: histErr } = await c.from("issue_status_history").insert({
 				issue_id: data.issue_id,
 				status: (data.status ?? null) as Tables<"issues">["status"] | null,
 				note: data.note ?? null,
@@ -75,6 +75,7 @@ export const adminUpdateIssueFn = createServerFn({ method: "POST" })
 				photo_kind: data.photo_kind ?? null,
 				by_admin: true,
 			});
+			if (histErr) throw histErr;
 		}
 		return { ok: true };
 	});
@@ -136,7 +137,8 @@ export const adminHideCommentFn = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
 		const c = service();
-		await c.from("issue_comments").update({ hidden: data.hidden }).eq("id", data.comment_id);
+		const { error } = await c.from("issue_comments").update({ hidden: data.hidden }).eq("id", data.comment_id);
+		if (error) throw error;
 		return { ok: true };
 	});
 
@@ -176,9 +178,11 @@ export const adminUpsertAuthorityFn = createServerFn({ method: "POST" })
 		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			await c.from("authorities").update(rest).eq("id", id);
+			const { error } = await c.from("authorities").update(rest).eq("id", id);
+			if (error) throw error;
 		} else {
-			await c.from("authorities").insert(rest);
+			const { error } = await c.from("authorities").insert(rest);
+			if (error) throw error;
 		}
 		return { ok: true };
 	});
@@ -240,12 +244,14 @@ export const adminUpsertRuleFn = createServerFn({ method: "POST" })
 				.select("version")
 				.eq("id", id)
 				.single();
-			await c
+			const { error } = await c
 				.from("assignment_rules")
 				.update({ ...rest, version: (cur?.version ?? 1) + 1 })
 				.eq("id", id);
+			if (error) throw error;
 		} else {
-			await c.from("assignment_rules").insert({ ...rest, version: 1 });
+			const { error } = await c.from("assignment_rules").insert({ ...rest, version: 1 });
+			if (error) throw error;
 		}
 		return { ok: true };
 	});
@@ -335,9 +341,11 @@ export const adminUpsertJurisdictionRuleFn = createServerFn({ method: "POST" })
 		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			await c.from("jurisdiction_rules").update(rest).eq("id", id);
+			const { error } = await c.from("jurisdiction_rules").update(rest).eq("id", id);
+			if (error) throw error;
 		} else {
-			await c.from("jurisdiction_rules").insert(rest);
+			const { error } = await c.from("jurisdiction_rules").insert(rest);
+			if (error) throw error;
 		}
 		return { ok: true };
 	});
@@ -410,9 +418,11 @@ export const adminUpsertRepresentativeFn = createServerFn({ method: "POST" })
 		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			await c.from("representatives").update(rest).eq("id", id);
+			const { error } = await c.from("representatives").update(rest).eq("id", id);
+			if (error) throw error;
 		} else {
-			await c.from("representatives").insert(rest);
+			const { error } = await c.from("representatives").insert(rest);
+			if (error) throw error;
 		}
 		return { ok: true };
 	});
@@ -452,9 +462,11 @@ export const adminUpsertWardFn = createServerFn({ method: "POST" })
 		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			await c.from("wards").update(rest).eq("id", id);
+			const { error } = await c.from("wards").update(rest).eq("id", id);
+			if (error) throw error;
 		} else {
-			await c.from("wards").insert(rest);
+			const { error } = await c.from("wards").insert(rest);
+			if (error) throw error;
 		}
 		return { ok: true };
 	});
@@ -506,9 +518,11 @@ export const adminUpsertCategoryFn = createServerFn({ method: "POST" })
 		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			await c.from("categories").update(rest).eq("id", id);
+			const { error } = await c.from("categories").update(rest).eq("id", id);
+			if (error) throw error;
 		} else {
-			await c.from("categories").insert(rest);
+			const { error } = await c.from("categories").insert(rest);
+			if (error) throw error;
 		}
 		return { ok: true };
 	});

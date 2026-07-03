@@ -42,7 +42,7 @@ const STEPS = [
     icon: Camera01Icon,
     title: "Snap & report",
     description:
-      "Take a photo of the pothole, garbage pile, or broken streetlight. Pin the location \u2014 no account required.",
+      "Take a photo of the pothole, garbage pile, or broken streetlight. Pin the location — no account required.",
   },
   {
     icon: Notification03Icon,
@@ -99,7 +99,7 @@ function Home() {
                 Get it fixed.
               </h1>
               <p className="mt-5 max-w-md text-base text-primary-foreground/80 md:text-lg">
-                Pothole, garbage, broken streetlight \u2014 snap a photo and the right civic
+                Pothole, garbage, broken streetlight — snap a photo and the right civic
                 authority gets notified. No login needed.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -159,7 +159,7 @@ function Home() {
                       <HugeiconsIcon icon={Notification03Icon} size={12} strokeWidth={1.5} />
                     </div>
                     <div className="rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-xs">
-                      Got it \u2014 routed to PWD Mangaluru for you.
+                      Got it — routed to PWD Mangaluru for you.
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -231,7 +231,7 @@ function Home() {
           eyebrow="Live right now"
           icon={<HugeiconsIcon icon={FireIcon} size={20} className="text-warning" strokeWidth={1.5} />}
           title="Hottest in Mangaluru"
-          subtitle="Ranked by heat score \u2014 votes, age, severity & duplicates."
+          subtitle="Ranked by heat score — votes, age, severity & duplicates."
           link={heatSectionLink}
         />
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -266,14 +266,15 @@ function Home() {
           eyebrow="Public accountability"
           icon={<HugeiconsIcon icon={Shield01Icon} size={20} className="text-success" strokeWidth={1.5} />}
           title="Authority leaderboard"
-          subtitle="Who is fixing \u2014 and who isn't."
+          subtitle="Who is fixing — and who isn't."
           link={authoritiesSectionLink}
         />
         <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {(auths.data ?? []).slice(0, 6).map((a: any) => (
             <Link
               key={a.id}
-              to="/authorities"
+              to="/authorities/$authorityId"
+              params={{ authorityId: String(a.id) }}
               className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition hover:bg-accent"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary">
@@ -309,7 +310,7 @@ function Home() {
             Seen something broken?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-background/70 md:text-base">
-            Less than a minute to report \u2014 no account needed, just a photo and a pin on the map.
+            Less than a minute to report — no account needed, just a photo and a pin on the map.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <Link to="/report">

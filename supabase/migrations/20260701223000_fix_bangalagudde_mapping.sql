@@ -15,8 +15,8 @@ WHERE keyword IN ('valachil', 'bangalagudde');
 -- they route to the correct authority/representative going forward. This only
 -- touches issues whose routing reason recorded the old area match.
 UPDATE public.issues
-SET assigned_ward_id = NULL
-WHERE assigned_ward_id = (SELECT id FROM public.wards WHERE name = 'Deralakatte')
+SET ward_id = NULL
+WHERE ward_id = (SELECT id FROM public.wards WHERE name = 'Deralakatte')
   AND (lower(coalesce(area, '')) LIKE '%bangalagudde%' OR lower(coalesce(area, '')) LIKE '%valachil%'
        OR lower(coalesce(locality, '')) LIKE '%bangalagudde%' OR lower(coalesce(locality, '')) LIKE '%valachil%'
        OR lower(coalesce(address, '')) LIKE '%bangalagudde%' OR lower(coalesce(address, '')) LIKE '%valachil%');

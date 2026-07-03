@@ -72,10 +72,15 @@ function LeaderboardPage() {
 
   const repLeaderboard = useMemo(() => {
     return (reps.data ?? [])
-      .map((r: any) => ({
-        ...r,
-        score: Math.floor(Math.random() * 40 + 60),
-      }))
+      .map((r: any) => {
+        const idNum = typeof r.id === "number" ? r.id : parseInt(String(r.id).replace(/\D/g, "") || "0");
+        const seed = (idNum * 17) % 31;
+        const score = 65 + seed;
+        return {
+          ...r,
+          score,
+        };
+      })
       .sort((a: any, b: any) => b.score - a.score);
   }, [reps.data]);
 
