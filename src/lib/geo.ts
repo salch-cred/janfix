@@ -63,3 +63,43 @@ export async function forwardGeocode(
 }
 
 export const MANGALURU_CENTER = { lat: 12.9141, lng: 74.856 };
+
+/**
+ * Validates that a coordinates and/or address belongs to the Dakshina Kannada district.
+ * Checks bounding box first, then verifies using address text blacklist to filter other regions.
+ */
+export function isLocationInDakshinaKannada(lat: number, lng: number, address?: string | null): boolean {
+  // 1. Coordinate check for Dakshina Kannada District bounding box:
+  // Latitude: ~12.45 to 13.20
+  // Longitude: ~74.75 to 75.70
+  const isWithinBox = lat >= 12.45 && lat <= 13.20 && lng >= 74.75 && lng <= 75.70;
+  if (!isWithinBox) return false;
+
+  // 2. Text-based verification if address is available (to block cases like Kasaragod, Bangalore, Udupi)
+  if (address) {
+    const addrLower = address.toLowerCase();
+    const blacklist = [
+      "kerala", 
+      "kasaragod", 
+      "kasargod", 
+      "udupi", 
+      "bengaluru", 
+      "bangalore", 
+      "kodagu", 
+      "coorg", 
+      "chikkamagaluru", 
+      "uttara kannada",
+      "mysore",
+      "mysuru",
+      "hassan"
+    ];
+    for (const item of blacklist) {
+      if (addrLower.includes(item)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+

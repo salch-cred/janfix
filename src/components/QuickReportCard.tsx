@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { CATEGORIES, SEVERITY_META, slugify } from "@/lib/civic";
-import { reverseGeocode, getPositionWithFallback } from "@/lib/geo";
+import { reverseGeocode, getPositionWithFallback, isLocationInDakshinaKannada } from "@/lib/geo";
 import { computeImagePHash } from "@/lib/phash";
 import { getDeviceId } from "@/lib/device";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,8 +104,12 @@ export function QuickReportCard({
     setGpsLoading(true);
     try {
       const pos = await getPositionWithFallback();
-      setLoc({ lat: pos.lat, lng: pos.lng });
       const a = await reverseGeocode(pos.lat, pos.lng);
+      if (!isLocationInDakshinaKannada(pos.lat, pos.lng, a.address)) {
+        toast.error("Detected location is outside Dakshina Kannada district. Please report within Mangaluru / neighboring local areas.");
+        return;
+      }
+      setLoc({ lat: pos.lat, lng: pos.lng });
       setAddr(a);
     } catch (e: any) {
       toast.error(e.message ?? "Could not get location");

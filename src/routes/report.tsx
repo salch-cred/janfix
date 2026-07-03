@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { IssueMap } from "@/components/IssueMap";
 import { CATEGORIES, SEVERITY_META, slugify, trustBadge } from "@/lib/civic";
-import { reverseGeocode, getPositionWithFallback, forwardGeocode } from "@/lib/geo";
+import { reverseGeocode, getPositionWithFallback, forwardGeocode, isLocationInDakshinaKannada } from "@/lib/geo";
 import { computeImagePHash, hammingHex } from "@/lib/phash";
 import { getDeviceId, getDeviceName, setDeviceName } from "@/lib/device";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,6 +159,10 @@ function ReportPage() {
   };
 
   const pickSearchResult = async (r: { lat: number; lng: number; address: string }) => {
+    if (!isLocationInDakshinaKannada(r.lat, r.lng, r.address)) {
+      toast.error("Location must be within Dakshina Kannada district. Bangalore and other districts are not supported.");
+      return;
+    }
     setLoc({ lat: r.lat, lng: r.lng });
     setSearchResults([]);
     setManualAddr(r.address);
@@ -173,8 +177,12 @@ function ReportPage() {
     setGpsLoading(true);
     try {
       const pos = await getPositionWithFallback();
-      setLoc({ lat: pos.lat, lng: pos.lng });
       const a = await reverseGeocode(pos.lat, pos.lng);
+      if (!isLocationInDakshinaKannada(pos.lat, pos.lng, a.address)) {
+        toast.error("Your current location is outside Dakshina Kannada district. Please search or pin location manually within Dakshina Kannada.");
+        return;
+      }
+      setLoc({ lat: pos.lat, lng: pos.lng });
       setAddr(a);
       toast.success("Location acquired");
     } catch (e: any) {
@@ -380,9 +388,14 @@ function ReportPage() {
                     center={loc}
                     zoom={16}
                     marker={loc}
-                    onClick={(lat, lng) => {
+                    onClick={async (lat, lng) => {
+                      const a = await reverseGeocode(lat, lng);
+                      if (!isLocationInDakshinaKannada(lat, lng, a.address)) {
+                        toast.error("Pinned location is outside Dakshina Kannada district. Please pin within Mangaluru / surrounding local areas.");
+                        return;
+                      }
                       setLoc({ lat, lng });
-                      reverseGeocode(lat, lng).then(setAddr);
+                      setAddr(a);
                     }}
                   />
                 )}
