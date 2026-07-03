@@ -4,7 +4,11 @@ export function getDeviceId(): string {
   if (typeof window === "undefined") return "";
   let id = window.localStorage.getItem(KEY);
   if (!id) {
-    id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+    // Safely verify window.crypto exists to avoid ReferenceError on older/non-secure browsers
+    const hasCrypto = typeof window !== "undefined" && typeof window.crypto !== "undefined";
+    id = (hasCrypto && window.crypto.randomUUID)
+      ? window.crypto.randomUUID()
+      : Math.random().toString(36).slice(2) + Date.now().toString(36);
     window.localStorage.setItem(KEY, id);
   }
   return id;

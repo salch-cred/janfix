@@ -49,6 +49,15 @@ export function QuickReportCard({
   const fileRef = useRef<HTMLInputElement>(null);
   const extraRef = useRef<HTMLInputElement>(null);
 
+  const safeRevokeObjectURL = (url: string | null | undefined) => {
+    if (!url) return;
+    try {
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.warn("Failed to revoke object URL:", url, e);
+    }
+  };
+
   const previewRef = useRef(preview);
   const extraPreviewsRef = useRef(extraPreviews);
   useEffect(() => {
@@ -58,9 +67,9 @@ export function QuickReportCard({
 
   useEffect(() => {
     return () => {
-      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      safeRevokeObjectURL(previewRef.current);
       extraPreviewsRef.current.forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
+        safeRevokeObjectURL(url);
       });
     };
   }, []);
@@ -77,7 +86,7 @@ export function QuickReportCard({
       });
       setFile(compressed);
       setPreview((prevUrl) => {
-        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        safeRevokeObjectURL(prevUrl);
         return URL.createObjectURL(compressed);
       });
       const ph = await computeImagePHash(compressed);
@@ -114,9 +123,7 @@ export function QuickReportCard({
   };
 
   const removeExtraFile = (idx: number) => {
-    if (extraPreviews[idx]) {
-      URL.revokeObjectURL(extraPreviews[idx]);
-    }
+    safeRevokeObjectURL(extraPreviews[idx]);
     setExtraFiles((prev) => prev.filter((_, i) => i !== idx));
     setExtraPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
