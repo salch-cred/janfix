@@ -13,12 +13,18 @@ import { Route as ReportRouteImport } from './routes/report'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthoritiesIndexRouteImport } from './routes/authorities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RepresentativesRepIdRouteImport } from './routes/representatives.$repId'
 import { Route as AuthoritiesAuthorityIdRouteImport } from './routes/authorities.$authorityId'
+import { Route as AdminWardsRouteImport } from './routes/admin.wards'
+import { Route as AdminRulesRouteImport } from './routes/admin.rules'
+import { Route as AdminRepresentativesRouteImport } from './routes/admin.representatives'
+import { Route as AdminJurisdictionRouteImport } from './routes/admin.jurisdiction'
 import { Route as AdminIssuesRouteImport } from './routes/admin.issues'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminAuthoritiesRouteImport } from './routes/admin.authorities'
 import { Route as IssuePublicIdSlugRouteImport } from './routes/issue.$publicId.$slug'
 
@@ -40,6 +46,11 @@ const ExploreRoute = ExploreRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -67,9 +78,34 @@ const AuthoritiesAuthorityIdRoute = AuthoritiesAuthorityIdRouteImport.update({
   path: '/authorities/$authorityId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminWardsRoute = AdminWardsRouteImport.update({
+  id: '/admin/wards',
+  path: '/admin/wards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRulesRoute = AdminRulesRouteImport.update({
+  id: '/admin/rules',
+  path: '/admin/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRepresentativesRoute = AdminRepresentativesRouteImport.update({
+  id: '/admin/representatives',
+  path: '/admin/representatives',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminJurisdictionRoute = AdminJurisdictionRouteImport.update({
+  id: '/admin/jurisdiction',
+  path: '/admin/jurisdiction',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIssuesRoute = AdminIssuesRouteImport.update({
   id: '/admin/issues',
   path: '/admin/issues',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/admin/categories',
+  path: '/admin/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAuthoritiesRoute = AdminAuthoritiesRouteImport.update({
@@ -85,12 +121,18 @@ const IssuePublicIdSlugRoute = IssuePublicIdSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
   '/leaderboard': typeof LeaderboardRoute
   '/report': typeof ReportRoute
   '/admin/authorities': typeof AdminAuthoritiesRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/issues': typeof AdminIssuesRoute
+  '/admin/jurisdiction': typeof AdminJurisdictionRoute
+  '/admin/representatives': typeof AdminRepresentativesRoute
+  '/admin/rules': typeof AdminRulesRoute
+  '/admin/wards': typeof AdminWardsRoute
   '/authorities/$authorityId': typeof AuthoritiesAuthorityIdRoute
   '/representatives/$repId': typeof RepresentativesRepIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -99,12 +141,18 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
   '/leaderboard': typeof LeaderboardRoute
   '/report': typeof ReportRoute
   '/admin/authorities': typeof AdminAuthoritiesRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/issues': typeof AdminIssuesRoute
+  '/admin/jurisdiction': typeof AdminJurisdictionRoute
+  '/admin/representatives': typeof AdminRepresentativesRoute
+  '/admin/rules': typeof AdminRulesRoute
+  '/admin/wards': typeof AdminWardsRoute
   '/authorities/$authorityId': typeof AuthoritiesAuthorityIdRoute
   '/representatives/$repId': typeof RepresentativesRepIdRoute
   '/admin': typeof AdminIndexRoute
@@ -114,12 +162,18 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
   '/leaderboard': typeof LeaderboardRoute
   '/report': typeof ReportRoute
   '/admin/authorities': typeof AdminAuthoritiesRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/issues': typeof AdminIssuesRoute
+  '/admin/jurisdiction': typeof AdminJurisdictionRoute
+  '/admin/representatives': typeof AdminRepresentativesRoute
+  '/admin/rules': typeof AdminRulesRoute
+  '/admin/wards': typeof AdminWardsRoute
   '/authorities/$authorityId': typeof AuthoritiesAuthorityIdRoute
   '/representatives/$repId': typeof RepresentativesRepIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -130,12 +184,18 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assistant'
     | '/auth'
     | '/explore'
     | '/leaderboard'
     | '/report'
     | '/admin/authorities'
+    | '/admin/categories'
     | '/admin/issues'
+    | '/admin/jurisdiction'
+    | '/admin/representatives'
+    | '/admin/rules'
+    | '/admin/wards'
     | '/authorities/$authorityId'
     | '/representatives/$repId'
     | '/admin/'
@@ -144,12 +204,18 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assistant'
     | '/auth'
     | '/explore'
     | '/leaderboard'
     | '/report'
     | '/admin/authorities'
+    | '/admin/categories'
     | '/admin/issues'
+    | '/admin/jurisdiction'
+    | '/admin/representatives'
+    | '/admin/rules'
+    | '/admin/wards'
     | '/authorities/$authorityId'
     | '/representatives/$repId'
     | '/admin'
@@ -158,12 +224,18 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/assistant'
     | '/auth'
     | '/explore'
     | '/leaderboard'
     | '/report'
     | '/admin/authorities'
+    | '/admin/categories'
     | '/admin/issues'
+    | '/admin/jurisdiction'
+    | '/admin/representatives'
+    | '/admin/rules'
+    | '/admin/wards'
     | '/authorities/$authorityId'
     | '/representatives/$repId'
     | '/admin/'
@@ -173,12 +245,18 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
   ExploreRoute: typeof ExploreRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ReportRoute: typeof ReportRoute
   AdminAuthoritiesRoute: typeof AdminAuthoritiesRoute
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminIssuesRoute: typeof AdminIssuesRoute
+  AdminJurisdictionRoute: typeof AdminJurisdictionRoute
+  AdminRepresentativesRoute: typeof AdminRepresentativesRoute
+  AdminRulesRoute: typeof AdminRulesRoute
+  AdminWardsRoute: typeof AdminWardsRoute
   AuthoritiesAuthorityIdRoute: typeof AuthoritiesAuthorityIdRoute
   RepresentativesRepIdRoute: typeof RepresentativesRepIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -216,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -251,11 +336,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthoritiesAuthorityIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/wards': {
+      id: '/admin/wards'
+      path: '/admin/wards'
+      fullPath: '/admin/wards'
+      preLoaderRoute: typeof AdminWardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/rules': {
+      id: '/admin/rules'
+      path: '/admin/rules'
+      fullPath: '/admin/rules'
+      preLoaderRoute: typeof AdminRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/representatives': {
+      id: '/admin/representatives'
+      path: '/admin/representatives'
+      fullPath: '/admin/representatives'
+      preLoaderRoute: typeof AdminRepresentativesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/jurisdiction': {
+      id: '/admin/jurisdiction'
+      path: '/admin/jurisdiction'
+      fullPath: '/admin/jurisdiction'
+      preLoaderRoute: typeof AdminJurisdictionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/issues': {
       id: '/admin/issues'
       path: '/admin/issues'
       fullPath: '/admin/issues'
       preLoaderRoute: typeof AdminIssuesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/authorities': {
@@ -277,12 +397,18 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
   ExploreRoute: ExploreRoute,
   LeaderboardRoute: LeaderboardRoute,
   ReportRoute: ReportRoute,
   AdminAuthoritiesRoute: AdminAuthoritiesRoute,
+  AdminCategoriesRoute: AdminCategoriesRoute,
   AdminIssuesRoute: AdminIssuesRoute,
+  AdminJurisdictionRoute: AdminJurisdictionRoute,
+  AdminRepresentativesRoute: AdminRepresentativesRoute,
+  AdminRulesRoute: AdminRulesRoute,
+  AdminWardsRoute: AdminWardsRoute,
   AuthoritiesAuthorityIdRoute: AuthoritiesAuthorityIdRoute,
   RepresentativesRepIdRoute: RepresentativesRepIdRoute,
   AdminIndexRoute: AdminIndexRoute,
