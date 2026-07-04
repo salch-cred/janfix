@@ -3,8 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyticsFn } from "@/lib/queries.functions";
+import { adminAnalyticsDetailFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import {
   Loader2,
   LogOut,
@@ -15,6 +27,7 @@ import {
   Shield,
   LayoutDashboard,
   FolderKanban,
+  Smartphone,
   Building2,
   Users,
   Map,
@@ -36,6 +49,7 @@ export const Route = createFileRoute("/admin/")({
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/issues", label: "Issues", icon: FolderKanban },
+  { to: "/admin/devices", label: "Reporters", icon: Smartphone },
   { to: "/admin/authorities", label: "Authorities", icon: Building2 },
   { to: "/admin/representatives", label: "Representatives", icon: Users },
   { to: "/admin/wards", label: "Wards", icon: Map },
@@ -46,6 +60,16 @@ const navItems = [
 
 const navLinkActiveProps = { className: "bg-accent text-foreground" };
 const chartTooltipStyle = { borderRadius: 8, fontSize: 12 };
+
+const statusBadgeVariant: Record<string, "secondary" | "outline" | "destructive"> = {
+  reported: "outline",
+  community_verified: "outline",
+  assigned: "secondary",
+  work_started: "secondary",
+  resolved: "secondary",
+  community_confirmed: "secondary",
+  closed: "secondary",
+};
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -66,6 +90,12 @@ function AdminDashboard() {
   const analytics = useQuery({
     queryKey: ["admin-analytics"],
     queryFn: () => analyticsFn(),
+  });
+
+  const detail = useQuery({
+    queryKey: ["admin-analytics-detail", session?.access_token],
+    queryFn: () => adminAnalyticsDetailFn({ data: { access_token: session.access_token } }),
+    enabled: !!session?.access_token,
   });
 
   const handleLogout = async () => {
@@ -116,6 +146,11 @@ function AdminDashboard() {
       value: (analytics.data?.total ?? 0) - (analytics.data?.resolved ?? 0),
     },
   ];
+
+  const trendData = (detail.data?.daily_trend ?? []).map((d) => ({
+    date: d.date.slice(5),
+    count: d.count,
+  }));
 
   return (
     <AdminLayout onLogout={handleLogout}>
@@ -171,6 +206,136 @@ function AdminDashboard() {
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <h3 className="mb-4 font-semibold">Reports Trend (Last 30 Days)</h3>
+          <div className="h-64">
+            {detail.isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" className="text-xs" />
+                  <YAxis className="text-xs" allowDecimals={false} />
+                  <Tooltip contentStyle={chartTooltipStyle} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <h3 className="mb-4 font-semibold">By Category</h3>
+            {detail.isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (detail.data?.by_category ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No data yet</p>
+            ) : (
+              <ul className="space-y-2">
+                {(detail.data?.by_category ?? []).map((row) => (
+                  <li key={row.name} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{row.name}</span>
+                    <span className="font-semibold">{row.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <h3 className="mb-4 font-semibold">By Ward</h3>
+            {detail.isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (detail.data?.by_ward ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No data yet</p>
+            ) : (
+              <ul className="max-h-64 space-y-2 overflow-auto">
+                {(detail.data?.by_ward ?? []).map((row) => (
+                  <li key={row.name} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{row.name}</span>
+                    <span className="font-semibold">{row.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <h3 className="mb-4 font-semibold">By Status</h3>
+            {detail.isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(detail.data?.by_status ?? []).map((row) => (
+                  <Badge key={row.name} variant={statusBadgeVariant[row.name] ?? "outline"}>
+                    {row.name.replace(/_/g, " ")}: {row.count}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <h3 className="mb-4 font-semibold">By Severity</h3>
+            {detail.isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(detail.data?.by_severity ?? []).map((row) => (
+                  <Badge key={row.name} variant="outline" className="capitalize">
+                    {row.name}: {row.count}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border bg-card p-4 shadow-sm">
+            <h3 className="mb-4 font-semibold">By Visibility</h3>
+            {detail.isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(detail.data?.by_visibility ?? []).map((row) => (
+                  <Badge key={row.name} variant="outline" className="capitalize">
+                    {row.name}: {row.count}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <h3 className="mb-4 font-semibold">By Authority</h3>
+          {detail.isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : (detail.data?.by_authority ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No data yet</p>
+          ) : (
+            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {(detail.data?.by_authority ?? []).map((row) => (
+                <li key={row.name} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{row.name}</span>
+                  <span className="font-semibold">{row.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </AdminLayout>
