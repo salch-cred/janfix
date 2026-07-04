@@ -542,3 +542,205 @@ export const adminDeleteCategoryFn = createServerFn({ method: "POST" })
 		if (error) throw error;
 		return { ok: true };
 	});
+
+// Admin-only listing of reporting devices. JanFix has no citizen account
+// system -- reporters are tracked only by an anonymous on-device ID stored
+// in public.devices. This aggregates activity (reports filed, votes cast,
+// thanks given, supporters given, comments posted) per device for the
+// admin "Reporters" page.
+export const adminListDevicesFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string; q?: string; limit?: number }) =>
+		z
+			.object({
+				access_token: z.string(),
+				q: z.string().optional(),
+				limit: z.number().int().min(1).max(500).optional(),
+			})
+			.parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		let q = c.from("devices").select("*").order("last_seen", { ascending: false }).limit(data.limit ?? 200);
+		if (data.q) q = q.ilike("device_id", `%${data.q}%`);
+		const { data: devices, error } = await q;
+		if (error) throw error;
+		const ids = (devices ?? []).map((d) => d.device_id);
+		if (!ids.length) return [];
+
+		const [issuesRes, votesRes, thanksRes, supportersRes, commentsRes] = await Promise.all([
+			c.from("issues").select("device_id, status").in("device_id", ids),
+			c.from("issue_votes").select("device_id").in("device_id", ids),
+			c.from("issue_thanks").select("device_id").in("device_id", ids),
+			c.from("issue_supporters").select("device_id").in("device_id", ids),
+			c.from("issue_comments").select("device_id").in("device_id", ids),
+		]);
+		if (issuesRes.error) throw issuesRes.error;
+		if (votesRes.error) throw votesRes.error;
+		if (thanksRes.error) throw thanksRes.error;
+		if (supportersRes.error) throw supportersRes.error;
+		if (commentsRes.error) throw commentsRes.error;
+
+		const countFor = (rows: { device_id: string | null }[] | null, id: string) =>
+			(rows ?? []).filter((r) => r.device_id === id).length;
+		const resolvedStatuses = ["resolved", "community_confirmed", "closed"];
+
+		return (devices ?? []).map((d) => {
+			const mine = (issuesRes.data ?? []).filter((i) => i.device_id === d.device_id);
+			const resolved = mine.filter((i) => resolvedStatuses.includes(i.status as string));
+			return {
+				...d,
+				reports_total: mine.length,
+				reports_resolved: resolved.length,
+				votes_cast: countFor(votesRes.data, d.device_id),
+				thanks_given: countFor(thanksRes.data, d.device_id),
+				supporters_given: countFor(supportersRes.data, d.device_id),
+				comments_posted: countFor(commentsRes.data, d.device_id),
+			};
+		});
+	});
+
+// Admin-only full detail for a single report: the raw issue row (regardless
+// of visibility), plus photos, status history, official updates, comments,
+// vote/thanks/supporter tallies, and watcher count. Powers the "View
+// details" panel on the admin Issues page.
+export const adminGetIssueDetailFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string; issue_id: string }) =>
+		z
+			.object({
+				access_token: z.string(),
+				issue_id: z.string().uuid(),
+			})
+			.parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { data: row, error } = await c
+			.from("issues")
+			.select(
+				`*, category:categories(*), authority:authorities!issues_assigned_authority_id_fkey(*), representative:representatives!issues_assigned_representative_id_fkey(*), ward:wards(*)`,
+			)
+			.eq("id", data.issue_id)
+			.maybeSingle();
+		if (error) throw error;
+		if (!row) return null;
+
+		const [history, official, comments, votes, thanks, supporters, watchers, photos] = await Promise.all([
+			c
+				.from("issue_status_history")
+				.select("*")
+				.eq("issue_id", row.id)
+				.order("created_at", { ascending: true }),
+			c
+				.from("issue_official_updates")
+				.select("*")
+				.eq("issue_id", row.id)
+				.order("created_at", { ascending: false }),
+			c
+				.from("issue_comments")
+				.select("*")
+				.eq("issue_id", row.id)
+				.order("created_at", { ascending: false }),
+			c.from("issue_votes").select("vote").eq("issue_id", row.id),
+			c.from("issue_thanks").select("device_id", { count: "exact", head: true }).eq("issue_id", row.id),
+			c.from("issue_supporters").select("device_id", { count: "exact", head: true }).eq("issue_id", row.id),
+			c.from("issue_watchers").select("device_id", { count: "exact", head: true }).eq("issue_id", row.id),
+			c
+				.from("issue_photos")
+				.select("*")
+				.eq("issue_id", row.id)
+				.order("position", { ascending: true }),
+		]);
+		if (history.error) throw history.error;
+		if (official.error) throw official.error;
+		if (comments.error) throw comments.error;
+		if (votes.error) throw votes.error;
+		if (photos.error) throw photos.error;
+
+		return {
+			issue: row,
+			history: history.data ?? [],
+			official: official.data ?? [],
+			comments: comments.data ?? [],
+			photos: photos.data ?? [],
+			votes: {
+				exists: votes.data?.filter((v) => v.vote === "exists").length ?? 0,
+				fixed: votes.data?.filter((v) => v.vote === "fixed").length ?? 0,
+			},
+			thanks: thanks.count ?? 0,
+			supporters: supporters.count ?? 0,
+			watchers: watchers.count ?? 0,
+		};
+	});
+
+// Admin-only deeper analytics: breakdowns by category, ward, status,
+// severity, authority, and visibility, plus a daily report-count trend for
+// the last 30 days. Unlike the public analyticsFn summary card, this is not
+// restricted to visible issues -- admins should be able to see hidden/spam/
+// duplicate volume too.
+export const adminAnalyticsDetailFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { data: rows, error } = await c
+			.from("issues")
+			.select(
+				"status, severity, visibility, ward_id, category_id, created_at, updated_at, assigned_authority_id, category:categories(name_en), ward:wards(number, name), authority:authorities!issues_assigned_authority_id_fkey(name)",
+			);
+		if (error) throw error;
+		const list = (rows ?? []) as any[];
+
+		const byCategory = new Map<string, number>();
+		const byWard = new Map<string, number>();
+		const byStatus = new Map<string, number>();
+		const bySeverity = new Map<string, number>();
+		const byAuthority = new Map<string, number>();
+		const byVisibility = new Map<string, number>();
+
+		const bump = (map: Map<string, number>, key: string | null | undefined) => {
+			const k = key ?? "Unassigned";
+			map.set(k, (map.get(k) ?? 0) + 1);
+		};
+
+		list.forEach((r) => {
+			bump(byCategory, r.category?.name_en);
+			bump(byWard, r.ward ? `Ward ${r.ward.number}` : null);
+			bump(byStatus, r.status);
+			bump(bySeverity, r.severity);
+			bump(byAuthority, r.authority?.name);
+			bump(byVisibility, r.visibility);
+		});
+
+		const toSorted = (map: Map<string, number>) =>
+			Array.from(map.entries())
+				.map(([name, count]) => ({ name, count }))
+				.sort((a, b) => b.count - a.count);
+
+		// Daily report-creation trend for the last 30 days.
+		const days: { date: string; count: number }[] = [];
+		const dayMs = 86400000;
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		for (let i = 29; i >= 0; i--) {
+			const d = new Date(today.getTime() - i * dayMs);
+			days.push({ date: d.toISOString().slice(0, 10), count: 0 });
+		}
+		const dayIndex = new Map(days.map((d, idx) => [d.date, idx]));
+		list.forEach((r) => {
+			const key = String(r.created_at).slice(0, 10);
+			const idx = dayIndex.get(key);
+			if (idx !== undefined) days[idx].count += 1;
+		});
+
+		return {
+			by_category: toSorted(byCategory),
+			by_ward: toSorted(byWard),
+			by_status: toSorted(byStatus),
+			by_severity: toSorted(bySeverity),
+			by_authority: toSorted(byAuthority),
+			by_visibility: toSorted(byVisibility),
+			daily_trend: days,
+		};
+	});
