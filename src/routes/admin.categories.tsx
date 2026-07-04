@@ -38,6 +38,7 @@ import {
   Shield,
   LayoutDashboard,
   FolderKanban,
+  Smartphone,
   Building2,
   Users,
   Map,
@@ -418,6 +419,7 @@ function AdminCategories() {
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/issues", label: "Issues", icon: FolderKanban },
+  { to: "/admin/devices", label: "Reporters", icon: Smartphone },
   { to: "/admin/authorities", label: "Authorities", icon: Building2 },
   { to: "/admin/representatives", label: "Representatives", icon: Users },
   { to: "/admin/wards", label: "Wards", icon: Map },
