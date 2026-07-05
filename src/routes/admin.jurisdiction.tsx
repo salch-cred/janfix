@@ -59,6 +59,7 @@ import {
   Tags,
   GitBranch,
   Compass,
+  Inbox,
   Plus,
   Pencil,
   Trash2,
@@ -542,6 +543,7 @@ const navItems = [
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
   { to: "/admin/jurisdiction", label: "Jurisdiction", icon: Compass },
+  { to: "/admin/feedback", label: "Feedback", icon: Inbox },
 ];
 
 const navLinkActiveProps = { className: "bg-accent text-foreground" };
@@ -585,7 +587,6 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
             onClick={onLogout}
           >
             <LogOut className="h-4 w-4" />
-            Logout
           </Button>
         </div>
       </aside>
