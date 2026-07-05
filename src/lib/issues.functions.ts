@@ -4,6 +4,30 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveIssue } from "@/lib/resolver";
 
+function isNewSupabaseApiKey(value: string): boolean {
+  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
+}
+
+function createSupabaseFetch(supabaseKey: string): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(
+      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+    );
+    if (init?.headers) {
+      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+    }
+    // New Supabase API keys are opaque strings, not bearer JWTs.
+    if (
+      isNewSupabaseApiKey(supabaseKey) &&
+      headers.get("Authorization") === `Bearer ${supabaseKey}`
+    ) {
+      headers.delete("Authorization");
+    }
+    headers.set("apikey", supabaseKey);
+    return fetch(input, { ...init, headers });
+  };
+}
+
 function serverClient() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,6 +35,7 @@ function serverClient() {
   if (!supabaseKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
 
   return createClient<Database>(supabaseUrl, supabaseKey, {
+    global: { fetch: createSupabaseFetch(supabaseKey) },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
