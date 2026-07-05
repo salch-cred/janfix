@@ -744,3 +744,46 @@ export const adminAnalyticsDetailFn = createServerFn({ method: "POST" })
 			daily_trend: days,
 		};
 	});
+
+// Admin-only listing of citizen feedback submitted via the site footer form.
+export const adminListFeedbackFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { data: rows, error } = await c
+			.from("feedback")
+			.select("*")
+			.order("created_at", { ascending: false });
+		if (error) throw error;
+		return rows ?? [];
+	});
+
+// Marks a feedback submission as read/unread for admin triage.
+export const adminMarkFeedbackReadFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string; id: string; read: boolean }) =>
+		z.object({ access_token: z.string(), id: z.string().uuid(), read: z.boolean() }).parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { error } = await c
+			.from("feedback")
+			.update({ read_at: data.read ? new Date().toISOString() : null })
+			.eq("id", data.id);
+		if (error) throw error;
+		return { ok: true };
+	});
+
+// Deletes a feedback submission. Service-role client for the usual permission reason.
+export const adminDeleteFeedbackFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string; id: string }) =>
+		z.object({ access_token: z.string(), id: z.string().uuid() }).parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		const c = service();
+		const { error } = await c.from("feedback").delete().eq("id", data.id);
+		if (error) throw error;
+		return { ok: true };
+	});
