@@ -27,6 +27,7 @@ import {
   Tags,
   GitBranch,
   Compass,
+  Inbox,
   Search,
   ShieldCheck,
 } from "lucide-react";
@@ -175,6 +176,7 @@ const navItems = [
   { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/rules", label: "Rules", icon: GitBranch },
   { to: "/admin/jurisdiction", label: "Jurisdiction", icon: Compass },
+  { to: "/admin/feedback", label: "Feedback", icon: Inbox },
 ];
 
 const navLinkActiveProps = { className: "bg-accent text-foreground" };
