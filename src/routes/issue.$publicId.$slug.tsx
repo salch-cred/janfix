@@ -36,6 +36,8 @@ import {
   Image as ImgIcon,
   Share2,
   ArrowRight,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/issue/$publicId/$slug")({
@@ -559,31 +561,39 @@ function Comments({
         <h2 className="font-display text-lg font-bold">Comments ({comments.length})</h2>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => quick("also_saw", "I saw this too.")}
-          disabled={working}
-        >
-          👀 I saw this too
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => quick("still_exists", "I passed today, still exists.")}
-          disabled={working}
-        >
-          ⚠️ Still exists today
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => quick("already_fixed", "Already repaired.")}
-          disabled={working}
-        >
-          ✅ Already fixed
-        </Button>
+      <div className="mt-3">
+        <div className="mb-1.5 font-sans text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Quick feedback
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 font-sans font-semibold"
+            onClick={() => quick("also_saw", "I saw this too.")}
+            disabled={working}
+          >
+            <Eye className="h-3.5 w-3.5" /> I saw this too
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 font-sans font-semibold text-warning"
+            onClick={() => quick("still_exists", "I passed today, still exists.")}
+            disabled={working}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" /> Still exists today
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 font-sans font-semibold text-success"
+            onClick={() => quick("already_fixed", "Already repaired.")}
+            disabled={working}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" /> Already fixed
+          </Button>
+        </div>
       </div>
 
       <div className="mt-3 space-y-2 rounded-2xl border bg-card p-3">
@@ -591,15 +601,17 @@ function Comments({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name (optional)"
+          className="font-sans"
         />
         <Textarea
           rows={3}
           value={body}
           onChange={(e) => setBody(e.target.value.slice(0, 500))}
           placeholder="Add a comment…"
+          className="font-sans"
         />
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground">{body.length}/500</span>
+          <span className="font-sans text-[10px] text-muted-foreground">{body.length}/500</span>
           <Button size="sm" onClick={post} disabled={working || body.length < 1}>
             Post
           </Button>
@@ -608,7 +620,7 @@ function Comments({
 
       <ul className="mt-4 space-y-2">
         {comments.map((c) => (
-          <li key={c.id} className="rounded-xl border bg-card p-3 text-sm">
+          <li key={c.id} className="rounded-xl border bg-card p-3 text-sm font-sans">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">{c.name || "Citizen"}</span>
               <span>· {new Date(c.created_at).toLocaleString()}</span>
