@@ -9,7 +9,7 @@ import {
   Megaphone01Icon,
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Mail, MessageCircleHeart } from "lucide-react";
 import { Disclaimer } from "./Disclaimer";
 
 const navItemActiveProps = { className: "bg-background text-foreground shadow-sm" };
@@ -174,20 +174,24 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-6 border-t pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="text-xs">
-            <div className="font-display font-semibold text-foreground flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-primary" /> About the Builders
+        <div className="mt-6 flex flex-col gap-4 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <MessageCircleHeart className="h-4 w-4" />
             </div>
-            <p className="mt-1 max-w-md italic text-muted-foreground">
-              "We are just boring builders. Love you all. And deep test find bugs like a pro and fix."
-            </p>
+            <div className="text-xs">
+              <div className="font-display font-semibold text-foreground">Made by a small, hands-on team</div>
+              <p className="mt-1 max-w-md text-muted-foreground">
+                We build fast, test thoroughly, and fix bugs quickly. Found an issue or have an idea
+                to make JanFix better? We read every message.
+              </p>
+            </div>
           </div>
           <a
-            href="mailto:aflalarman@gmail.com"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition duration-150"
+            href="mailto:aflalarman@gmail.com?subject=JanFix%20feedback"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition duration-150 hover:opacity-90"
           >
-            Give a connect / Give feedback
+            <Mail className="h-3.5 w-3.5" /> Send feedback
           </a>
         </div>
 
