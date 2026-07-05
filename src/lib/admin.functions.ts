@@ -4,8 +4,34 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 
+function isNewSupabaseApiKey(value: string): boolean {
+	return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
+}
+
+function createSupabaseFetch(supabaseKey: string): typeof fetch {
+	return (input, init) => {
+		const headers = new Headers(
+			typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+		);
+		if (init?.headers) {
+			new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+		}
+		// New Supabase API keys are opaque strings, not bearer JWTs.
+		if (
+			isNewSupabaseApiKey(supabaseKey) &&
+			headers.get("Authorization") === `Bearer ${supabaseKey}`
+		) {
+			headers.delete("Authorization");
+		}
+		headers.set("apikey", supabaseKey);
+		return fetch(input, { ...init, headers });
+	};
+}
+
 function service() {
-	return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+	const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+	return createClient<Database>(process.env.SUPABASE_URL!, key, {
+		global: { fetch: createSupabaseFetch(key) },
 		auth: { persistSession: false, autoRefreshToken: false },
 	});
 }
