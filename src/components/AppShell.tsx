@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -9,8 +10,14 @@ import {
   Megaphone01Icon,
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
-import { Sparkles, Mail, MessageCircleHeart } from "lucide-react";
+import { Sparkles, Mail, MessageCircleHeart, Send, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Disclaimer } from "./Disclaimer";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { submitFeedbackFn } from "@/lib/feedback.functions";
+import { getDeviceId } from "@/lib/device";
 
 const navItemActiveProps = { className: "bg-background text-foreground shadow-sm" };
 
@@ -153,6 +160,38 @@ function MobileTabBar() {
 }
 
 function Footer() {
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmitFeedback = async () => {
+    if (message.trim().length < 2) {
+      toast.error("Please write a bit more before sending.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await submitFeedbackFn({
+        data: {
+          name: name.trim() || null,
+          message: message.trim(),
+          device_id: typeof window !== "undefined" ? getDeviceId() : null,
+          page_url: typeof window !== "undefined" ? window.location.pathname : null,
+        },
+      });
+      toast.success("Thanks! Your feedback has been sent to our team.");
+      setName("");
+      setMessage("");
+      setShowForm(false);
+    } catch (e) {
+      console.error("Failed to submit feedback", e);
+      toast.error("Couldn't send your feedback. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <footer className="border-t bg-muted/30 pb-20 md:pb-8">
       <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground">
@@ -174,25 +213,72 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-4 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-2.5">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <MessageCircleHeart className="h-4 w-4" />
+        <div className="mt-6 flex flex-col gap-4 rounded-2xl border bg-card p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2.5">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <MessageCircleHeart className="h-4 w-4" />
+              </div>
+              <div className="text-xs">
+                <div className="font-display font-semibold text-foreground">Made by a small, hands-on team</div>
+                <p className="mt-1 max-w-md text-muted-foreground">
+                  We build fast, test thoroughly, and fix bugs quickly. Found an issue or have an idea
+                  to make JanFix better? We read every message.
+                </p>
+              </div>
             </div>
-            <div className="text-xs">
-              <div className="font-display font-semibold text-foreground">Made by a small, hands-on team</div>
-              <p className="mt-1 max-w-md text-muted-foreground">
-                We build fast, test thoroughly, and fix bugs quickly. Found an issue or have an idea
-                to make JanFix better? We read every message.
-              </p>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={showForm ? "outline" : "secondary"}
+                size="sm"
+                className="gap-1.5 rounded-full text-xs"
+                onClick={() => setShowForm((v) => !v)}
+              >
+                <MessageCircleHeart className="h-3.5 w-3.5" /> {showForm ? "Cancel" : "Write feedback"}
+              </Button>
+              <a
+                href="mailto:aflalarman@gmail.com?subject=JanFix%20feedback"
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition duration-150 hover:opacity-90"
+              >
+                <Mail className="h-3.5 w-3.5" /> Email us
+              </a>
             </div>
           </div>
-          <a
-            href="mailto:aflalarman@gmail.com?subject=JanFix%20feedback"
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition duration-150 hover:opacity-90"
-          >
-            <Mail className="h-3.5 w-3.5" /> Send feedback
-          </a>
+
+          {showForm && (
+            <div className="flex flex-col gap-2 border-t pt-4">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name (optional)"
+                className="bg-background text-xs"
+              />
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Tell us what's working, what's broken, or what you'd like to see..."
+                rows={3}
+                className="bg-background text-xs"
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-1.5 rounded-full text-xs"
+                  onClick={handleSubmitFeedback}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
+                  Submit feedback
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <Disclaimer variant="footer" />
