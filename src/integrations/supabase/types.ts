@@ -169,6 +169,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      feedback: {
+        Row: {
+          created_at: string;
+          device_id: string | null;
+          email: string | null;
+          id: string;
+          message: string;
+          name: string | null;
+          page_url: string | null;
+          read_at: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          device_id?: string | null;
+          email?: string | null;
+          id?: string;
+          message: string;
+          name?: string | null;
+          page_url?: string | null;
+          read_at?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          device_id?: string | null;
+          email?: string | null;
+          id?: string;
+          message?: string;
+          name?: string | null;
+          page_url?: string | null;
+          read_at?: string | null;
+        };
+        Relationships: [];
+      };
       gram_panchayats: {
         Row: {
           id: number;
