@@ -587,6 +587,7 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
             onClick={onLogout}
           >
             <LogOut className="h-4 w-4" />
+            Logout
           </Button>
         </div>
       </aside>
