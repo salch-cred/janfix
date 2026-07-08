@@ -159,19 +159,20 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         display: "flex",
         flexDirection: "column",
-        border: `${px(14)}px solid #1d4ed8`,
-        overflow: "hidden",
+        padding: px(16),
         boxSizing: "border-box",
-        position: "relative",
       }}>
-        {/* Inner white container with padding */}
+        {/* Inset blue border matching reference exactly */}
         <div style={{
-          width: "100%",
-          height: "100%",
+          flex: 1,
+          border: `${px(3.5)}px solid #1d4ed8`,
+          borderRadius: px(24),
           display: "flex",
           flexDirection: "column",
-          padding: `${px(16)}px`,
+          overflow: "hidden",
           boxSizing: "border-box",
+          position: "relative",
+          background: "#ffffff",
         }}>
 
           {/* ── HEADER ──────────────────────────────────────────────────────── */}
@@ -179,7 +180,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingBottom: px(14),
+            padding: `${px(16)}px ${px(24)}px`,
             borderBottom: `${px(1)}px solid #cbd5e1`,
             background: "#ffffff",
             flexShrink: 0,
@@ -219,10 +220,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             {/* Skyline Illustration */}
             <svg width={px(120)} height={px(52)} viewBox="0 0 120 52" style={{ opacity: 0.25, flexShrink: 0 }}>
               <path d="M5,42 h110 M10,42 V28 h8 V42 M22,42 V18 h12 V42 M38,42 V32 h6 V42 M48,42 V20 h10 V42 M62,42 V12 h14 V42 M80,42 V26 h12 V42 M96,42 V30 h8 V42" stroke="#1d4ed8" strokeWidth="1.5" fill="none" />
-              {/* church dome & cross */}
               <path d="M28,18 C28,12 30,10 32,10 C34,10 36,12 36,18 Z" fill="none" stroke="#1d4ed8" strokeWidth="1.5" />
               <path d="M32,10 V4 M30,6 H34" stroke="#1d4ed8" strokeWidth="1.5" />
-              {/* temple dome shape */}
               <path d="M69,12 C69,4 75,4 75,12" stroke="#1d4ed8" strokeWidth="1.5" fill="none" />
               <circle cx="75" cy="3" r="1" fill="#1d4ed8" />
             </svg>
@@ -235,7 +234,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             marginTop: px(16),
             marginBottom: px(46), // Space for floating card overflow
             flexShrink: 0,
-            overflow: "visible", // ALLOW info card to overlap outside bottom boundary
+            overflow: "visible", 
           }}>
             {/* Visual Photo Card */}
             <div style={{
@@ -295,7 +294,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               {/* Title & Desc text inside photo (above the overlapping card) */}
               <div style={{
                 position: "absolute",
-                bottom: px(68), // Pushed up slightly so it clears the overlapping card
+                bottom: px(68), 
                 left: px(20),
                 right: px(20),
                 color: "#ffffff",
@@ -405,8 +404,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               justifyContent: "center",
               minWidth: 0,
             }}>
-              <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5), marginBottom: px(6) }}>RESPONSIBLE AUTHORITY</div>
-              <div style={{ display: "flex", alignItems: "center", gap: px(12) }}>
+              <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5), marginBottom: px(6), textAlign: "center" }}>RESPONSIBLE AUTHORITY</div>
+              <div style={{ display: "flex", alignItems: "center", gap: px(12), justifyContent: "center" }}>
                 <img src={logoSrc} alt="" style={{ width: px(52), height: px(52), objectFit: "contain", borderRadius: px(8), border: `${px(1)}px solid #cbd5e1`, background: "#ffffff", padding: px(2), flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: px(14), fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>
@@ -431,8 +430,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               justifyContent: "center",
               minWidth: 0,
             }}>
-              <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5), marginBottom: px(6) }}>LOCAL REPRESENTATIVE</div>
-              <div style={{ display: "flex", alignItems: "center", gap: px(12) }}>
+              <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5), marginBottom: px(6), textAlign: "center" }}>LOCAL REPRESENTATIVE</div>
+              <div style={{ display: "flex", alignItems: "center", gap: px(12), justifyContent: "center" }}>
                 <img src={repSrc} alt="" style={{ width: px(52), height: px(52), objectFit: "cover", borderRadius: "50%", border: `${px(2)}px solid #1d4ed8`, flexShrink: 0 }} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: px(13), fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>
