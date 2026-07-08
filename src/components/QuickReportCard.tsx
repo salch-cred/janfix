@@ -1,12 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { CATEGORIES, SEVERITY_META, slugify } from "@/lib/civic";
 import { reverseGeocode, getPositionWithFallback, isLocationInDakshinaKannada } from "@/lib/geo";
 import { computeImagePHash } from "@/lib/phash";
 import { getDeviceId } from "@/lib/device";
-import { supabase } from "@/integrations/supabase/client";
-import { createIssueFn } from "@/lib/issues.functions";
+import { createIssueFn, uploadPhotoFn } from "@/lib/issues.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Camera, Loader2, MapPin, X, ImagePlus } from "lucide-react";
@@ -147,6 +146,15 @@ export function QuickReportCard({
     }
   };
 
+  const fileToBase64 = (f: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(f);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (e) => reject(e);
+    });
+  };
+
   const submit = async () => {
     if (!file) return toast.error("Attach a photo first");
     if (!cat) return toast.error("Choose a category");
@@ -155,22 +163,36 @@ export function QuickReportCard({
     setWorking(true);
     try {
       const device_id = getDeviceId();
-      const path = `${device_id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-      const up = await supabase.storage.from("issue-photos").upload(path, file, {
-        contentType: "image/jpeg",
-        cacheControl: "3600",
+      const filename = `${device_id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      
+      // Convert main photo to base64 and upload to Vercel Blob
+      const base64Data = await fileToBase64(file);
+      const mainUpload = await uploadPhotoFn({
+        data: {
+          filename,
+          contentType: "image/jpeg",
+          base64Data,
+        },
       });
-      if (up.error) throw up.error;
 
-      const extraPaths = await Promise.all(
+      if (!mainUpload?.url) {
+        throw new Error("Failed to upload primary photo");
+      }
+
+      // Convert and upload extra photos
+      const extraUrls = await Promise.all(
         extraFiles.map(async (ef, idx) => {
-          const p = `${device_id}/${Date.now()}-x${idx}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-          const extraUp = await supabase.storage.from("issue-photos").upload(p, ef, {
-            contentType: "image/jpeg",
-            cacheControl: "3600",
+          const fn = `${device_id}-${Date.now()}-x${idx}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const b64 = await fileToBase64(ef);
+          const up = await uploadPhotoFn({
+            data: {
+              filename: fn,
+              contentType: "image/jpeg",
+              base64Data: b64,
+            },
           });
-          if (extraUp.error) throw extraUp.error;
-          return p;
+          if (!up?.url) throw new Error(`Failed to upload extra photo ${idx + 1}`);
+          return up.url;
         }),
       );
 
@@ -187,9 +209,9 @@ export function QuickReportCard({
           locality: addr?.locality ?? null,
           pincode: addr?.pincode ?? null,
           ward_id: null,
-          image_path: path,
+          image_url: mainUpload.url,
           image_phash: phash || null,
-          extra_image_paths: extraPaths.length > 0 ? extraPaths : null,
+          extra_image_urls: extraUrls.length > 0 ? extraUrls : null,
         },
       });
       toast.success("Reported! Tracking " + res.public_id);
