@@ -55,7 +55,6 @@ export const createIssueFn = createServerFn({ method: "POST" })
 
     // Resolve authority + representative via layered engine
     // NOTE: resolver.ts now uses the Neon pool directly
-    const sb = storageClient();
     const resolution = await resolveIssue({
       category_id: cat.id,
       ward_id: data.ward_id,
