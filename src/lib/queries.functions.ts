@@ -243,16 +243,20 @@ export const wardStatsFn = createServerFn({ method: "GET" })
   });
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const [issuesRes, visitsRes] = await Promise.all([
+  const [issuesRes, visitsRes, weeklyRes, monthlyRes] = await Promise.all([
     query(
       `SELECT status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id
        FROM public.issues
        WHERE visibility = 'visible'`
     ),
-    query(`SELECT count FROM public.site_visits WHERE id = 1`)
+    query(`SELECT count FROM public.site_visits WHERE id = 1`).catch(() => ({ rows: [] })),
+    query(`SELECT SUM(count) as count FROM public.daily_visits WHERE date >= CURRENT_DATE - INTERVAL '7 days'`).catch(() => ({ rows: [] })),
+    query(`SELECT SUM(count) as count FROM public.daily_visits WHERE date >= CURRENT_DATE - INTERVAL '30 days'`).catch(() => ({ rows: [] }))
   ]);
   const list = issuesRes.rows;
-  const visitors = visitsRes.rows[0]?.count ?? 0;
+  const visitors = parseInt(visitsRes.rows[0]?.count ?? 0, 10) || 0;
+  const visitors_week = parseInt(weeklyRes.rows[0]?.count ?? 0, 10) || 0;
+  const visitors_month = parseInt(monthlyRes.rows[0]?.count ?? 0, 10) || 0;
   const now = Date.now();
   const dayAgo = now - 86400000;
   const weekAgo = now - 7 * 86400000;
@@ -284,6 +288,8 @@ export const analyticsFn = createServerFn({ method: "GET" }).handler(async () =>
     top_ward_id: topWard ? Number(topWard[0]) : null,
     top_category_id: topCat ? Number(topCat[0]) : null,
     visitors,
+    visitors_week,
+    visitors_month,
   };
 });
 
@@ -295,8 +301,18 @@ export const trackVisitFn = createServerFn({ method: "POST" }).handler(async () 
     );
   `);
   await query(`
+    CREATE TABLE IF NOT EXISTS public.daily_visits (
+      date date PRIMARY KEY,
+      count integer NOT NULL DEFAULT 0
+    );
+  `);
+  await query(`
     INSERT INTO public.site_visits (id, count) VALUES (1, 1)
     ON CONFLICT (id) DO UPDATE SET count = site_visits.count + 1;
+  `);
+  await query(`
+    INSERT INTO public.daily_visits (date, count) VALUES (CURRENT_DATE, 1)
+    ON CONFLICT (date) DO UPDATE SET count = daily_visits.count + 1;
   `);
   return { ok: true };
 });

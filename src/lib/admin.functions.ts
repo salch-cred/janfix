@@ -712,19 +712,33 @@ export const adminAnalyticsDetailFn = createServerFn({ method: "POST" })
 				.sort((a, b) => b.count - a.count);
 
 		// Daily report-creation trend for the last 30 days.
-		const days: { date: string; count: number }[] = [];
+		const days: { date: string; count: number; visitors: number }[] = [];
 		const dayMs = 86400000;
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		for (let i = 29; i >= 0; i--) {
 			const d = new Date(today.getTime() - i * dayMs);
-			days.push({ date: d.toISOString().slice(0, 10), count: 0 });
+			days.push({ date: d.toISOString().slice(0, 10), count: 0, visitors: 0 });
 		}
 		const dayIndex = new Map(days.map((d, idx) => [d.date, idx]));
 		list.forEach((r) => {
 			const key = String(r.created_at).slice(0, 10);
 			const idx = dayIndex.get(key);
 			if (idx !== undefined) days[idx].count += 1;
+		});
+
+		const { rows: dailyVisits } = await query(`SELECT date, count FROM public.daily_visits WHERE date >= CURRENT_DATE - INTERVAL '30 days'`).catch(() => ({ rows: [] }));
+		dailyVisits.forEach((r: any) => {
+			let dateStr = "";
+			if (r.date instanceof Date) {
+				dateStr = r.date.toISOString().slice(0, 10);
+			} else {
+				dateStr = String(r.date).slice(0, 10);
+			}
+			const idx = dayIndex.get(dateStr);
+			if (idx !== undefined) {
+				days[idx].visitors += parseInt(r.count, 10) || 0;
+			}
 		});
 
 		return {

@@ -113,6 +113,18 @@ function AdminDashboard() {
       color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
     },
     {
+      label: "Weekly Visitors",
+      value: analytics.data?.visitors_week ?? 0,
+      icon: Users,
+      color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
+    },
+    {
+      label: "Monthly Visitors",
+      value: analytics.data?.visitors_month ?? 0,
+      icon: Users,
+      color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
+    },
+    {
       label: "Reported Today",
       value: analytics.data?.today ?? 0,
       icon: TrendingUp,
@@ -143,7 +155,8 @@ function AdminDashboard() {
 
   const trendData = (detail.data?.daily_trend ?? []).map((d) => ({
     date: d.date.slice(5),
-    count: d.count,
+    reports: d.count,
+    visitors: d.visitors ?? 0,
   }));
 
   return (
@@ -154,7 +167,7 @@ function AdminDashboard() {
           <p className="text-sm text-muted-foreground">Overview of JanFix Mangaluru</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s) => {
             const Icon = s.icon;
             return (
@@ -218,8 +231,17 @@ function AdminDashboard() {
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Line
                     type="monotone"
-                    dataKey="count"
+                    dataKey="reports"
+                    name="Reports"
                     stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="visitors"
+                    name="Visitors"
+                    stroke="#8b5cf6"
                     strokeWidth={2}
                     dot={false}
                   />
