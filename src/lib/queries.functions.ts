@@ -1,43 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
-
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-    );
-    if (init?.headers) {
-      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (
-      isNewSupabaseApiKey(supabaseKey) &&
-      headers.get("Authorization") === `Bearer ${supabaseKey}`
-    ) {
-      headers.delete("Authorization");
-    }
-    headers.set("apikey", supabaseKey);
-    return fetch(input, { ...init, headers });
-  };
-}
-
-function sb() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl) throw new Error("Missing SUPABASE_URL environment variable");
-  if (!supabaseKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
-
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    global: { fetch: createSupabaseFetch(supabaseKey) },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { query } from "@/lib/db";
 
 function isCorporator(role: unknown) {
   return String(role ?? "").trim().toLowerCase() === "corporator";
@@ -71,53 +34,74 @@ export const listIssuesFn = createServerFn({ method: "POST" })
         .parse(d ?? {}),
   )
   .handler(async ({ data }) => {
-    const c = sb();
-    let q = c
-      .from("issues")
-      .select(
-        `
-        id, public_id, slug, description, severity, status, lat, lng,
-        area, locality, address, ward_id, needs_review, image_url, supporters_count,
-        thanked_count, views, heat_score, created_at, updated_at,
-        category:categories(id, slug, name_en, icon, color),
-        authority:authorities!issues_assigned_authority_id_fkey(id, name, logo_url),
-        representative:representatives!issues_assigned_representative_id_fkey(id, name, role, photo_url),
-        ward:wards(id, number, name)
-      `,
-      )
-      .eq("visibility", "visible")
-      .limit(data.limit ?? 30);
+    const params: any[] = ["visible"];
+    let paramIdx = 2;
+    const conditions: string[] = ["i.visibility = $1"];
 
-    if (data.sort === "heat") q = q.order("heat_score", { ascending: false });
-    else q = q.order("created_at", { ascending: false });
-
-    if (data.status) q = q.eq("status", data.status as any);
-    if (data.severity) q = q.eq("severity", data.severity as any);
-    if (data.ward_id) q = q.eq("ward_id", data.ward_id);
-    if (data.authority_id) q = q.eq("assigned_authority_id", data.authority_id);
-    if (data.representative_id) q = q.eq("assigned_representative_id", data.representative_id);
+    if (data.status) {
+      conditions.push(`i.status = $${paramIdx++}`);
+      params.push(data.status);
+    }
+    if (data.severity) {
+      conditions.push(`i.severity = $${paramIdx++}`);
+      params.push(data.severity);
+    }
+    if (data.ward_id) {
+      conditions.push(`i.ward_id = $${paramIdx++}`);
+      params.push(data.ward_id);
+    }
+    if (data.authority_id) {
+      conditions.push(`i.assigned_authority_id = $${paramIdx++}`);
+      params.push(data.authority_id);
+    }
+    if (data.representative_id) {
+      conditions.push(`i.assigned_representative_id = $${paramIdx++}`);
+      params.push(data.representative_id);
+    }
     if (data.category_slug) {
-      const { data: cat } = await c
-        .from("categories")
-        .select("id")
-        .eq("slug", data.category_slug)
-        .single();
-      if (cat) q = q.eq("category_id", cat.id);
+      conditions.push(`i.category_id = (SELECT id FROM public.categories WHERE slug = $${paramIdx++})`);
+      params.push(data.category_slug);
     }
     if (data.q) {
-      const term = data.q.trim().replace(/[(),.]/g, '\\$&');
-      if (term.startsWith("MGR-")) q = q.eq("public_id", term);
-      else
-        q = q.or(
-          `description.ilike.%${term}%,area.ilike.%${term}%,locality.ilike.%${term}%,address.ilike.%${term}%`,
+      const term = data.q.trim();
+      if (term.startsWith("MGR-")) {
+        conditions.push(`i.public_id = $${paramIdx++}`);
+        params.push(term);
+      } else {
+        conditions.push(
+          `(i.description ILIKE $${paramIdx} OR i.area ILIKE $${paramIdx} OR i.locality ILIKE $${paramIdx} OR i.address ILIKE $${paramIdx})`
         );
+        params.push(`%${term}%`);
+        paramIdx++;
+      }
     }
 
-    const { data: rows, error } = await q;
-    if (error) throw error;
-    // Job-role "Corporator" placeholders (one auto-generated per ward, not a
-    // named individual) should never surface as an assigned representative.
-    return (rows ?? []).map((r: any) =>
+    const orderBy = data.sort === "heat" ? "i.heat_score DESC" : "i.created_at DESC";
+    const limit = data.limit ?? 30;
+    params.push(limit);
+
+    const sql = `
+      SELECT
+        i.id, i.public_id, i.slug, i.description, i.severity, i.status,
+        i.lat, i.lng, i.area, i.locality, i.address, i.ward_id, i.needs_review,
+        i.image_url, i.supporters_count, i.thanked_count, i.views, i.heat_score,
+        i.created_at, i.updated_at,
+        json_build_object('id', c.id, 'slug', c.slug, 'name_en', c.name_en, 'icon', c.icon, 'color', c.color) AS category,
+        CASE WHEN a.id IS NOT NULL THEN json_build_object('id', a.id, 'name', a.name, 'logo_url', a.logo_url) ELSE NULL END AS authority,
+        CASE WHEN r.id IS NOT NULL THEN json_build_object('id', r.id, 'name', r.name, 'role', r.role, 'photo_url', r.photo_url) ELSE NULL END AS representative,
+        CASE WHEN w.id IS NOT NULL THEN json_build_object('id', w.id, 'number', w.number, 'name', w.name) ELSE NULL END AS ward
+      FROM public.issues i
+      LEFT JOIN public.categories c ON c.id = i.category_id
+      LEFT JOIN public.authorities a ON a.id = i.assigned_authority_id
+      LEFT JOIN public.representatives r ON r.id = i.assigned_representative_id
+      LEFT JOIN public.wards w ON w.id = i.ward_id
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY ${orderBy}
+      LIMIT $${paramIdx}
+    `;
+
+    const { rows } = await query(sql, params);
+    return rows.map((r: any) =>
       r.representative && isCorporator(r.representative.role)
         ? { ...r, representative: null }
         : r,
@@ -127,121 +111,88 @@ export const listIssuesFn = createServerFn({ method: "POST" })
 export const getIssueByPublicIdFn = createServerFn({ method: "POST" })
   .inputValidator((d: { public_id: string }) => z.object({ public_id: z.string() }).parse(d))
   .handler(async ({ data }) => {
-    const c = sb();
-    const { data: row, error } = await c
-      .from("issues")
-      .select(
-        `
-        *,
-        category:categories(*),
-        authority:authorities!issues_assigned_authority_id_fkey(*),
-        representative:representatives!issues_assigned_representative_id_fkey(*),
-        ward:wards(*)
-      `,
-      )
-      .eq("public_id", data.public_id)
-      .eq("visibility", "visible")
-      .maybeSingle();
-    if (error) throw error;
-    if (!row) return null;
+    const { rows: issueRows } = await query(
+      `SELECT
+        i.*,
+        json_build_object('id', c.id, 'slug', c.slug, 'name_en', c.name_en, 'icon', c.icon, 'color', c.color) AS category,
+        CASE WHEN a.id IS NOT NULL THEN row_to_json(a.*) ELSE NULL END AS authority,
+        CASE WHEN r.id IS NOT NULL THEN row_to_json(r.*) ELSE NULL END AS representative,
+        CASE WHEN w.id IS NOT NULL THEN row_to_json(w.*) ELSE NULL END AS ward
+       FROM public.issues i
+       LEFT JOIN public.categories c ON c.id = i.category_id
+       LEFT JOIN public.authorities a ON a.id = i.assigned_authority_id
+       LEFT JOIN public.representatives r ON r.id = i.assigned_representative_id
+       LEFT JOIN public.wards w ON w.id = i.ward_id
+       WHERE i.public_id = $1 AND i.visibility = 'visible'`,
+      [data.public_id],
+    );
+    if (!issueRows.length) return null;
+    const row: any = issueRows[0];
 
-    if ((row as any).representative && isCorporator((row as any).representative.role)) {
-      (row as any).representative = null;
+    if (row.representative && isCorporator(row.representative.role)) {
+      row.representative = null;
     }
 
     const [history, official, comments, votes, watchers, photos] = await Promise.all([
-      c
-        .from("issue_status_history")
-        .select("*")
-        .eq("issue_id", row.id)
-        .order("created_at", { ascending: true }),
-      c
-        .from("issue_official_updates")
-        .select("*")
-        .eq("issue_id", row.id)
-        .order("created_at", { ascending: false }),
-      c
-        .from("issue_comments")
-        .select("*")
-        .eq("issue_id", row.id)
-        .eq("hidden", false)
-        .order("created_at", { ascending: false })
-        .limit(100),
-      c.from("issue_votes").select("vote").eq("issue_id", row.id),
-      c
-        .from("issue_watchers")
-        .select("device_id", { count: "exact", head: true })
-        .eq("issue_id", row.id),
-      c
-        .from("issue_photos")
-        .select("*")
-        .eq("issue_id", row.id)
-        .order("position", { ascending: true }),
+      query(`SELECT * FROM public.issue_status_history WHERE issue_id = $1 ORDER BY created_at ASC`, [row.id]),
+      query(`SELECT * FROM public.issue_official_updates WHERE issue_id = $1 ORDER BY created_at DESC`, [row.id]),
+      query(`SELECT * FROM public.issue_comments WHERE issue_id = $1 AND hidden = false ORDER BY created_at DESC LIMIT 100`, [row.id]),
+      query(`SELECT vote FROM public.issue_votes WHERE issue_id = $1`, [row.id]),
+      query(`SELECT COUNT(*) AS count FROM public.issue_watchers WHERE issue_id = $1`, [row.id]),
+      query(`SELECT * FROM public.issue_photos WHERE issue_id = $1 ORDER BY position ASC`, [row.id]),
     ]);
 
     return {
       issue: row,
-      history: history.data ?? [],
-      official: official.data ?? [],
-      comments: comments.data ?? [],
-      photos: photos.data ?? [],
+      history: history.rows,
+      official: official.rows,
+      comments: comments.rows,
+      photos: photos.rows,
       votes: {
-        exists: votes.data?.filter((v) => v.vote === "exists").length ?? 0,
-        fixed: votes.data?.filter((v) => v.vote === "fixed").length ?? 0,
+        exists: votes.rows.filter((v: any) => v.vote === "exists").length,
+        fixed: votes.rows.filter((v: any) => v.vote === "fixed").length,
       },
-      watchers: watchers.count ?? 0,
+      watchers: parseInt((watchers.rows[0] as any)?.count ?? "0", 10),
     };
   });
 
 export const listCategoriesFn = createServerFn({ method: "GET" }).handler(async () => {
-  const c = sb();
-  const { data, error } = await c.from("categories").select("*").order("sort_order").order("name_en");
-  if (error) throw error;
-  return data ?? [];
+  const { rows } = await query(`SELECT * FROM public.categories ORDER BY sort_order, name_en`);
+  return rows;
 });
 
 export const listWardsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const c = sb();
-  const { data, error } = await c.from("wards").select("*").order("number");
-  if (error) throw error;
-  return data ?? [];
+  const { rows } = await query(`SELECT * FROM public.wards ORDER BY number`);
+  return rows;
 });
 
-// DK's 9 taluks (see the governance knowledge base). Used by the admin
-// jurisdiction-rules editor and available for any future taluk-aware UI.
+// DK's 9 taluks. Used by the admin jurisdiction-rules editor.
 export const listTaluksFn = createServerFn({ method: "GET" }).handler(async () => {
-  const c = sb();
-  const { data, error } = await c.from("taluks").select("*").order("name");
-  if (error) throw error;
-  return data ?? [];
+  const { rows } = await query(`SELECT * FROM public.taluks ORDER BY name`);
+  return rows;
 });
 
 export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async () => {
-  const c = sb();
-  const { data: auths, error: authsError } = await c.from("authorities").select("*").order("name");
-  if (authsError) throw authsError;
-  // PERF: Fetching ALL issues is expensive as the table grows.
-  // Consider using a materialized view or aggregate table instead.
-  // For now, limit to the last 10,000 issues to keep response times reasonable.
-  const { data: agg, error: aggError } = await c
-    .from("issues")
-    .select("assigned_authority_id, status, created_at, updated_at")
-    .order("created_at", { ascending: false })
-    .limit(10000);
-  if (aggError) throw aggError;
+  const { rows: auths } = await query(`SELECT * FROM public.authorities ORDER BY name`);
+  const { rows: agg } = await query(
+    `SELECT assigned_authority_id, status, created_at, updated_at
+     FROM public.issues
+     ORDER BY created_at DESC
+     LIMIT 10000`,
+  );
 
-  return (auths ?? []).map((a) => {
-    const mine = (agg ?? []).filter((i) => i.assigned_authority_id === a.id);
-    const resolved = mine.filter((i) =>
-      ["resolved", "community_confirmed", "closed"].includes(i.status as string),
+  return auths.map((a: any) => {
+    const mine = agg.filter((i: any) => i.assigned_authority_id === a.id);
+    const resolved = mine.filter((i: any) =>
+      ["resolved", "community_confirmed", "closed"].includes(i.status),
     );
     const pending = mine.length - resolved.length;
     const times = resolved.map(
-      (i) =>
-        new Date(i.updated_at as string).getTime() - new Date(i.created_at as string).getTime(),
+      (i: any) =>
+        new Date(i.updated_at).getTime() - new Date(i.created_at).getTime(),
     );
     const avgDays = times.length
-      ? times.reduce((x, y) => x + y, 0) / times.length / 86400000
+      ? times.reduce((x: number, y: number) => x + y, 0) / times.length / 86400000
       : null;
     const total = mine.length;
     const score = total > 0 ? Math.round((resolved.length / total) * 100) : 0;
@@ -257,15 +208,17 @@ export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async
 });
 
 export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(async () => {
-  const c = sb();
-  const { data, error } = await c
-    .from("representatives")
-    .select("*, authority:authorities(id, name), ward:wards(id, number, name)")
-    .eq("active", true)
-    .not("role", "ilike", "corporator")
-    .order("name");
-  if (error) throw error;
-  return data ?? [];
+  const { rows } = await query(
+    `SELECT r.*,
+       json_build_object('id', a.id, 'name', a.name) AS authority,
+       CASE WHEN w.id IS NOT NULL THEN json_build_object('id', w.id, 'number', w.number, 'name', w.name) ELSE NULL END AS ward
+     FROM public.representatives r
+     LEFT JOIN public.authorities a ON a.id = r.authority_id
+     LEFT JOIN public.wards w ON w.id = r.ward_id
+     WHERE r.active = true AND lower(r.role) NOT LIKE 'corporator%'
+     ORDER BY r.name`,
+  );
+  return rows;
 });
 
 export const wardStatsFn = createServerFn({ method: "GET" })
@@ -273,43 +226,45 @@ export const wardStatsFn = createServerFn({ method: "GET" })
     z.object({ ward_id: z.number().int().optional() }).parse(d ?? {}),
   )
   .handler(async ({ data }) => {
-    const c = sb();
-    let q = c
-      .from("issues")
-      .select(
-        "id, status, category_id, severity, lat, lng, ward_id, created_at, category:categories(slug, name_en, color)",
-      )
-      .eq("visibility", "visible");
-    if (data.ward_id) q = q.eq("ward_id", data.ward_id);
-    const { data: rows, error } = await q;
-    if (error) throw error;
-    return rows ?? [];
+    const params: any[] = [];
+    let sql = `
+      SELECT i.id, i.status, i.category_id, i.severity, i.lat, i.lng, i.ward_id, i.created_at,
+        json_build_object('slug', c.slug, 'name_en', c.name_en, 'color', c.color) AS category
+      FROM public.issues i
+      LEFT JOIN public.categories c ON c.id = i.category_id
+      WHERE i.visibility = 'visible'
+    `;
+    if (data.ward_id) {
+      params.push(data.ward_id);
+      sql += ` AND i.ward_id = $1`;
+    }
+    const { rows } = await query(sql, params);
+    return rows;
   });
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const c = sb();
-  const { data: rows, error } = await c
-    .from("issues")
-    .select("status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id")
-    .eq("visibility", "visible");
-  if (error) throw error;
-  const list = rows ?? [];
+  const { rows } = await query(
+    `SELECT status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id
+     FROM public.issues
+     WHERE visibility = 'visible'`,
+  );
+  const list = rows;
   const now = Date.now();
   const dayAgo = now - 86400000;
   const weekAgo = now - 7 * 86400000;
-  const today = list.filter((r) => new Date(r.created_at as string).getTime() >= dayAgo).length;
-  const week = list.filter((r) => new Date(r.created_at as string).getTime() >= weekAgo).length;
-  const resolved = list.filter((r) =>
-    ["resolved", "community_confirmed", "closed"].includes(r.status as string),
+  const today = list.filter((r: any) => new Date(r.created_at).getTime() >= dayAgo).length;
+  const week = list.filter((r: any) => new Date(r.created_at).getTime() >= weekAgo).length;
+  const resolved = list.filter((r: any) =>
+    ["resolved", "community_confirmed", "closed"].includes(r.status),
   );
   const times = resolved.map(
-    (r) => new Date(r.updated_at as string).getTime() - new Date(r.created_at as string).getTime(),
+    (r: any) => new Date(r.updated_at).getTime() - new Date(r.created_at).getTime(),
   );
-  const avgDays = times.length ? times.reduce((a, b) => a + b, 0) / times.length / 86400000 : 0;
+  const avgDays = times.length ? times.reduce((a: number, b: number) => a + b, 0) / times.length / 86400000 : 0;
 
   const byWard: Record<string, number> = {};
   const byCat: Record<string, number> = {};
-  list.forEach((r) => {
+  list.forEach((r: any) => {
     if (r.ward_id) byWard[r.ward_id] = (byWard[r.ward_id] ?? 0) + 1;
     if (r.category_id) byCat[r.category_id] = (byCat[r.category_id] ?? 0) + 1;
   });

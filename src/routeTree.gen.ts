@@ -24,6 +24,8 @@ import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminRepresentativesRouteImport } from './routes/admin.representatives'
 import { Route as AdminJurisdictionRouteImport } from './routes/admin.jurisdiction'
 import { Route as AdminIssuesRouteImport } from './routes/admin.issues'
+import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
+import { Route as AdminDevicesRouteImport } from './routes/admin.devices'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminAuthoritiesRouteImport } from './routes/admin.authorities'
 import { Route as IssuePublicIdSlugRouteImport } from './routes/issue.$publicId.$slug'
@@ -103,6 +105,16 @@ const AdminIssuesRoute = AdminIssuesRouteImport.update({
   path: '/admin/issues',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminFeedbackRoute = AdminFeedbackRouteImport.update({
+  id: '/admin/feedback',
+  path: '/admin/feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDevicesRoute = AdminDevicesRouteImport.update({
+  id: '/admin/devices',
+  path: '/admin/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   id: '/admin/categories',
   path: '/admin/categories',
@@ -128,6 +140,8 @@ export interface FileRoutesByFullPath {
   '/report': typeof ReportRoute
   '/admin/authorities': typeof AdminAuthoritiesRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/devices': typeof AdminDevicesRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/issues': typeof AdminIssuesRoute
   '/admin/jurisdiction': typeof AdminJurisdictionRoute
   '/admin/representatives': typeof AdminRepresentativesRoute
@@ -148,6 +162,8 @@ export interface FileRoutesByTo {
   '/report': typeof ReportRoute
   '/admin/authorities': typeof AdminAuthoritiesRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/devices': typeof AdminDevicesRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/issues': typeof AdminIssuesRoute
   '/admin/jurisdiction': typeof AdminJurisdictionRoute
   '/admin/representatives': typeof AdminRepresentativesRoute
@@ -169,6 +185,8 @@ export interface FileRoutesById {
   '/report': typeof ReportRoute
   '/admin/authorities': typeof AdminAuthoritiesRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/devices': typeof AdminDevicesRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/issues': typeof AdminIssuesRoute
   '/admin/jurisdiction': typeof AdminJurisdictionRoute
   '/admin/representatives': typeof AdminRepresentativesRoute
@@ -191,6 +209,8 @@ export interface FileRouteTypes {
     | '/report'
     | '/admin/authorities'
     | '/admin/categories'
+    | '/admin/devices'
+    | '/admin/feedback'
     | '/admin/issues'
     | '/admin/jurisdiction'
     | '/admin/representatives'
@@ -211,6 +231,8 @@ export interface FileRouteTypes {
     | '/report'
     | '/admin/authorities'
     | '/admin/categories'
+    | '/admin/devices'
+    | '/admin/feedback'
     | '/admin/issues'
     | '/admin/jurisdiction'
     | '/admin/representatives'
@@ -231,6 +253,8 @@ export interface FileRouteTypes {
     | '/report'
     | '/admin/authorities'
     | '/admin/categories'
+    | '/admin/devices'
+    | '/admin/feedback'
     | '/admin/issues'
     | '/admin/jurisdiction'
     | '/admin/representatives'
@@ -252,6 +276,8 @@ export interface RootRouteChildren {
   ReportRoute: typeof ReportRoute
   AdminAuthoritiesRoute: typeof AdminAuthoritiesRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminDevicesRoute: typeof AdminDevicesRoute
+  AdminFeedbackRoute: typeof AdminFeedbackRoute
   AdminIssuesRoute: typeof AdminIssuesRoute
   AdminJurisdictionRoute: typeof AdminJurisdictionRoute
   AdminRepresentativesRoute: typeof AdminRepresentativesRoute
@@ -371,6 +397,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIssuesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/feedback': {
+      id: '/admin/feedback'
+      path: '/admin/feedback'
+      fullPath: '/admin/feedback'
+      preLoaderRoute: typeof AdminFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/devices': {
+      id: '/admin/devices'
+      path: '/admin/devices'
+      fullPath: '/admin/devices'
+      preLoaderRoute: typeof AdminDevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/categories': {
       id: '/admin/categories'
       path: '/admin/categories'
@@ -404,6 +444,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReportRoute: ReportRoute,
   AdminAuthoritiesRoute: AdminAuthoritiesRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminDevicesRoute: AdminDevicesRoute,
+  AdminFeedbackRoute: AdminFeedbackRoute,
   AdminIssuesRoute: AdminIssuesRoute,
   AdminJurisdictionRoute: AdminJurisdictionRoute,
   AdminRepresentativesRoute: AdminRepresentativesRoute,

@@ -1,7 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-
-type Sb = SupabaseClient<Database>;
+import { query } from "@/lib/db";
 
 export type ResolveInput = {
   category_id: number;
@@ -159,27 +156,35 @@ function detectScope(
   return { scope: "any", taluk: null };
 }
 
-export async function resolveIssue(sb: Sb, input: ResolveInput): Promise<ResolveResult> {
+// resolveIssue now fetches rules from Neon directly (no Supabase parameter).
+export async function resolveIssue(input: ResolveInput): Promise<ResolveResult> {
   const locationText = [input.area, input.locality, input.address].filter(Boolean).join(" ").toLowerCase();
   const parts: string[] = [];
 
   // ── Load rules + reps + scope-aware jurisdiction rules in parallel ──
   const [rulesRes, repsRes, jrulesRes] = await Promise.all([
-    sb.from("assignment_rules")
-      .select("authority_id, representative_id, version, ward_id")
-      .eq("category_id", input.category_id)
-      .eq("active", true),
-    sb.from("representatives")
-      .select("id, name, role, constituency, city, ward_id")
-      .eq("active", true),
-    sb.from("jurisdiction_rules")
-      .select("id, category_id, scope_type, taluk_id, authority_id, confidence, notes, priority, active")
-      .eq("category_id", input.category_id)
-      .eq("active", true),
+    query<AssignmentRule>(
+      `SELECT authority_id, representative_id, version, ward_id
+       FROM public.assignment_rules
+       WHERE category_id = $1 AND active = true`,
+      [input.category_id],
+    ),
+    query<Rep>(
+      `SELECT id, name, role, constituency, city, ward_id
+       FROM public.representatives
+       WHERE active = true`,
+    ),
+    query<JurisdictionRule>(
+      `SELECT id, category_id, scope_type, taluk_id, authority_id, confidence, notes, priority, active
+       FROM public.jurisdiction_rules
+       WHERE category_id = $1 AND active = true`,
+      [input.category_id],
+    ),
   ]);
-  const rules: AssignmentRule[] = rulesRes.data ?? [];
-  const reps: Rep[] = repsRes.data ?? [];
-  const jrules: JurisdictionRule[] = jrulesRes.data ?? [];
+
+  const rules: AssignmentRule[] = rulesRes.rows;
+  const reps: Rep[] = repsRes.rows;
+  const jrules: JurisdictionRule[] = jrulesRes.rows;
 
   // ── Build area mapping from embedded data ──────────────────────────
   const mappings: AreaMapping[] = [...EXTRA_MAPPINGS];

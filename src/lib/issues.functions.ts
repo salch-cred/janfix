@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveIssue } from "@/lib/resolver";
+import { query } from "@/lib/db";
 
+// ── Supabase client — used ONLY for Storage (photo uploads + signed URLs) ──
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
@@ -16,7 +18,6 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     if (init?.headers) {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
-    // New Supabase API keys are opaque strings, not bearer JWTs.
     if (
       isNewSupabaseApiKey(supabaseKey) &&
       headers.get("Authorization") === `Bearer ${supabaseKey}`
@@ -28,7 +29,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function serverClient() {
+function storageClient() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl) throw new Error("Missing SUPABASE_URL environment variable");
@@ -39,6 +40,14 @@ function serverClient() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+
+async function signUrl(bucket: string, path: string): Promise<string> {
+  const sb = storageClient();
+  const { data } = await sb.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 365);
+  return data?.signedUrl ?? "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const createIssueInput = z.object({
   device_id: z.string().min(8),
@@ -54,31 +63,24 @@ const createIssueInput = z.object({
   ward_id: z.number().int().optional().nullable(),
   image_path: z.string().min(3),
   image_phash: z.string().optional().nullable(),
-  // Up to 4 optional additional photos, uploaded to storage by the caller;
-  // these are stored in issue_photos alongside the required primary photo.
   extra_image_paths: z.array(z.string().min(3)).max(4).optional().nullable(),
 });
-
-async function signUrl(sb: ReturnType<typeof serverClient>, bucket: string, path: string) {
-  const { data } = await sb.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 365);
-  return data?.signedUrl ?? "";
-}
 
 export const createIssueFn = createServerFn({ method: "POST" })
   .inputValidator((d: z.infer<typeof createIssueInput>) => createIssueInput.parse(d))
   .handler(async ({ data }) => {
-    const sb = serverClient();
-
     // category lookup
-    const { data: cat, error: catErr } = await sb
-      .from("categories")
-      .select("id, slug, name_en")
-      .eq("slug", data.category_slug)
-      .single();
-    if (catErr || !cat) throw new Error("Unknown category");
+    const { rows: catRows } = await query(
+      `SELECT id, slug, name_en FROM public.categories WHERE slug = $1`,
+      [data.category_slug],
+    );
+    if (!catRows.length) throw new Error("Unknown category");
+    const cat = catRows[0] as any;
 
     // Resolve authority + representative via layered engine
-    const resolution = await resolveIssue(sb, {
+    // NOTE: resolver.ts now uses the Neon pool directly
+    const sb = storageClient();
+    const resolution = await resolveIssue({
       category_id: cat.id,
       ward_id: data.ward_id,
       area: data.area,
@@ -86,10 +88,10 @@ export const createIssueFn = createServerFn({ method: "POST" })
       address: data.address,
     });
 
-    // public id
-    const { data: pidRow, error: pidErr } = await sb.rpc("next_public_id");
-    if (pidErr || !pidRow) throw new Error("Could not allocate ID");
-    const public_id = pidRow as unknown as string;
+    // allocate public id via the DB sequence function
+    const { rows: pidRows } = await query(`SELECT public.next_public_id() AS public_id`);
+    if (!pidRows.length) throw new Error("Could not allocate ID");
+    const public_id = (pidRows[0] as any).public_id as string;
 
     const slug = data.description
       .toLowerCase()
@@ -101,91 +103,71 @@ export const createIssueFn = createServerFn({ method: "POST" })
     const reason = `Category=${cat.name_en}` + (resolution.reason ? `, ${resolution.reason}` : "");
 
     // upsert device + increment count
-    const { error: devUpsertErr } = await sb
-      .from("devices")
-      .upsert(
-        { device_id: data.device_id, last_seen: new Date().toISOString() },
-        { onConflict: "device_id" },
-      );
-    if (devUpsertErr) throw devUpsertErr;
+    await query(
+      `INSERT INTO public.devices (device_id, last_seen)
+       VALUES ($1, now())
+       ON CONFLICT (device_id) DO UPDATE SET last_seen = now()`,
+      [data.device_id],
+    );
+    await query(
+      `UPDATE public.devices SET report_count = report_count + 1, last_seen = now() WHERE device_id = $1`,
+      [data.device_id],
+    );
 
-    const { data: dev, error: devSelErr } = await sb
-      .from("devices")
-      .select("report_count")
-      .eq("device_id", data.device_id)
-      .single();
-    if (devSelErr) throw devSelErr;
+    const image_url = await signUrl("issue-photos", data.image_path);
 
-    const { error: devUpdErr } = await sb
-      .from("devices")
-      .update({
-        report_count: (dev?.report_count ?? 0) + 1,
-        last_seen: new Date().toISOString(),
-      })
-      .eq("device_id", data.device_id);
-    if (devUpdErr) throw devUpdErr;
+    // insert issue
+    const { rows: insRows } = await query(
+      `INSERT INTO public.issues
+        (public_id, slug, category_id, description, severity, lat, lng,
+         address, area, locality, pincode, ward_id, image_url, image_phash, device_id,
+         assigned_authority_id, assigned_representative_id, assignment_reason,
+         assignment_rule_version, needs_review, jurisdiction_confidence)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+       RETURNING id, public_id, slug`,
+      [
+        public_id, slug, cat.id, data.description, data.severity, data.lat, data.lng,
+        data.address ?? null, data.area ?? null, data.locality ?? null, data.pincode ?? null,
+        resolution.resolved_ward_id ?? data.ward_id ?? null,
+        image_url, data.image_phash ?? null, data.device_id,
+        resolution.authority_id, resolution.representative_id, reason,
+        resolution.version, resolution.needs_review ?? false,
+        resolution.jurisdiction_confidence ?? null,
+      ],
+    );
+    if (!insRows.length) throw new Error("Failed to create issue");
+    const ins = insRows[0] as any;
 
-    const image_url = await signUrl(sb, "issue-photos", data.image_path);
+    await query(
+      `INSERT INTO public.issue_status_history
+        (issue_id, status, note, photo_url, photo_kind, by_admin, by_device_id)
+       VALUES ($1, 'reported', 'Issue reported by citizen', $2, 'report', false, $3)`,
+      [ins.id, image_url, data.device_id],
+    );
 
-    const { data: ins, error: insErr } = await sb
-      .from("issues")
-      .insert({
-        public_id,
-        slug,
-        category_id: cat.id,
-        description: data.description,
-        severity: data.severity,
-        lat: data.lat,
-        lng: data.lng,
-        address: data.address ?? null,
-        area: data.area ?? null,
-        locality: data.locality ?? null,
-        pincode: data.pincode ?? null,
-        ward_id: resolution.resolved_ward_id ?? data.ward_id ?? null,
-        image_url,
-        image_phash: data.image_phash ?? null,
-        device_id: data.device_id,
-        assigned_authority_id: resolution.authority_id,
-        assigned_representative_id: resolution.representative_id,
-        assignment_reason: reason,
-        assignment_rule_version: resolution.version,
-        needs_review: resolution.needs_review ?? false,
-        jurisdiction_confidence: resolution.jurisdiction_confidence ?? null,
-      })
-      .select("id, public_id, slug")
-      .single();
-    if (insErr || !ins) throw new Error(insErr?.message ?? "Failed to create");
-
-    const { error: histErr } = await sb.from("issue_status_history").insert({
-      issue_id: ins.id,
-      status: "reported",
-      note: "Issue reported by citizen",
-      photo_url: image_url,
-      photo_kind: "report",
-      by_admin: false,
-      by_device_id: data.device_id,
-    });
-    if (histErr) throw histErr;
-
-    // Optional extra photos beyond the required primary one.
+    // Optional extra photos
     const extraPaths = (data.extra_image_paths ?? []).slice(0, 4);
     if (extraPaths.length > 0) {
       const extraRows = await Promise.all(
         extraPaths.map(async (p, idx) => ({
           issue_id: ins.id,
-          url: await signUrl(sb, "issue-photos", p),
+          url: await signUrl("issue-photos", p),
           path: p,
           position: idx + 1,
         })),
       );
-      const { error: extraErr } = await sb.from("issue_photos").insert(extraRows);
-      if (extraErr) throw extraErr;
+      for (const row of extraRows) {
+        await query(
+          `INSERT INTO public.issue_photos (issue_id, url, path, position) VALUES ($1,$2,$3,$4)`,
+          [row.issue_id, row.url, row.path, row.position],
+        );
+      }
     }
 
     return { public_id: ins.public_id, slug: ins.slug ?? "" };
   });
 
-// Duplicate detection
+// ── Duplicate detection ──────────────────────────────────────────────────────
 const findDupesInput = z.object({
   category_slug: z.string(),
   lat: z.number(),
@@ -197,58 +179,53 @@ const findDupesInput = z.object({
 export const findDuplicatesFn = createServerFn({ method: "POST" })
   .inputValidator((d: z.infer<typeof findDupesInput>) => findDupesInput.parse(d))
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { data: cat } = await sb
-      .from("categories")
-      .select("id")
-      .eq("slug", data.category_slug)
-      .single();
-    if (!cat) return { candidates: [] };
+    const { rows: catRows } = await query(
+      `SELECT id FROM public.categories WHERE slug = $1`,
+      [data.category_slug],
+    );
+    if (!catRows.length) return { candidates: [] };
+    const cat = catRows[0] as any;
 
     const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-    // bounding box ~0.0005 deg = ~55 m
     const delta = 0.0006;
-    const { data: rows } = await sb
-      .from("issues")
-      .select(
-        "id, public_id, slug, description, lat, lng, image_phash, image_url, created_at, status, supporters_count",
-      )
-      .eq("category_id", cat.id)
-      .eq("visibility", "visible")
-      .gte("created_at", since)
-      .gte("lat", data.lat - delta)
-      .lte("lat", data.lat + delta)
-      .gte("lng", data.lng - delta)
-      .lte("lng", data.lng + delta)
-      .limit(10);
-    return { candidates: rows ?? [] };
+
+    const { rows } = await query(
+      `SELECT id, public_id, slug, description, lat, lng, image_phash, image_url, created_at, status, supporters_count
+       FROM public.issues
+       WHERE category_id = $1
+         AND visibility = 'visible'
+         AND created_at >= $2
+         AND lat BETWEEN $3 AND $4
+         AND lng BETWEEN $5 AND $6
+       LIMIT 10`,
+      [cat.id, since, data.lat - delta, data.lat + delta, data.lng - delta, data.lng + delta],
+    );
+    return { candidates: rows };
   });
 
-// Support an existing issue
+// ── Support an existing issue ────────────────────────────────────────────────
 export const supportIssueFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string; device_id: string }) =>
     z.object({ issue_id: z.string().uuid(), device_id: z.string().min(8) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { error } = await sb
-      .from("issue_supporters")
-      .insert({ issue_id: data.issue_id, device_id: data.device_id });
-    if (error && !error.message.includes("duplicate")) throw error;
-    
-    // Count is automatically updated on the issues table by DB triggers.
-    // Query it from the issues table to return the correct count.
-    const { data: issueRow, error: getErr } = await sb
-      .from("issues")
-      .select("supporters_count")
-      .eq("id", data.issue_id)
-      .single();
-    if (getErr) throw getErr;
+    try {
+      await query(
+        `INSERT INTO public.issue_supporters (issue_id, device_id) VALUES ($1, $2)`,
+        [data.issue_id, data.device_id],
+      );
+    } catch (e: any) {
+      if (!e.message?.includes("duplicate") && !e.code?.includes("23505")) throw e;
+    }
 
-    return { ok: true, supporters: issueRow?.supporters_count ?? 0 };
+    const { rows } = await query(
+      `SELECT supporters_count FROM public.issues WHERE id = $1`,
+      [data.issue_id],
+    );
+    return { ok: true, supporters: (rows[0] as any)?.supporters_count ?? 0 };
   });
 
-// Vote
+// ── Vote ─────────────────────────────────────────────────────────────────────
 export const voteIssueFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string; device_id: string; vote: "exists" | "fixed" }) =>
     z
@@ -260,78 +237,76 @@ export const voteIssueFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    await sb.from("issue_votes").upsert(
-      {
-        issue_id: data.issue_id,
-        device_id: data.device_id,
-        vote: data.vote,
-      },
-      { onConflict: "issue_id,device_id" },
+    await query(
+      `INSERT INTO public.issue_votes (issue_id, device_id, vote)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (issue_id, device_id) DO UPDATE SET vote = $3`,
+      [data.issue_id, data.device_id, data.vote],
     );
 
-    // auto status flips
-    const { data: votes } = await sb
-      .from("issue_votes")
-      .select("vote")
-      .eq("issue_id", data.issue_id);
-    const exists = votes?.filter((v) => v.vote === "exists").length ?? 0;
-    const fixed = votes?.filter((v) => v.vote === "fixed").length ?? 0;
+    const { rows: votes } = await query(
+      `SELECT vote FROM public.issue_votes WHERE issue_id = $1`,
+      [data.issue_id],
+    );
+    const exists = votes.filter((v: any) => v.vote === "exists").length;
+    const fixed = votes.filter((v: any) => v.vote === "fixed").length;
     const total = exists + fixed;
 
-    const { data: issue } = await sb
-      .from("issues")
-      .select("status")
-      .eq("id", data.issue_id)
-      .single();
+    const { rows: issueRows } = await query(
+      `SELECT status FROM public.issues WHERE id = $1`,
+      [data.issue_id],
+    );
+    const issue = issueRows[0] as any;
 
     if (issue) {
       if (issue.status === "reported" && exists >= 5 && exists / total >= 0.7) {
-        await sb.from("issues").update({ status: "community_verified" }).eq("id", data.issue_id);
-        await sb.from("issue_status_history").insert({
-          issue_id: data.issue_id,
-          status: "community_verified",
-          note: "Auto-verified by community (≥70% agreement)",
-          by_admin: false,
-        });
+        await query(
+          `UPDATE public.issues SET status = 'community_verified' WHERE id = $1`,
+          [data.issue_id],
+        );
+        await query(
+          `INSERT INTO public.issue_status_history (issue_id, status, note, by_admin)
+           VALUES ($1, 'community_verified', 'Auto-verified by community (≥70% agreement)', false)`,
+          [data.issue_id],
+        );
       }
       if (issue.status === "resolved" && fixed >= 5 && fixed / total >= 0.7) {
-        await sb.from("issues").update({ status: "community_confirmed" }).eq("id", data.issue_id);
-        await sb.from("issue_status_history").insert({
-          issue_id: data.issue_id,
-          status: "community_confirmed",
-          note: "Community confirmed fix (≥70% agreement)",
-          by_admin: false,
-        });
+        await query(
+          `UPDATE public.issues SET status = 'community_confirmed' WHERE id = $1`,
+          [data.issue_id],
+        );
+        await query(
+          `INSERT INTO public.issue_status_history (issue_id, status, note, by_admin)
+           VALUES ($1, 'community_confirmed', 'Community confirmed fix (≥70% agreement)', false)`,
+          [data.issue_id],
+        );
       }
     }
     return { ok: true, exists, fixed };
   });
 
+// ── Thanks ────────────────────────────────────────────────────────────────────
 export const thanksIssueFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string; device_id: string }) =>
     z.object({ issue_id: z.string().uuid(), device_id: z.string().min(8) }).parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { error } = await sb.from("issue_thanks").insert({
-      issue_id: data.issue_id,
-      device_id: data.device_id,
-    });
-    if (error && !error.message.includes("duplicate")) throw error;
-
-    // Count is automatically updated on the issues table by DB triggers.
-    // Query it from the issues table to return the correct count.
-    const { data: issueRow, error: getErr } = await sb
-      .from("issues")
-      .select("thanked_count")
-      .eq("id", data.issue_id)
-      .single();
-    if (getErr) throw getErr;
-
-    return { ok: true, thanks: issueRow?.thanked_count ?? 0 };
+    try {
+      await query(
+        `INSERT INTO public.issue_thanks (issue_id, device_id) VALUES ($1, $2)`,
+        [data.issue_id, data.device_id],
+      );
+    } catch (e: any) {
+      if (!e.message?.includes("duplicate") && !e.code?.includes("23505")) throw e;
+    }
+    const { rows } = await query(
+      `SELECT thanked_count FROM public.issues WHERE id = $1`,
+      [data.issue_id],
+    );
+    return { ok: true, thanks: (rows[0] as any)?.thanked_count ?? 0 };
   });
 
+// ── Comment ───────────────────────────────────────────────────────────────────
 export const commentIssueFn = createServerFn({ method: "POST" })
   .inputValidator(
     (d: {
@@ -355,18 +330,15 @@ export const commentIssueFn = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { error } = await sb.from("issue_comments").insert({
-      issue_id: data.issue_id,
-      device_id: data.device_id,
-      name: data.name ?? null,
-      body: data.body,
-      quick_reply: data.quick_reply ?? null,
-    });
-    if (error) throw error;
+    await query(
+      `INSERT INTO public.issue_comments (issue_id, device_id, name, body, quick_reply)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [data.issue_id, data.device_id, data.name ?? null, data.body, data.quick_reply ?? null],
+    );
     return { ok: true };
   });
 
+// ── Watch ─────────────────────────────────────────────────────────────────────
 export const watchIssueFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string; device_id: string; email?: string | null }) =>
     z
@@ -378,16 +350,18 @@ export const watchIssueFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { error } = await sb.from("issue_watchers").insert({
-      issue_id: data.issue_id,
-      device_id: data.device_id,
-      email: data.email ?? null,
-    });
-    if (error && !error.message.includes("duplicate")) throw error;
+    try {
+      await query(
+        `INSERT INTO public.issue_watchers (issue_id, device_id, email) VALUES ($1, $2, $3)`,
+        [data.issue_id, data.device_id, data.email ?? null],
+      );
+    } catch (e: any) {
+      if (!e.message?.includes("duplicate") && !e.code?.includes("23505")) throw e;
+    }
     return { ok: true };
   });
 
+// ── Citizen Photo ─────────────────────────────────────────────────────────────
 export const addCitizenPhotoFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string; device_id: string; photo_url: string }) =>
     z
@@ -399,25 +373,22 @@ export const addCitizenPhotoFn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { error } = await sb.from("issue_status_history").insert({
-      issue_id: data.issue_id,
-      status: null,
-      note: "Current photo added by citizen",
-      photo_url: data.photo_url,
-      photo_kind: "citizen_after",
-      by_admin: false,
-      by_device_id: data.device_id,
-    });
-    if (error) throw error;
+    await query(
+      `INSERT INTO public.issue_status_history
+        (issue_id, status, note, photo_url, photo_kind, by_admin, by_device_id)
+       VALUES ($1, NULL, 'Current photo added by citizen', $2, 'citizen_after', false, $3)`,
+      [data.issue_id, data.photo_url, data.device_id],
+    );
     return { ok: true };
   });
 
+// ── Increment View ────────────────────────────────────────────────────────────
 export const incrementViewFn = createServerFn({ method: "POST" })
   .inputValidator((d: { issue_id: string }) => z.object({ issue_id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
-    const sb = serverClient();
-    const { error } = await sb.rpc("increment_issue_views", { issue_id: data.issue_id });
-    if (error) throw error;
+    await query(
+      `UPDATE public.issues SET views = views + 1 WHERE id = $1`,
+      [data.issue_id],
+    );
     return { ok: true };
   });

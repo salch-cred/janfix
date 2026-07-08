@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
-import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
+import { query } from "@/lib/db";
 
+// ── Supabase service client — used ONLY for auth.getUser() ──────────────────
 function isNewSupabaseApiKey(value: string): boolean {
 	return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
@@ -28,7 +29,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 	};
 }
 
-function service() {
+function authClient() {
 	const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 	return createClient<Database>(process.env.SUPABASE_URL!, key, {
 		global: { fetch: createSupabaseFetch(key) },
@@ -38,15 +39,21 @@ function service() {
 
 async function requireAdmin(token: string | undefined | null) {
 	if (!token) throw new Error("Not authenticated");
-	const c = service();
+	const c = authClient();
 	const { data: userRes } = await c.auth.getUser(token);
 	const user = userRes?.user;
 	if (!user) throw new Error("Not authenticated");
-	const { data: roles } = await c.from("user_roles").select("role").eq("user_id", user.id);
-	const isAdmin = (roles ?? []).some((r) => r.role === "admin" || r.role === "moderator");
+	// user_roles table is in Neon now
+	const { rows: roles } = await query<{ role: string }>(
+		`SELECT role FROM public.user_roles WHERE user_id = $1`,
+		[user.id],
+	);
+	const isAdmin = roles.some((r) => r.role === "admin" || r.role === "moderator");
 	if (!isAdmin) throw new Error("Not authorized");
 	return { user };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const adminUpdateIssueFn = createServerFn({ method: "POST" })
 	.inputValidator(
@@ -79,38 +86,35 @@ export const adminUpdateIssueFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const patch: TablesUpdate<"issues"> = {};
-		if (data.status !== undefined) patch.status = data.status as Tables<"issues">["status"];
-		if (data.visibility !== undefined) patch.visibility = data.visibility as Tables<"issues">["visibility"];
-		if (data.duplicate_of_id !== undefined) patch.duplicate_of_id = data.duplicate_of_id;
-		if (data.assigned_authority_id !== undefined)
-			patch.assigned_authority_id = data.assigned_authority_id;
-		if (data.assigned_representative_id !== undefined)
-			patch.assigned_representative_id = data.assigned_representative_id;
-		if (Object.keys(patch).length) {
-			const { error } = await c.from("issues").update(patch).eq("id", data.issue_id);
-			if (error) throw error;
+
+		const setClauses: string[] = [];
+		const params: any[] = [];
+		let pi = 1;
+
+		if (data.status !== undefined) { setClauses.push(`status = $${pi++}`); params.push(data.status); }
+		if (data.visibility !== undefined) { setClauses.push(`visibility = $${pi++}`); params.push(data.visibility); }
+		if (data.duplicate_of_id !== undefined) { setClauses.push(`duplicate_of_id = $${pi++}`); params.push(data.duplicate_of_id); }
+		if (data.assigned_authority_id !== undefined) { setClauses.push(`assigned_authority_id = $${pi++}`); params.push(data.assigned_authority_id); }
+		if (data.assigned_representative_id !== undefined) { setClauses.push(`assigned_representative_id = $${pi++}`); params.push(data.assigned_representative_id); }
+
+		if (setClauses.length) {
+			params.push(data.issue_id);
+			await query(
+				`UPDATE public.issues SET ${setClauses.join(", ")} WHERE id = $${pi}`,
+				params,
+			);
 		}
 		if (data.status || data.note || data.photo_url) {
-			const { error: histErr } = await c.from("issue_status_history").insert({
-				issue_id: data.issue_id,
-				status: (data.status ?? null) as Tables<"issues">["status"] | null,
-				note: data.note ?? null,
-				photo_url: data.photo_url ?? null,
-				photo_kind: data.photo_kind ?? null,
-				by_admin: true,
-			});
-			if (histErr) throw histErr;
+			await query(
+				`INSERT INTO public.issue_status_history (issue_id, status, note, photo_url, photo_kind, by_admin)
+         VALUES ($1, $2, $3, $4, $5, true)`,
+				[data.issue_id, data.status ?? null, data.note ?? null, data.photo_url ?? null, data.photo_kind ?? null],
+			);
 		}
 		return { ok: true };
 	});
 
-// Permanently deletes an issue/report and all of its dependent rows (votes,
-// supporters, thanks, comments, status history, official updates, watchers,
-// photos cascade via FK ON DELETE CASCADE at the DB level). Admin/moderator
-// only. Uses the service-role client because the anon/authenticated Postgres
-// role has no DELETE grant on public.issues -- only service_role can delete.
+// Permanently deletes an issue/report and all dependent rows.
 export const adminDeleteIssueFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; issue_id: string }) =>
 		z
@@ -122,9 +126,7 @@ export const adminDeleteIssueFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("issues").delete().eq("id", data.issue_id);
-		if (error) throw error;
+		await query(`DELETE FROM public.issues WHERE id = $1`, [data.issue_id]);
 		return { ok: true };
 	});
 
@@ -140,13 +142,10 @@ export const adminPostOfficialFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		const { user } = await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("issue_official_updates").insert({
-			issue_id: data.issue_id,
-			body: data.body,
-			posted_by: user.id,
-		});
-		if (error) throw error;
+		await query(
+			`INSERT INTO public.issue_official_updates (issue_id, body, posted_by) VALUES ($1, $2, $3)`,
+			[data.issue_id, data.body, user.id],
+		);
 		return { ok: true };
 	});
 
@@ -162,9 +161,10 @@ export const adminHideCommentFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("issue_comments").update({ hidden: data.hidden }).eq("id", data.comment_id);
-		if (error) throw error;
+		await query(
+			`UPDATE public.issue_comments SET hidden = $1 WHERE id = $2`,
+			[data.hidden, data.comment_id],
+		);
 		return { ok: true };
 	});
 
@@ -201,25 +201,28 @@ export const adminUpsertAuthorityFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			const { error } = await c.from("authorities").update(rest).eq("id", id);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+			await query(
+				`UPDATE public.authorities SET ${setClauses} WHERE id = $${keys.length + 1}`,
+				[...keys.map((k) => rest[k]), id],
+			);
 		} else {
-			const { error } = await c.from("authorities").insert(rest);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const cols = keys.join(", ");
+			const vals = keys.map((_, i) => `$${i + 1}`).join(", ");
+			await query(
+				`INSERT INTO public.authorities (${cols}) VALUES (${vals})`,
+				keys.map((k) => rest[k]),
+			);
 		}
 		return { ok: true };
 	});
 
-// Deletes an authority. Uses the service-role client for the same reason as
-// adminDeleteIssueFn: public.authorities has no DELETE grant for the
-// anon/authenticated Postgres role, so a direct client-side
-// supabase.from("authorities").delete() call always fails with a permission
-// error, even for a logged-in admin. If the authority is still referenced by
-// an existing issue or assignment rule, the database's foreign key
-// constraint will reject the delete -- reassign or remove those first.
+// Deletes an authority. If still referenced by an issue or assignment rule,
+// the database's FK constraint will reject the delete.
 export const adminDeleteAuthorityFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: number }) =>
 		z
@@ -231,9 +234,7 @@ export const adminDeleteAuthorityFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("authorities").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.authorities WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
 
@@ -262,37 +263,39 @@ export const adminUpsertRuleFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			const { data: cur } = await c
-				.from("assignment_rules")
-				.select("version")
-				.eq("id", id)
-				.single();
-			const { error } = await c
-				.from("assignment_rules")
-				.update({ ...rest, version: (cur?.version ?? 1) + 1 })
-				.eq("id", id);
-			if (error) throw error;
+			const { rows: cur } = await query<{ version: number }>(
+				`SELECT version FROM public.assignment_rules WHERE id = $1`,
+				[id],
+			);
+			const newVersion = (cur[0]?.version ?? 1) + 1;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const setClauses = [...keys.map((k, i) => `${k} = $${i + 1}`), `version = $${keys.length + 1}`].join(", ");
+			await query(
+				`UPDATE public.assignment_rules SET ${setClauses} WHERE id = $${keys.length + 2}`,
+				[...keys.map((k) => rest[k]), newVersion, id],
+			);
 		} else {
-			const { error } = await c.from("assignment_rules").insert({ ...rest, version: 1 });
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const cols = [...keys, "version"].join(", ");
+			const vals = keys.map((_, i) => `$${i + 1}`).join(", ") + `, 1`;
+			await query(
+				`INSERT INTO public.assignment_rules (${cols}) VALUES (${vals})`,
+				keys.map((k) => rest[k]),
+			);
 		}
 		return { ok: true };
 	});
 
-// Deletes an assignment rule. Service-role client for the usual permission
-// reason.
+// Deletes an assignment rule.
 export const adminDeleteRuleFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: number }) =>
 		z.object({ access_token: z.string(), id: z.number().int() }).parse(d),
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("assignment_rules").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.assignment_rules WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
 
@@ -301,36 +304,39 @@ export const adminListRulesFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { data: rows, error } = await c
-			.from("assignment_rules")
-			.select(
-				"*, category:categories(id, name_en), ward:wards(id, number, name), authority:authorities(id, name), representative:representatives(id, name)",
-			)
-			.order("id");
-		if (error) throw error;
-		return rows ?? [];
+		const { rows } = await query(
+			`SELECT ar.*,
+        json_build_object('id', c.id, 'name_en', c.name_en) AS category,
+        CASE WHEN w.id IS NOT NULL THEN json_build_object('id', w.id, 'number', w.number, 'name', w.name) ELSE NULL END AS ward,
+        json_build_object('id', a.id, 'name', a.name) AS authority,
+        CASE WHEN r.id IS NOT NULL THEN json_build_object('id', r.id, 'name', r.name) ELSE NULL END AS representative
+       FROM public.assignment_rules ar
+       LEFT JOIN public.categories c ON c.id = ar.category_id
+       LEFT JOIN public.wards w ON w.id = ar.ward_id
+       LEFT JOIN public.authorities a ON a.id = ar.authority_id
+       LEFT JOIN public.representatives r ON r.id = ar.representative_id
+       ORDER BY ar.id`,
+		);
+		return rows;
 	});
 
-// Admin-only listing of scope-aware jurisdiction rules (see the governance
-// knowledge base) with resolved names for display. Unlike assignment_rules
-// (ward-specific), these are keyed by category + scope (mcc / rural / state
-// highway / national highway / any) and only apply as a fallback when no
-// ward-specific assignment_rules row matches.
+// Admin-only listing of scope-aware jurisdiction rules.
 export const adminListJurisdictionRulesFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { data: rows, error } = await c
-			.from("jurisdiction_rules")
-			.select(
-				"*, category:categories(id, name_en), taluk:taluks(id, name), authority:authorities(id, name)",
-			)
-			.order("category_id")
-			.order("priority", { ascending: false });
-		if (error) throw error;
-		return rows ?? [];
+		const { rows } = await query(
+			`SELECT jr.*,
+        json_build_object('id', c.id, 'name_en', c.name_en) AS category,
+        CASE WHEN t.id IS NOT NULL THEN json_build_object('id', t.id, 'name', t.name) ELSE NULL END AS taluk,
+        CASE WHEN a.id IS NOT NULL THEN json_build_object('id', a.id, 'name', a.name) ELSE NULL END AS authority
+       FROM public.jurisdiction_rules jr
+       LEFT JOIN public.categories c ON c.id = jr.category_id
+       LEFT JOIN public.taluks t ON t.id = jr.taluk_id
+       LEFT JOIN public.authorities a ON a.id = jr.authority_id
+       ORDER BY jr.category_id, jr.priority DESC`,
+		);
+		return rows;
 	});
 
 export const adminUpsertJurisdictionRuleFn = createServerFn({ method: "POST" })
@@ -364,46 +370,52 @@ export const adminUpsertJurisdictionRuleFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			const { error } = await c.from("jurisdiction_rules").update(rest).eq("id", id);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+			await query(
+				`UPDATE public.jurisdiction_rules SET ${setClauses} WHERE id = $${keys.length + 1}`,
+				[...keys.map((k) => rest[k]), id],
+			);
 		} else {
-			const { error } = await c.from("jurisdiction_rules").insert(rest);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const cols = keys.join(", ");
+			const vals = keys.map((_, i) => `$${i + 1}`).join(", ");
+			await query(
+				`INSERT INTO public.jurisdiction_rules (${cols}) VALUES (${vals})`,
+				keys.map((k) => rest[k]),
+			);
 		}
 		return { ok: true };
 	});
 
-// Deletes a jurisdiction rule. Service-role client for the usual permission
-// reason.
+// Deletes a jurisdiction rule.
 export const adminDeleteJurisdictionRuleFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: number }) =>
 		z.object({ access_token: z.string(), id: z.number().int() }).parse(d),
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("jurisdiction_rules").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.jurisdiction_rules WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
 
-// Admin-only listing of ALL representatives (including inactive ones and
-// Corporator placeholders), unlike the public listRepresentativesFn which
-// filters those out for citizen-facing display.
+// Admin-only listing of ALL representatives.
 export const adminListRepresentativesFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { data: rows, error } = await c
-			.from("representatives")
-			.select("*, authority:authorities(id, name), ward:wards(id, number, name)")
-			.order("name");
-		if (error) throw error;
-		return rows ?? [];
+		const { rows } = await query(
+			`SELECT r.*,
+        json_build_object('id', a.id, 'name', a.name) AS authority,
+        CASE WHEN w.id IS NOT NULL THEN json_build_object('id', w.id, 'number', w.number, 'name', w.name) ELSE NULL END AS ward
+       FROM public.representatives r
+       LEFT JOIN public.authorities a ON a.id = r.authority_id
+       LEFT JOIN public.wards w ON w.id = r.ward_id
+       ORDER BY r.name`,
+		);
+		return rows;
 	});
 
 export const adminUpsertRepresentativeFn = createServerFn({ method: "POST" })
@@ -441,32 +453,34 @@ export const adminUpsertRepresentativeFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			const { error } = await c.from("representatives").update(rest).eq("id", id);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+			await query(
+				`UPDATE public.representatives SET ${setClauses} WHERE id = $${keys.length + 1}`,
+				[...keys.map((k) => rest[k]), id],
+			);
 		} else {
-			const { error } = await c.from("representatives").insert(rest);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const cols = keys.join(", ");
+			const vals = keys.map((_, i) => `$${i + 1}`).join(", ");
+			await query(
+				`INSERT INTO public.representatives (${cols}) VALUES (${vals})`,
+				keys.map((k) => rest[k]),
+			);
 		}
 		return { ok: true };
 	});
 
-// Deletes a representative. Service-role client for the usual permission
-// reason. representatives is referenced by issues.assigned_representative_id
-// (ON DELETE SET NULL, safe) and assignment_rules.representative_id (hard
-// FK) -- remove/reassign any rules referencing this representative first if
-// the delete fails.
+// Deletes a representative. representatives.ward_id is ON DELETE SET NULL.
 export const adminDeleteRepresentativeFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: number }) =>
 		z.object({ access_token: z.string(), id: z.number().int() }).parse(d),
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("representatives").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.representatives WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
 
@@ -485,32 +499,34 @@ export const adminUpsertWardFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			const { error } = await c.from("wards").update(rest).eq("id", id);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+			await query(
+				`UPDATE public.wards SET ${setClauses} WHERE id = $${keys.length + 1}`,
+				[...keys.map((k) => rest[k]), id],
+			);
 		} else {
-			const { error } = await c.from("wards").insert(rest);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const cols = keys.join(", ");
+			const vals = keys.map((_, i) => `$${i + 1}`).join(", ");
+			await query(
+				`INSERT INTO public.wards (${cols}) VALUES (${vals})`,
+				keys.map((k) => rest[k]),
+			);
 		}
 		return { ok: true };
 	});
 
-// Deletes a ward. Service-role client for the usual permission reason.
-// wards is referenced by issues.ward_id (ON DELETE SET NULL, safe),
-// representatives.ward_id (ON DELETE SET NULL, safe), and
-// assignment_rules.ward_id (hard FK) -- remove/reassign any rules
-// referencing this ward first if the delete fails.
+// Deletes a ward. wards.assignment_rules.ward_id is a hard FK — remove rules first.
 export const adminDeleteWardFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: number }) =>
 		z.object({ access_token: z.string(), id: z.number().int() }).parse(d),
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("wards").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.wards WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
 
@@ -541,39 +557,38 @@ export const adminUpsertCategoryFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
 		const { id, access_token: _t, ...rest } = data;
 		if (id) {
-			const { error } = await c.from("categories").update(rest).eq("id", id);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const setClauses = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+			await query(
+				`UPDATE public.categories SET ${setClauses} WHERE id = $${keys.length + 1}`,
+				[...keys.map((k) => rest[k]), id],
+			);
 		} else {
-			const { error } = await c.from("categories").insert(rest);
-			if (error) throw error;
+			const keys = Object.keys(rest) as (keyof typeof rest)[];
+			const cols = keys.join(", ");
+			const vals = keys.map((_, i) => `$${i + 1}`).join(", ");
+			await query(
+				`INSERT INTO public.categories (${cols}) VALUES (${vals})`,
+				keys.map((k) => rest[k]),
+			);
 		}
 		return { ok: true };
 	});
 
-// Deletes a category. Service-role client for the usual permission reason.
-// categories is referenced by issues.category_id and
-// assignment_rules.category_id (both hard FKs) -- the delete will be
-// rejected if any report or rule still uses this category.
+// Deletes a category. Hard FK from issues + assignment_rules — reassign first.
 export const adminDeleteCategoryFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: number }) =>
 		z.object({ access_token: z.string(), id: z.number().int() }).parse(d),
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("categories").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.categories WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
 
-// Admin-only listing of reporting devices. JanFix has no citizen account
-// system -- reporters are tracked only by an anonymous on-device ID stored
-// in public.devices. This aggregates activity (reports filed, votes cast,
-// thanks given, supporters given, comments posted) per device for the
-// admin "Reporters" page.
+// Admin-only listing of reporting devices with activity aggregates.
 export const adminListDevicesFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; q?: string; limit?: number }) =>
 		z
@@ -586,50 +601,47 @@ export const adminListDevicesFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		let q = c.from("devices").select("*").order("last_seen", { ascending: false }).limit(data.limit ?? 200);
-		if (data.q) q = q.ilike("device_id", `%${data.q}%`);
-		const { data: devices, error } = await q;
-		if (error) throw error;
-		const ids = (devices ?? []).map((d) => d.device_id);
+
+		const params: any[] = [data.limit ?? 200];
+		let deviceSql = `SELECT * FROM public.devices ORDER BY last_seen DESC LIMIT $1`;
+		if (data.q) {
+			params.push(`%${data.q}%`);
+			deviceSql = `SELECT * FROM public.devices WHERE device_id ILIKE $2 ORDER BY last_seen DESC LIMIT $1`;
+		}
+		const { rows: devices } = await query(deviceSql, params);
+		const ids = devices.map((d: any) => d.device_id);
 		if (!ids.length) return [];
 
-		const [issuesRes, votesRes, thanksRes, supportersRes, commentsRes] = await Promise.all([
-			c.from("issues").select("device_id, status").in("device_id", ids),
-			c.from("issue_votes").select("device_id").in("device_id", ids),
-			c.from("issue_thanks").select("device_id").in("device_id", ids),
-			c.from("issue_supporters").select("device_id").in("device_id", ids),
-			c.from("issue_comments").select("device_id").in("device_id", ids),
-		]);
-		if (issuesRes.error) throw issuesRes.error;
-		if (votesRes.error) throw votesRes.error;
-		if (thanksRes.error) throw thanksRes.error;
-		if (supportersRes.error) throw supportersRes.error;
-		if (commentsRes.error) throw commentsRes.error;
+		const placeholder = ids.map((_: any, i: number) => `$${i + 1}`).join(", ");
 
-		const countFor = (rows: { device_id: string | null }[] | null, id: string) =>
-			(rows ?? []).filter((r) => r.device_id === id).length;
+		const [issuesRes, votesRes, thanksRes, supportersRes, commentsRes] = await Promise.all([
+			query(`SELECT device_id, status FROM public.issues WHERE device_id IN (${placeholder})`, ids),
+			query(`SELECT device_id FROM public.issue_votes WHERE device_id IN (${placeholder})`, ids),
+			query(`SELECT device_id FROM public.issue_thanks WHERE device_id IN (${placeholder})`, ids),
+			query(`SELECT device_id FROM public.issue_supporters WHERE device_id IN (${placeholder})`, ids),
+			query(`SELECT device_id FROM public.issue_comments WHERE device_id IN (${placeholder})`, ids),
+		]);
+
+		const countFor = (rows: { device_id: string | null }[], id: string) =>
+			rows.filter((r) => r.device_id === id).length;
 		const resolvedStatuses = ["resolved", "community_confirmed", "closed"];
 
-		return (devices ?? []).map((d) => {
-			const mine = (issuesRes.data ?? []).filter((i) => i.device_id === d.device_id);
-			const resolved = mine.filter((i) => resolvedStatuses.includes(i.status as string));
+		return devices.map((d: any) => {
+			const mine = issuesRes.rows.filter((i: any) => i.device_id === d.device_id);
+			const resolved = mine.filter((i: any) => resolvedStatuses.includes(i.status));
 			return {
 				...d,
 				reports_total: mine.length,
 				reports_resolved: resolved.length,
-				votes_cast: countFor(votesRes.data, d.device_id),
-				thanks_given: countFor(thanksRes.data, d.device_id),
-				supporters_given: countFor(supportersRes.data, d.device_id),
-				comments_posted: countFor(commentsRes.data, d.device_id),
+				votes_cast: countFor(votesRes.rows, d.device_id),
+				thanks_given: countFor(thanksRes.rows, d.device_id),
+				supporters_given: countFor(supportersRes.rows, d.device_id),
+				comments_posted: countFor(commentsRes.rows, d.device_id),
 			};
 		});
 	});
 
-// Admin-only full detail for a single report: the raw issue row (regardless
-// of visibility), plus photos, status history, official updates, comments,
-// vote/thanks/supporter tallies, and watcher count. Powers the "View
-// details" panel on the admin Issues page.
+// Admin-only full detail for a single report.
 export const adminGetIssueDetailFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; issue_id: string }) =>
 		z
@@ -641,82 +653,67 @@ export const adminGetIssueDetailFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { data: row, error } = await c
-			.from("issues")
-			.select(
-				`*, category:categories(*), authority:authorities!issues_assigned_authority_id_fkey(*), representative:representatives!issues_assigned_representative_id_fkey(*), ward:wards(*)`,
-			)
-			.eq("id", data.issue_id)
-			.maybeSingle();
-		if (error) throw error;
-		if (!row) return null;
+		const { rows: issueRows } = await query(
+			`SELECT i.*,
+        row_to_json(c.*) AS category,
+        row_to_json(a.*) AS authority,
+        row_to_json(r.*) AS representative,
+        row_to_json(w.*) AS ward
+       FROM public.issues i
+       LEFT JOIN public.categories c ON c.id = i.category_id
+       LEFT JOIN public.authorities a ON a.id = i.assigned_authority_id
+       LEFT JOIN public.representatives r ON r.id = i.assigned_representative_id
+       LEFT JOIN public.wards w ON w.id = i.ward_id
+       WHERE i.id = $1`,
+			[data.issue_id],
+		);
+		if (!issueRows.length) return null;
+		const row = issueRows[0] as any;
 
 		const [history, official, comments, votes, thanks, supporters, watchers, photos] = await Promise.all([
-			c
-				.from("issue_status_history")
-				.select("*")
-				.eq("issue_id", row.id)
-				.order("created_at", { ascending: true }),
-			c
-				.from("issue_official_updates")
-				.select("*")
-				.eq("issue_id", row.id)
-				.order("created_at", { ascending: false }),
-			c
-				.from("issue_comments")
-				.select("*")
-				.eq("issue_id", row.id)
-				.order("created_at", { ascending: false }),
-			c.from("issue_votes").select("vote").eq("issue_id", row.id),
-			c.from("issue_thanks").select("device_id", { count: "exact", head: true }).eq("issue_id", row.id),
-			c.from("issue_supporters").select("device_id", { count: "exact", head: true }).eq("issue_id", row.id),
-			c.from("issue_watchers").select("device_id", { count: "exact", head: true }).eq("issue_id", row.id),
-			c
-				.from("issue_photos")
-				.select("*")
-				.eq("issue_id", row.id)
-				.order("position", { ascending: true }),
+			query(`SELECT * FROM public.issue_status_history WHERE issue_id = $1 ORDER BY created_at ASC`, [row.id]),
+			query(`SELECT * FROM public.issue_official_updates WHERE issue_id = $1 ORDER BY created_at DESC`, [row.id]),
+			query(`SELECT * FROM public.issue_comments WHERE issue_id = $1 ORDER BY created_at DESC`, [row.id]),
+			query(`SELECT vote FROM public.issue_votes WHERE issue_id = $1`, [row.id]),
+			query(`SELECT COUNT(*) AS count FROM public.issue_thanks WHERE issue_id = $1`, [row.id]),
+			query(`SELECT COUNT(*) AS count FROM public.issue_supporters WHERE issue_id = $1`, [row.id]),
+			query(`SELECT COUNT(*) AS count FROM public.issue_watchers WHERE issue_id = $1`, [row.id]),
+			query(`SELECT * FROM public.issue_photos WHERE issue_id = $1 ORDER BY position ASC`, [row.id]),
 		]);
-		if (history.error) throw history.error;
-		if (official.error) throw official.error;
-		if (comments.error) throw comments.error;
-		if (votes.error) throw votes.error;
-		if (photos.error) throw photos.error;
 
 		return {
 			issue: row,
-			history: history.data ?? [],
-			official: official.data ?? [],
-			comments: comments.data ?? [],
-			photos: photos.data ?? [],
+			history: history.rows,
+			official: official.rows,
+			comments: comments.rows,
+			photos: photos.rows,
 			votes: {
-				exists: votes.data?.filter((v) => v.vote === "exists").length ?? 0,
-				fixed: votes.data?.filter((v) => v.vote === "fixed").length ?? 0,
+				exists: votes.rows.filter((v: any) => v.vote === "exists").length,
+				fixed: votes.rows.filter((v: any) => v.vote === "fixed").length,
 			},
-			thanks: thanks.count ?? 0,
-			supporters: supporters.count ?? 0,
-			watchers: watchers.count ?? 0,
+			thanks: parseInt((thanks.rows[0] as any)?.count ?? "0", 10),
+			supporters: parseInt((supporters.rows[0] as any)?.count ?? "0", 10),
+			watchers: parseInt((watchers.rows[0] as any)?.count ?? "0", 10),
 		};
 	});
 
-// Admin-only deeper analytics: breakdowns by category, ward, status,
-// severity, authority, and visibility, plus a daily report-count trend for
-// the last 30 days. Unlike the public analyticsFn summary card, this is not
-// restricted to visible issues -- admins should be able to see hidden/spam/
-// duplicate volume too.
+// Admin-only deeper analytics.
 export const adminAnalyticsDetailFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { data: rows, error } = await c
-			.from("issues")
-			.select(
-				"status, severity, visibility, ward_id, category_id, created_at, updated_at, assigned_authority_id, category:categories(name_en), ward:wards(number, name), authority:authorities!issues_assigned_authority_id_fkey(name)",
-			);
-		if (error) throw error;
-		const list = (rows ?? []) as any[];
+		const { rows } = await query(
+			`SELECT i.status, i.severity, i.visibility, i.ward_id, i.category_id,
+        i.created_at, i.updated_at, i.assigned_authority_id,
+        row_to_json(c.*) AS category,
+        row_to_json(w.*) AS ward,
+        row_to_json(a.*) AS authority
+       FROM public.issues i
+       LEFT JOIN public.categories c ON c.id = i.category_id
+       LEFT JOIN public.wards w ON w.id = i.ward_id
+       LEFT JOIN public.authorities a ON a.id = i.assigned_authority_id`,
+		);
+		const list = rows as any[];
 
 		const byCategory = new Map<string, number>();
 		const byWard = new Map<string, number>();
@@ -776,13 +773,10 @@ export const adminListFeedbackFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string }) => z.object({ access_token: z.string() }).parse(d))
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { data: rows, error } = await c
-			.from("feedback")
-			.select("*")
-			.order("created_at", { ascending: false });
-		if (error) throw error;
-		return rows ?? [];
+		const { rows } = await query(
+			`SELECT * FROM public.feedback ORDER BY created_at DESC`,
+		);
+		return rows;
 	});
 
 // Marks a feedback submission as read/unread for admin triage.
@@ -792,24 +786,20 @@ export const adminMarkFeedbackReadFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c
-			.from("feedback")
-			.update({ read_at: data.read ? new Date().toISOString() : null })
-			.eq("id", data.id);
-		if (error) throw error;
+		await query(
+			`UPDATE public.feedback SET read_at = $1 WHERE id = $2`,
+			[data.read ? new Date().toISOString() : null, data.id],
+		);
 		return { ok: true };
 	});
 
-// Deletes a feedback submission. Service-role client for the usual permission reason.
+// Deletes a feedback submission.
 export const adminDeleteFeedbackFn = createServerFn({ method: "POST" })
 	.inputValidator((d: { access_token: string; id: string }) =>
 		z.object({ access_token: z.string(), id: z.string().uuid() }).parse(d),
 	)
 	.handler(async ({ data }) => {
 		await requireAdmin(data.access_token);
-		const c = service();
-		const { error } = await c.from("feedback").delete().eq("id", data.id);
-		if (error) throw error;
+		await query(`DELETE FROM public.feedback WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});

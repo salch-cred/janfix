@@ -1,43 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
-
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-    );
-    if (init?.headers) {
-      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (
-      isNewSupabaseApiKey(supabaseKey) &&
-      headers.get("Authorization") === `Bearer ${supabaseKey}`
-    ) {
-      headers.delete("Authorization");
-    }
-    headers.set("apikey", supabaseKey);
-    return fetch(input, { ...init, headers });
-  };
-}
-
-function sb() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl) throw new Error("Missing SUPABASE_URL environment variable");
-  if (!supabaseKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
-
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    global: { fetch: createSupabaseFetch(supabaseKey) },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
+import { query } from "@/lib/db";
 
 // Citizen-facing feedback submission (footer form). No login required --
 // mirrors the rest of JanFix's anonymous, device-id-based model. Submitted
@@ -66,14 +29,16 @@ export const submitFeedbackFn = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data }) => {
-    const c = sb();
-    const { error } = await c.from("feedback").insert({
-      name: data.name?.trim() || null,
-      email: data.email?.trim() || null,
-      message: data.message.trim(),
-      device_id: data.device_id || null,
-      page_url: data.page_url || null,
-    });
-    if (error) throw error;
+    await query(
+      `INSERT INTO public.feedback (name, email, message, device_id, page_url)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        data.name?.trim() || null,
+        data.email?.trim() || null,
+        data.message.trim(),
+        data.device_id || null,
+        data.page_url || null,
+      ],
+    );
     return { ok: true };
   });
