@@ -123,6 +123,21 @@ export const adminHideCommentFn = createServerFn({ method: "POST" })
 		return { ok: true };
 	});
 
+export const adminDeleteCommentFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string; comment_id: string }) =>
+		z
+			.object({
+				access_token: z.string(),
+				comment_id: z.string().uuid(),
+			})
+			.parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+		await query(`DELETE FROM public.issue_comments WHERE id = $1`, [data.comment_id]);
+		return { ok: true };
+	});
+
 export const adminUpsertAuthorityFn = createServerFn({ method: "POST" })
 	.inputValidator(
 		(d: {

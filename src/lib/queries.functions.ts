@@ -243,12 +243,16 @@ export const wardStatsFn = createServerFn({ method: "GET" })
   });
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const { rows } = await query(
-    `SELECT status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id
-     FROM public.issues
-     WHERE visibility = 'visible'`,
-  );
-  const list = rows;
+  const [issuesRes, visitsRes] = await Promise.all([
+    query(
+      `SELECT status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id
+       FROM public.issues
+       WHERE visibility = 'visible'`
+    ),
+    query(`SELECT count FROM public.site_visits WHERE id = 1`)
+  ]);
+  const list = issuesRes.rows;
+  const visitors = visitsRes.rows[0]?.count ?? 0;
   const now = Date.now();
   const dayAgo = now - 86400000;
   const weekAgo = now - 7 * 86400000;
@@ -279,5 +283,20 @@ export const analyticsFn = createServerFn({ method: "GET" }).handler(async () =>
     avg_days: avgDays,
     top_ward_id: topWard ? Number(topWard[0]) : null,
     top_category_id: topCat ? Number(topCat[0]) : null,
+    visitors,
   };
+});
+
+export const trackVisitFn = createServerFn({ method: "POST" }).handler(async () => {
+  await query(`
+    CREATE TABLE IF NOT EXISTS public.site_visits (
+      id integer PRIMARY KEY DEFAULT 1,
+      count integer NOT NULL DEFAULT 0
+    );
+  `);
+  await query(`
+    INSERT INTO public.site_visits (id, count) VALUES (1, 1)
+    ON CONFLICT (id) DO UPDATE SET count = site_visits.count + 1;
+  `);
+  return { ok: true };
 });

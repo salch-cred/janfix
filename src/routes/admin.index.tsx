@@ -1,4 +1,4 @@
-﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAdminSession } from "@/hooks/useAdminSession";
@@ -107,6 +107,12 @@ function AdminDashboard() {
       color: "text-blue-600 bg-blue-100 dark:bg-blue-950 dark:text-blue-400",
     },
     {
+      label: "Total Visitors",
+      value: analytics.data?.visitors ?? 0,
+      icon: Users,
+      color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
+    },
+    {
       label: "Reported Today",
       value: analytics.data?.today ?? 0,
       icon: TrendingUp,
@@ -148,7 +154,7 @@ function AdminDashboard() {
           <p className="text-sm text-muted-foreground">Overview of JanFix Mangaluru</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {stats.map((s) => {
             const Icon = s.icon;
             return (

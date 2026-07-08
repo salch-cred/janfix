@@ -1,9 +1,9 @@
-﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { listIssuesFn, listCategoriesFn, listWardsFn } from "@/lib/queries.functions";
-import { adminUpdateIssueFn, adminDeleteIssueFn, adminGetIssueDetailFn } from "@/lib/admin.functions";
+import { adminUpdateIssueFn, adminDeleteIssueFn, adminGetIssueDetailFn, adminDeleteCommentFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -239,6 +239,26 @@ function AdminIssues() {
         detail: null,
         error: e?.message || "Failed to load report details",
       });
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!session || !viewDialog.detail) return;
+    try {
+      await adminDeleteCommentFn({
+        data: { access_token: session, comment_id: commentId }
+      });
+      // Update local state without refetching the whole issue
+      setViewDialog((prev) => ({
+        ...prev,
+        detail: {
+          ...prev.detail,
+          comments: (prev.detail?.comments ?? []).filter((c: any) => c.id !== commentId)
+        }
+      }));
+    } catch (e: any) {
+      console.error("Failed to delete comment", e);
+      alert(e?.message || "Failed to delete comment");
     }
   };
 
@@ -670,9 +690,20 @@ function AdminIssues() {
                           <span className="font-medium">
                             {cm.quick_reply ? String(cm.quick_reply).replace("_", " ") : "Comment"}
                           </span>
-                          <span className="text-muted-foreground">
-                            {cm.created_at ? new Date(cm.created_at).toLocaleString() : ""}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">
+                              {cm.created_at ? new Date(cm.created_at).toLocaleString() : ""}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => handleDeleteComment(cm.id)}
+                              title="Delete comment"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                         <p className="mt-1">{cm.body}</p>
                         {cm.hidden && (
