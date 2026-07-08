@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { listIssuesFn, listCategoriesFn, listWardsFn } from "@/lib/queries.functions";
 import { adminUpdateIssueFn, adminDeleteIssueFn, adminGetIssueDetailFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
@@ -95,19 +95,8 @@ const statusColors: Record<string, string> = {
 function AdminIssues() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [session, setSession] = useState<any>(null);
-  const [checking, setChecking] = useState(true);
+  const { token: session, checking, logout } = useAdminSession();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        navigate({ to: "/auth" });
-      } else {
-        setSession(s);
-        setChecking(false);
-      }
-    });
-  }, [navigate]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -164,10 +153,7 @@ function AdminIssues() {
     error: string | null;
   }>({ open: false, loading: false, detail: null, error: null });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const handleLogout = logout;
 
   const openUpdateDialog = (issue: any) => {
     setUpdateDialog({
@@ -185,9 +171,8 @@ function AdminIssues() {
     if (!updateDialog.issue) return;
     setUpdateDialog((prev) => ({ ...prev, saving: true, error: null }));
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!session) throw new Error("Not authenticated");
+      const token = session;
 
       await adminUpdateIssueFn({
         data: {
@@ -219,9 +204,8 @@ function AdminIssues() {
     if (!deleteDialog.issue) return;
     setDeleteDialog((prev) => ({ ...prev, deleting: true, error: null }));
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!session) throw new Error("Not authenticated");
+      const token = session;
 
       await adminDeleteIssueFn({
         data: {
@@ -241,8 +225,7 @@ function AdminIssues() {
   const openViewDialog = async (issue: any) => {
     setViewDialog({ open: true, loading: true, detail: null, error: null });
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const token = session;
       if (!token) throw new Error("Not authenticated");
       const detail = await adminGetIssueDetailFn({
         data: { access_token: token, issue_id: issue.id },
@@ -791,3 +774,5 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
     </div>
   );
 }
+
+

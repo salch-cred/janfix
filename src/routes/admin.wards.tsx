@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { listWardsFn } from "@/lib/queries.functions";
 import { adminUpsertWardFn, adminDeleteWardFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
@@ -65,19 +65,8 @@ const emptyForm = {
 function AdminWards() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [session, setSession] = useState<any>(null);
-  const [checking, setChecking] = useState(true);
+  const { token: session, checking, logout } = useAdminSession();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        navigate({ to: "/auth" });
-      } else {
-        setSession(s);
-        setChecking(false);
-      }
-    });
-  }, [navigate]);
 
   const wards = useQuery({
     queryKey: ["admin-wards"],
@@ -97,10 +86,7 @@ function AdminWards() {
     error: string | null;
   }>({ open: false, id: null, name: "", deleting: false, error: null });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const handleLogout = logout;
 
   const openAdd = () => {
     setEditingId(null);
@@ -122,9 +108,8 @@ function AdminWards() {
     if (!form.name.trim() || !form.number.trim()) return;
     setSaving(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!session) throw new Error("Not authenticated");
+      const token = session;
 
       await adminUpsertWardFn({
         data: {
@@ -151,9 +136,8 @@ function AdminWards() {
     if (!deleteDialog.id) return;
     setDeleteDialog((prev) => ({ ...prev, deleting: true, error: null }));
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!session) throw new Error("Not authenticated");
+      const token = session;
 
       await adminDeleteWardFn({
         data: {
@@ -426,3 +410,5 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
     </div>
   );
 }
+
+

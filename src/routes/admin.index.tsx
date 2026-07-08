@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { analyticsFn } from "@/lib/queries.functions";
 import { adminAnalyticsDetailFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
@@ -75,19 +75,8 @@ const statusBadgeVariant: Record<string, "secondary" | "outline" | "destructive"
 
 function AdminDashboard() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<any>(null);
-  const [checking, setChecking] = useState(true);
+  const { token: session, checking, logout } = useAdminSession();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        navigate({ to: "/auth" });
-      } else {
-        setSession(s);
-        setChecking(false);
-      }
-    });
-  }, [navigate]);
 
   const analytics = useQuery({
     queryKey: ["admin-analytics"],
@@ -95,15 +84,12 @@ function AdminDashboard() {
   });
 
   const detail = useQuery({
-    queryKey: ["admin-analytics-detail", session?.access_token],
-    queryFn: () => adminAnalyticsDetailFn({ data: { access_token: session.access_token } }),
-    enabled: !!session?.access_token,
+    queryKey: ["admin-analytics-detail", session],
+    queryFn: () => adminAnalyticsDetailFn({ data: { access_token: session } }),
+    enabled: !!session,
   });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const handleLogout = logout;
 
   if (checking) {
     return (
@@ -401,3 +387,4 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
     </div>
   );
 }
+

@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { adminListFeedbackFn, adminMarkFeedbackReadFn, adminDeleteFeedbackFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,24 +50,13 @@ export const Route = createFileRoute("/admin/feedback")({
 function AdminFeedback() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [session, setSession] = useState<any>(null);
-  const [checking, setChecking] = useState(true);
+  const { token: session, checking, logout } = useAdminSession();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        navigate({ to: "/auth" });
-      } else {
-        setSession(s);
-        setChecking(false);
-      }
-    });
-  }, [navigate]);
 
   const feedback = useQuery({
-    queryKey: ["admin-feedback", session?.access_token],
-    queryFn: () => adminListFeedbackFn({ data: { access_token: session.access_token } }),
-    enabled: !!session?.access_token,
+    queryKey: ["admin-feedback", session],
+    queryFn: () => adminListFeedbackFn({ data: { access_token: session } }),
+    enabled: !!session,
   });
 
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -77,15 +66,11 @@ function AdminFeedback() {
     error: string | null;
   }>({ open: false, id: null, deleting: false, error: null });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const handleLogout = logout;
 
   const toggleRead = async (row: any) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const token = session;
       if (!token) throw new Error("Not authenticated");
       await adminMarkFeedbackReadFn({
         data: { access_token: token, id: row.id, read: !row.read_at },
@@ -100,8 +85,7 @@ function AdminFeedback() {
     if (!deleteDialog.id) return;
     setDeleteDialog((prev) => ({ ...prev, deleting: true, error: null }));
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const token = session;
       if (!token) throw new Error("Not authenticated");
       await adminDeleteFeedbackFn({ data: { access_token: token, id: deleteDialog.id } });
       queryClient.invalidateQueries({ queryKey: ["admin-feedback"] });
@@ -321,3 +305,5 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
     </div>
   );
 }
+
+

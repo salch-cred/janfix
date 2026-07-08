@@ -1,56 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import { verifyAdminToken } from "@/lib/admin.auth";
 import { query } from "@/lib/db";
 
-// ── Supabase service client — used ONLY for auth.getUser() ──────────────────
-function isNewSupabaseApiKey(value: string): boolean {
-	return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-	return (input, init) => {
-		const headers = new Headers(
-			typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-		);
-		if (init?.headers) {
-			new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-		}
-		// New Supabase API keys are opaque strings, not bearer JWTs.
-		if (
-			isNewSupabaseApiKey(supabaseKey) &&
-			headers.get("Authorization") === `Bearer ${supabaseKey}`
-		) {
-			headers.delete("Authorization");
-		}
-		headers.set("apikey", supabaseKey);
-		return fetch(input, { ...init, headers });
-	};
-}
-
-function authClient() {
-	const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-	return createClient<Database>(process.env.SUPABASE_URL!, key, {
-		global: { fetch: createSupabaseFetch(key) },
-		auth: { persistSession: false, autoRefreshToken: false },
-	});
-}
-
-async function requireAdmin(token: string | undefined | null) {
-	if (!token) throw new Error("Not authenticated");
-	const c = authClient();
-	const { data: userRes } = await c.auth.getUser(token);
-	const user = userRes?.user;
-	if (!user) throw new Error("Not authenticated");
-	// user_roles table is in Neon now
-	const { rows: roles } = await query<{ role: string }>(
-		`SELECT role FROM public.user_roles WHERE user_id = $1`,
-		[user.id],
-	);
-	const isAdmin = roles.some((r) => r.role === "admin" || r.role === "moderator");
-	if (!isAdmin) throw new Error("Not authorized");
-	return { user };
+// ── Simple HMAC token auth — no Supabase required ───────────────────────────
+function requireAdmin(token: string | undefined | null) {
+	if (!verifyAdminToken(token)) throw new Error("Not authenticated");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

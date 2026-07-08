@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { listCategoriesFn, listAuthoritiesFn, listTaluksFn } from "@/lib/queries.functions";
 import {
   adminListJurisdictionRulesFn,
@@ -95,24 +95,13 @@ const emptyForm = {
 function AdminJurisdiction() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [session, setSession] = useState<any>(null);
-  const [checking, setChecking] = useState(true);
+  const { token: session, checking, logout } = useAdminSession();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        navigate({ to: "/auth" });
-      } else {
-        setSession(s);
-        setChecking(false);
-      }
-    });
-  }, [navigate]);
 
   const rules = useQuery({
-    queryKey: ["admin-jurisdiction-rules", session?.access_token],
-    queryFn: () => adminListJurisdictionRulesFn({ data: { access_token: session.access_token } }),
-    enabled: !!session?.access_token,
+    queryKey: ["admin-jurisdiction-rules", session],
+    queryFn: () => adminListJurisdictionRulesFn({ data: { access_token: session } }),
+    enabled: !!session,
   });
 
   const categories = useQuery({
@@ -143,10 +132,7 @@ function AdminJurisdiction() {
     error: string | null;
   }>({ open: false, id: null, label: "", deleting: false, error: null });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const handleLogout = logout;
 
   const openAdd = () => {
     setEditingId(null);
@@ -173,9 +159,8 @@ function AdminJurisdiction() {
     if (!form.category_id || !form.scope_type) return;
     setSaving(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!session) throw new Error("Not authenticated");
+      const token = session;
 
       await adminUpsertJurisdictionRuleFn({
         data: {
@@ -206,9 +191,8 @@ function AdminJurisdiction() {
     if (!deleteDialog.id) return;
     setDeleteDialog((prev) => ({ ...prev, deleting: true, error: null }));
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!session) throw new Error("Not authenticated");
+      const token = session;
 
       await adminDeleteJurisdictionRuleFn({
         data: {
@@ -605,3 +589,5 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
     </div>
   );
 }
+
+

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { adminLoginFn } from "@/lib/admin.auth";
+import { setAdminToken } from "@/hooks/useAdminSession";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,16 +25,13 @@ function AdminLogin() {
     setError(null);
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
-    } else {
+    try {
+      const { token } = await adminLoginFn({ data: { email, password } });
+      setAdminToken(token);
       navigate({ to: "/admin" });
+    } catch (err: any) {
+      setError(err?.message ?? "Sign in failed. Check your credentials.");
+      setLoading(false);
     }
   };
 
@@ -84,8 +82,14 @@ function AdminLogin() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in…
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
             </form>
           </CardContent>

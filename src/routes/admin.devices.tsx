@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminSession } from "@/hooks/useAdminSession";
 import { adminListDevicesFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,34 +39,20 @@ export const Route = createFileRoute("/admin/devices")({
 
 function AdminDevices() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<any>(null);
-  const [checking, setChecking] = useState(true);
+  const { token: session, checking, logout } = useAdminSession();
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s) {
-        navigate({ to: "/auth" });
-      } else {
-        setSession(s);
-        setChecking(false);
-      }
-    });
-  }, [navigate]);
 
   const devices = useQuery({
-    queryKey: ["admin-devices", session?.access_token, search],
+    queryKey: ["admin-devices", session, search],
     queryFn: () =>
       adminListDevicesFn({
-        data: { access_token: session.access_token, q: search || undefined, limit: 200 },
+        data: { access_token: session, q: search || undefined, limit: 200 },
       }),
-    enabled: !!session?.access_token,
+    enabled: !!session,
   });
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
+  const handleLogout = logout;
 
   if (checking) {
     return (
@@ -238,3 +224,4 @@ function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogo
     </div>
   );
 }
+
