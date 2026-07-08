@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useMemo, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building2, CalendarDays, Eye, ThumbsUp, Phone, Download, Share2, Settings } from "lucide-react";
+import { Download, Share2 } from "lucide-react";
 import { STATUS_META, categoryBySlug } from "@/lib/civic";
 import { getBase64ImageFn } from "@/lib/proxy.functions";
 
@@ -35,7 +35,6 @@ type IssueLike = {
   } | null;
 };
 
-// Fixed poster size: 750×1100 (portrait, like the reference)
 const POSTER_W = 750;
 const POSTER_H = 1100;
 
@@ -55,16 +54,6 @@ const STATUS_LABEL: Record<string, string> = {
   resolved:             "RESOLVED",
   community_confirmed:  "CONFIRMED",
   closed:               "CLOSED",
-};
-
-const STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
-  reported:            { bg: "#fde047", fg: "#0f172a" },
-  community_verified:  { bg: "#bfdbfe", fg: "#1e3a8a" },
-  assigned:            { bg: "#fed7aa", fg: "#7c2d12" },
-  work_started:        { bg: "#fde047", fg: "#0f172a" },
-  resolved:            { bg: "#86efac", fg: "#14532d" },
-  community_confirmed: { bg: "#6ee7b7", fg: "#064e3b" },
-  closed:              { bg: "#cbd5e1", fg: "#334155" },
 };
 
 const REPRESENTATIVE_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f1f5f9"/><circle cx="50" cy="38" r="22" fill="%2394a3b8"/><path d="M10 90c0-24 18-36 40-36s40 12 40 36z" fill="%2394a3b8"/></svg>`;
@@ -101,7 +90,6 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
   const cat = issue.category ?? categoryBySlug("others");
   const statusLabel = STATUS_LABEL[issue.status] ?? "REPORTED";
-  const statusColor = STATUS_COLOR[issue.status] ?? STATUS_COLOR.reported;
   const dims = SIZES[size];
 
   const imageUrls = useMemo(() => [
@@ -129,7 +117,6 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const idTail        = issue.public_id.includes("-") ? issue.public_id.split("-").pop() : issue.public_id;
   const shortLink     = `janfix.in/${idTail}`;
 
-  // ── Download ────────────────────────────────────────────────────────────────
   const download = async () => {
     if (!downloadRef.current || downloading) return;
     setDownloading(true);
@@ -157,274 +144,423 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     }
   };
 
-  // Preview scale so poster fits nicely in 360px wide UI
   const PREVIEW_W = 360;
   const scale     = PREVIEW_W / POSTER_W;
 
-  // ── Poster content (same JSX used for preview + offscreen download) ─────────
   const renderPoster = (w: number, h: number) => {
-    // Scale all sizes relative to the reference 750×1100 poster
     const s = w / POSTER_W;
     const px = (v: number) => v * s;
 
     return (
       <div style={{
-        width: w, height: h,
+        width: w,
+        height: h,
         background: "#ffffff",
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        display: "flex", flexDirection: "column",
-        border: `${px(3)}px solid #1d4ed8`,
-        overflow: "hidden", boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        border: `${px(14)}px solid #1d4ed8`,
+        overflow: "hidden",
+        boxSizing: "border-box",
+        position: "relative",
       }}>
-
-        {/* ── HEADER ──────────────────────────────────────────────────────── */}
+        {/* Inner white container with padding */}
         <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: `${px(18)}px ${px(24)}px`,
-          borderBottom: `${px(1)}px solid #e2e8f0`,
-          background: "#ffffff",
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          padding: `${px(16)}px`,
+          boxSizing: "border-box",
         }}>
-          {/* Logo left */}
-          <div style={{ display: "flex", alignItems: "center", gap: px(10) }}>
-            {/* Pin icon */}
-            <svg width={px(44)} height={px(52)} viewBox="0 0 44 52" fill="none">
-              <path d="M22 0C10.954 0 2 8.954 2 20c0 14 20 32 20 32s20-18 20-32C42 8.954 33.046 0 22 0z" fill="#1d4ed8"/>
-              <circle cx="22" cy="20" r="13" fill="white"/>
-              {/* family in pin */}
-              <circle cx="22" cy="16" r="2.5" fill="#1d4ed8"/>
-              <path d="M17 24c0-3.5 2.2-4.5 5-4.5s5 1 5 4.5v1h-10z" fill="#1d4ed8"/>
-              <circle cx="16" cy="18" r="1.8" fill="#1d4ed8"/>
-              <path d="M12 24c0-2.5 1.5-3.5 4-3.5v0c0 0-0.5 0.3-0.5 3.5z" fill="#1d4ed8"/>
-              <circle cx="28" cy="18" r="1.8" fill="#1d4ed8"/>
-              <path d="M32 24c0-2.5-1.5-3.5-4-3.5v0c0 0 0.5 0.3 0.5 3.5z" fill="#1d4ed8"/>
-            </svg>
-            <div>
-              <div style={{ fontSize: px(26), fontWeight: 900, color: "#1d4ed8", lineHeight: 1, letterSpacing: "-0.5px" }}>
-                Jan<span style={{ color: "#16a34a" }}>Fix</span>
-              </div>
-              <div style={{ fontSize: px(10), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(2), marginTop: px(2) }}>MANGALURU</div>
-              <div style={{ fontSize: px(9), color: "#64748b", fontWeight: 500, marginTop: px(1) }}>Report. Track. Fix.</div>
-            </div>
-          </div>
 
-          {/* Divider */}
-          <div style={{ width: px(1), height: px(52), background: "#e2e8f0" }} />
-
-          {/* Right tagline */}
-          <div style={{ display: "flex", flexDirection: "column", gap: px(3), paddingLeft: px(16) }}>
-            <div style={{ fontSize: px(16), fontWeight: 900, color: "#0f172a" }}>Let's Fix Mangaluru</div>
-            <div style={{ fontSize: px(11), fontWeight: 600, color: "#16a34a" }}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
-            <div style={{ fontSize: px(10), color: "#64748b" }}>Together for a Better City</div>
-          </div>
-
-          {/* City skyline illustration placeholder */}
-          <svg width={px(80)} height={px(60)} viewBox="0 0 80 60" style={{ opacity: 0.18, marginLeft: px(8) }}>
-            <rect x="5"  y="30" width="12" height="30" fill="#1d4ed8"/>
-            <rect x="8"  y="20" width="6"  height="10" fill="#1d4ed8"/>
-            <rect x="20" y="22" width="14" height="38" fill="#1d4ed8"/>
-            <rect x="25" y="14" width="4"  height="8"  fill="#1d4ed8"/>
-            <rect x="37" y="35" width="10" height="25" fill="#1d4ed8"/>
-            <rect x="50" y="26" width="16" height="34" fill="#1d4ed8"/>
-            <rect x="56" y="16" width="4"  height="10" fill="#1d4ed8"/>
-            <rect x="68" y="38" width="8"  height="22" fill="#1d4ed8"/>
-            <line x1="0" y1="58" x2="80" y2="58" stroke="#1d4ed8" strokeWidth="2"/>
-          </svg>
-        </div>
-
-        {/* ── PHOTO SECTION with overlaid badges ──────────────────────────── */}
-        <div style={{ position: "relative", height: px(360), flexShrink: 0, overflow: "hidden" }}>
-          <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-
-          {/* Dark gradient at bottom */}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.08) 55%, transparent 100%)" }} />
-
-          {/* Issue ID badge — top left */}
+          {/* ── HEADER ──────────────────────────────────────────────────────── */}
           <div style={{
-            position: "absolute", top: px(16), left: px(16),
-            background: "#dc2626", color: "white",
-            padding: `${px(6)}px ${px(14)}px`,
-            borderRadius: px(6), display: "flex", flexDirection: "column", gap: px(1),
-          }}>
-            <div style={{ fontSize: px(8), fontWeight: 700, letterSpacing: px(1), opacity: 0.9 }}>ISSUE ID</div>
-            <div style={{ fontSize: px(14), fontWeight: 900 }}>{issue.public_id}</div>
-          </div>
-
-          {/* Status badge — top right */}
-          <div style={{
-            position: "absolute", top: px(16), right: px(16),
-            background: statusColor.bg, color: statusColor.fg,
-            padding: `${px(6)}px ${px(14)}px`,
-            borderRadius: px(6), display: "flex", flexDirection: "column", gap: px(1), alignItems: "flex-end",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: px(4) }}>
-              <Settings width={px(10)} height={px(10)} />
-              <div style={{ fontSize: px(8), fontWeight: 700, letterSpacing: px(1) }}>STATUS</div>
-            </div>
-            <div style={{ fontSize: px(13), fontWeight: 900 }}>{statusLabel}</div>
-          </div>
-
-          {/* Category + description at bottom */}
-          <div style={{ position: "absolute", bottom: px(20), left: px(20), right: px(20), color: "white" }}>
-            <div style={{ fontSize: px(38), fontWeight: 900, textTransform: "uppercase", lineHeight: 1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-              {cat.name_en.toUpperCase()}
-            </div>
-            <div style={{ fontSize: px(15), marginTop: px(6), opacity: 0.95, fontWeight: 500, lineHeight: 1.35, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
-              {issue.description.length > 100 ? issue.description.slice(0, 97) + "…" : issue.description}
-            </div>
-          </div>
-        </div>
-
-        {/* ── LOCATION / WARD / DATE / VIEWS ROW ──────────────────────────── */}
-        <div style={{
-          display: "flex", alignItems: "stretch",
-          margin: `${px(12)}px ${px(16)}px`,
-          background: "#ffffff",
-          border: `${px(1)}px solid #e2e8f0`,
-          borderRadius: px(12),
-          overflow: "hidden",
-        }}>
-          {/* Location */}
-          <div style={{ flex: 2, display: "flex", alignItems: "center", gap: px(8), padding: `${px(10)}px ${px(12)}px`, borderRight: `${px(1)}px solid #e2e8f0` }}>
-            <MapPin width={px(18)} height={px(18)} color="#1d4ed8" style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: px(8), fontWeight: 700, color: "#64748b", letterSpacing: px(0.5), textTransform: "uppercase" }}>LOCATION</div>
-              <div style={{ fontSize: px(12), fontWeight: 700, color: "#0f172a", marginTop: px(1), lineHeight: 1.2 }}>{locationLabel}</div>
-            </div>
-          </div>
-
-          {/* Ward */}
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: px(8), padding: `${px(10)}px ${px(12)}px`, borderRight: `${px(1)}px solid #e2e8f0` }}>
-            <Building2 width={px(16)} height={px(16)} color="#1d4ed8" style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: px(8), fontWeight: 700, color: "#64748b", letterSpacing: px(0.5), textTransform: "uppercase" }}>WARD</div>
-              <div style={{ fontSize: px(18), fontWeight: 900, color: "#0f172a" }}>{wardLabel}</div>
-            </div>
-          </div>
-
-          {/* Reported on */}
-          <div style={{ flex: 2, display: "flex", alignItems: "center", gap: px(8), padding: `${px(10)}px ${px(12)}px`, borderRight: `${px(1)}px solid #e2e8f0` }}>
-            <CalendarDays width={px(16)} height={px(16)} color="#1d4ed8" style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: px(8), fontWeight: 700, color: "#64748b", letterSpacing: px(0.5), textTransform: "uppercase" }}>REPORTED ON</div>
-              <div style={{ fontSize: px(11), fontWeight: 700, color: "#0f172a", marginTop: px(1) }}>{dateLine}</div>
-              <div style={{ fontSize: px(10), color: "#64748b" }}>{timeLine}</div>
-            </div>
-          </div>
-
-          {/* Supports / Views */}
-          <div style={{ flex: 1.2, display: "flex", alignItems: "center", gap: px(8), padding: `${px(10)}px ${px(12)}px` }}>
-            <Eye width={px(16)} height={px(16)} color="#1d4ed8" style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: px(8), fontWeight: 700, color: "#64748b", letterSpacing: px(0.5), textTransform: "uppercase" }}>SUPPORTS</div>
-              <div style={{ fontSize: px(20), fontWeight: 900, color: "#0f172a" }}>{supportsCount}</div>
-              <div style={{ fontSize: px(9), color: "#64748b" }}>VIEWS {viewsCount}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── AUTHORITY + REPRESENTATIVE ROW ──────────────────────────────── */}
-        <div style={{
-          display: "flex", gap: px(12),
-          margin: `0 ${px(16)}px ${px(12)}px`,
-          flex: 1, minHeight: 0,
-        }}>
-          {/* Authority */}
-          <div style={{
-            flex: 1,
-            border: `${px(1)}px solid #e2e8f0`,
-            borderRadius: px(12),
-            padding: `${px(12)}px ${px(14)}px`,
-            display: "flex", alignItems: "center", gap: px(12),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingBottom: px(14),
+            borderBottom: `${px(1)}px solid #cbd5e1`,
             background: "#ffffff",
+            flexShrink: 0,
           }}>
-            <img src={logoSrc} alt="" style={{ width: px(52), height: px(52), objectFit: "contain", borderRadius: px(6), border: `${px(1)}px solid #e2e8f0`, background: "#f8fafc", flexShrink: 0 }} />
-            <div>
-              <div style={{ fontSize: px(8), fontWeight: 700, color: "#64748b", letterSpacing: px(0.5), textTransform: "uppercase", marginBottom: px(3) }}>RESPONSIBLE AUTHORITY</div>
-              <div style={{ fontSize: px(14), fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>
-                {issue.authority?.name ?? "MCC"}
-              </div>
-              {issue.authority?.department && (
-                <div style={{ fontSize: px(11), color: "#475569", fontWeight: 600, marginTop: px(2) }}>{issue.authority.department}</div>
-              )}
-            </div>
-          </div>
-
-          {/* Representative */}
-          <div style={{
-            flex: 1,
-            border: `${px(1)}px solid #e2e8f0`,
-            borderRadius: px(12),
-            padding: `${px(12)}px ${px(14)}px`,
-            display: "flex", alignItems: "center", gap: px(12),
-            background: "#ffffff",
-          }}>
-            <img src={repSrc} alt="" style={{ width: px(52), height: px(52), objectFit: "cover", borderRadius: "50%", border: `${px(2)}px solid #1d4ed8`, flexShrink: 0 }} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: px(8), fontWeight: 700, color: "#64748b", letterSpacing: px(0.5), textTransform: "uppercase", marginBottom: px(3) }}>LOCAL REPRESENTATIVE</div>
-              <div style={{ fontSize: px(13), fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>
-                {issue.representative?.name ? `Sri. ${issue.representative.name}` : "Not Mapped"}
-              </div>
-              <div style={{ fontSize: px(10), color: "#475569", fontWeight: 600, marginTop: px(2) }}>
-                {issue.representative?.role ?? "—"}
-              </div>
-              {issue.representative?.phone && (
-                <div style={{ display: "flex", alignItems: "center", gap: px(4), fontSize: px(10), color: "#64748b", marginTop: px(3) }}>
-                  <Phone width={px(10)} height={px(10)} /> {issue.representative.phone}
+            {/* Logo left */}
+            <div style={{ display: "flex", alignItems: "center", gap: px(10) }}>
+              {/* Pin logo */}
+              <svg width={px(44)} height={px(52)} viewBox="0 0 44 52" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M22 0C10.954 0 2 8.954 2 20c0 14 20 32 20 32s20-18 20-32C42 8.954 33.046 0 22 0z" fill="#1d4ed8"/>
+                <circle cx="22" cy="20" r="13" fill="white"/>
+                <circle cx="22" cy="16" r="2.5" fill="#1d4ed8"/>
+                <path d="M17 24c0-3.5 2.2-4.5 5-4.5s5 1 5 4.5v1h-10z" fill="#1d4ed8"/>
+                <circle cx="16" cy="18" r="1.8" fill="#1d4ed8"/>
+                <path d="M12 24c0-2.5 1.5-3.5 4-3.5v0c0 0-0.5 0.3-0.5 3.5z" fill="#1d4ed8"/>
+                <circle cx="28" cy="18" r="1.8" fill="#1d4ed8"/>
+                <path d="M32 24c0-2.5-1.5-3.5-4-3.5v0c0 0 0.5 0.3 0.5 3.5z" fill="#1d4ed8"/>
+              </svg>
+              <div>
+                <div style={{ fontSize: px(28), fontWeight: 900, color: "#1d4ed8", lineHeight: 1, letterSpacing: "-0.5px" }}>
+                  Jan<span style={{ color: "#16a34a" }}>Fix</span>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-        <div style={{
-          background: "#1e3a8a",
-          padding: `${px(14)}px ${px(16)}px`,
-          display: "flex", alignItems: "center", gap: px(16),
-          flexShrink: 0,
-        }}>
-          {/* CTA text left */}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: px(17), fontWeight: 900, color: "#ffffff", lineHeight: 1.1 }}>
-              Your Small Report<br />
-              <span style={{ color: "#fbbf24" }}>Can Create a Big Change!</span>
-            </div>
-            <div style={{ fontSize: px(10), color: "rgba(255,255,255,0.8)", marginTop: px(5), fontWeight: 500, lineHeight: 1.4 }}>
-              Vote, share and help make<br />Mangaluru a better place to live.
-            </div>
-          </div>
-
-          {/* Vote buttons */}
-          <div style={{ display: "flex", flexDirection: "column", gap: px(6), flexShrink: 0 }}>
-            <div style={{ background: "#16a34a", color: "white", padding: `${px(7)}px ${px(12)}px`, borderRadius: px(8), display: "flex", alignItems: "center", gap: px(6) }}>
-              <ThumbsUp width={px(14)} height={px(14)} />
-              <div>
-                <div style={{ fontSize: px(11), fontWeight: 900 }}>ISSUE FIXED</div>
-                <div style={{ fontSize: px(8), opacity: 0.85 }}>Vote if the issue is resolved</div>
+                <div style={{ fontSize: px(11), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(1.5), marginTop: px(2) }}>MANGALURU</div>
+                <div style={{ fontSize: px(10), color: "#0f172a", fontWeight: 700, marginTop: px(2) }}>Report. Track. Fix.</div>
               </div>
             </div>
-            <div style={{ background: "#dc2626", color: "white", padding: `${px(7)}px ${px(12)}px`, borderRadius: px(8), display: "flex", alignItems: "center", gap: px(6) }}>
-              <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/></svg>
-              <div>
-                <div style={{ fontSize: px(11), fontWeight: 900 }}>STILL EXISTS</div>
-                <div style={{ fontSize: px(8), opacity: 0.85 }}>Vote if the issue still exists</div>
+
+            {/* Vertical Divider */}
+            <div style={{ width: px(1.5), height: px(52), background: "#cbd5e1", margin: `0 ${px(16)}px` }} />
+
+            {/* Taglines */}
+            <div style={{ display: "flex", flexDirection: "column", gap: px(2), flex: 1 }}>
+              <div style={{ fontSize: px(18), fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>Let's Fix Mangaluru</div>
+              <div style={{ fontSize: px(12), fontWeight: 700, color: "#16a34a", lineHeight: 1.1 }}>ನಮ್ಮ ಮಂಗಳೂರು, ನಮ್ಮ ಜವಾಬ್ದಾರಿ</div>
+              <div style={{ fontSize: px(11), color: "#475569", fontWeight: 600 }}>Together for a Better City</div>
+            </div>
+
+            {/* Skyline Illustration */}
+            <svg width={px(120)} height={px(52)} viewBox="0 0 120 52" style={{ opacity: 0.25, flexShrink: 0 }}>
+              <path d="M5,42 h110 M10,42 V28 h8 V42 M22,42 V18 h12 V42 M38,42 V32 h6 V42 M48,42 V20 h10 V42 M62,42 V12 h14 V42 M80,42 V26 h12 V42 M96,42 V30 h8 V42" stroke="#1d4ed8" strokeWidth="1.5" fill="none" />
+              {/* church dome & cross */}
+              <path d="M28,18 C28,12 30,10 32,10 C34,10 36,12 36,18 Z" fill="none" stroke="#1d4ed8" strokeWidth="1.5" />
+              <path d="M32,10 V4 M30,6 H34" stroke="#1d4ed8" strokeWidth="1.5" />
+              {/* temple dome shape */}
+              <path d="M69,12 C69,4 75,4 75,12" stroke="#1d4ed8" strokeWidth="1.5" fill="none" />
+              <circle cx="75" cy="3" r="1" fill="#1d4ed8" />
+            </svg>
+          </div>
+
+          {/* ── PHOTO CONTAINER (with overlapping floating details card) ────── */}
+          <div style={{
+            position: "relative",
+            height: px(450),
+            marginTop: px(16),
+            marginBottom: px(46), // Space for floating card overflow
+            flexShrink: 0,
+            overflow: "visible", // ALLOW info card to overlap outside bottom boundary
+          }}>
+            {/* Visual Photo Card */}
+            <div style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: px(20),
+              overflow: "hidden",
+              border: `${px(1)}px solid #cbd5e1`,
+              position: "relative",
+            }}>
+              <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              
+              {/* Dark overlay gradient */}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 40%, transparent 100%)" }} />
+
+              {/* ISSUE ID badge (top-left) */}
+              <div style={{
+                position: "absolute",
+                top: px(16),
+                left: px(16),
+                background: "#e60000",
+                color: "#ffffff",
+                padding: `${px(8)}px ${px(16)}px`,
+                borderRadius: px(8),
+                display: "flex",
+                flexDirection: "column",
+                gap: px(1),
+              }}>
+                <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1) }}>ISSUE ID</div>
+                <div style={{ fontSize: px(15), fontWeight: 900 }}>{issue.public_id}</div>
+              </div>
+
+              {/* STATUS badge (top-right) */}
+              <div style={{
+                position: "absolute",
+                top: px(16),
+                right: px(16),
+                background: "#fcc419",
+                color: "#0f172a",
+                padding: `${px(8)}px ${px(16)}px`,
+                borderRadius: px(8),
+                display: "flex",
+                alignItems: "center",
+                gap: px(8),
+              }}>
+                {/* Gear Icon */}
+                <svg width={px(24)} height={px(24)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(0.5) }}>STATUS</div>
+                  <div style={{ fontSize: px(13), fontWeight: 900 }}>{statusLabel}</div>
+                </div>
+              </div>
+
+              {/* Title & Desc text inside photo (above the overlapping card) */}
+              <div style={{
+                position: "absolute",
+                bottom: px(68), // Pushed up slightly so it clears the overlapping card
+                left: px(20),
+                right: px(20),
+                color: "#ffffff",
+              }}>
+                <div style={{ fontSize: px(38), fontWeight: 900, textTransform: "uppercase", lineHeight: 1, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>
+                  {cat.name_en.toUpperCase()}
+                </div>
+                <div style={{ fontSize: px(15), marginTop: px(6), opacity: 0.95, fontWeight: 500, lineHeight: 1.35, textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+                  {issue.description.length > 110 ? issue.description.slice(0, 107) + "…" : issue.description}
+                </div>
+              </div>
+            </div>
+
+            {/* FLOATING DETAILS CARD (overlaps photo bottom boundary) */}
+            <div style={{
+              position: "absolute",
+              bottom: px(-32),
+              left: px(16),
+              right: px(16),
+              height: px(82),
+              background: "#ffffff",
+              borderRadius: px(16),
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+              border: `${px(1.5)}px solid #cbd5e1`,
+              display: "flex",
+              alignItems: "stretch",
+              zIndex: 10,
+              overflow: "hidden",
+            }}>
+              {/* Location Column */}
+              <div style={{ flex: 1.8, display: "flex", alignItems: "center", gap: px(10), padding: `${px(8)}px ${px(12)}px`, borderRight: `${px(1)}px solid #cbd5e1` }}>
+                {/* Location Icon */}
+                <svg width={px(24)} height={px(24)} viewBox="0 0 24 24" fill="#1d4ed8">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5) }}>LOCATION</div>
+                  <div style={{ fontSize: px(12), fontWeight: 700, color: "#0f172a", marginTop: px(1), lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {locationLabel}
+                  </div>
+                  <div style={{ fontSize: px(10), color: "#64748b" }}>Mangaluru</div>
+                </div>
+              </div>
+
+              {/* Ward Column */}
+              <div style={{ flex: 1, display: "flex", alignItems: "center", gap: px(8), padding: `${px(8)}px ${px(12)}px`, borderRight: `${px(1)}px solid #cbd5e1` }}>
+                {/* Building Icon */}
+                <svg width={px(22)} height={px(22)} viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2">
+                  <path d="M3 21h18M9 21V10a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v11M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5) }}>WARD</div>
+                  <div style={{ fontSize: px(18), fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>{wardLabel}</div>
+                </div>
+              </div>
+
+              {/* Calendar Column */}
+              <div style={{ flex: 1.6, display: "flex", alignItems: "center", gap: px(8), padding: `${px(8)}px ${px(12)}px`, borderRight: `${px(1)}px solid #cbd5e1` }}>
+                {/* Calendar Icon */}
+                <svg width={px(22)} height={px(22)} viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5) }}>REPORTED ON</div>
+                  <div style={{ fontSize: px(12), fontWeight: 700, color: "#0f172a", lineHeight: 1.1 }}>{dateLine}</div>
+                  <div style={{ fontSize: px(10), color: "#64748b", marginTop: px(1) }}>{timeLine}</div>
+                </div>
+              </div>
+
+              {/* Supports Column */}
+              <div style={{ flex: 1.2, display: "flex", alignItems: "center", gap: px(8), padding: `${px(8)}px ${px(12)}px` }}>
+                {/* Eye Icon */}
+                <svg width={px(22)} height={px(22)} viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <div>
+                  <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5) }}>SUPPORTS</div>
+                  <div style={{ fontSize: px(18), fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>{supportsCount}</div>
+                  <div style={{ fontSize: px(9), color: "#64748b" }}>VIEWS {viewsCount}</div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* QR code */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: px(4), background: "white", padding: px(8), borderRadius: px(8), flexShrink: 0 }}>
-            {qr && <img src={qr} alt="QR" style={{ width: px(64), height: px(64), display: "block" }} />}
-            <div style={{ fontSize: px(7), fontWeight: 700, color: "#1d4ed8", letterSpacing: px(0.3), textAlign: "center" }}>SCAN TO VIEW & SUPPORT</div>
-            <div style={{ fontSize: px(9), fontWeight: 800, color: "#0f172a" }}>{shortLink}</div>
-          </div>
-        </div>
+          {/* ── CREAM CONTAINER (Authority + Local Rep Side-by-side) ───────── */}
+          <div style={{
+            background: "#fdfbf7",
+            border: `${px(1)}px solid #e9e3d5`,
+            borderRadius: px(16),
+            display: "flex",
+            alignItems: "stretch",
+            margin: `0 0 ${px(16)}px 0`,
+            flex: 1,
+            minHeight: 0,
+            boxSizing: "border-box",
+          }}>
+            {/* Responsible Authority (Left) */}
+            <div style={{
+              flex: 1.1,
+              padding: `${px(12)}px ${px(16)}px`,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              minWidth: 0,
+            }}>
+              <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5), marginBottom: px(6) }}>RESPONSIBLE AUTHORITY</div>
+              <div style={{ display: "flex", alignItems: "center", gap: px(12) }}>
+                <img src={logoSrc} alt="" style={{ width: px(52), height: px(52), objectFit: "contain", borderRadius: px(8), border: `${px(1)}px solid #cbd5e1`, background: "#ffffff", padding: px(2), flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: px(14), fontWeight: 900, color: "#0f172a", lineHeight: 1.1 }}>
+                    {issue.authority?.name ?? "MCC ROADS DIVISION"}
+                  </div>
+                  <div style={{ fontSize: px(11), color: "#475569", fontWeight: 600, marginTop: px(3) }}>
+                    {issue.authority?.department ?? "Mangaluru City Corporation"}
+                  </div>
+                </div>
+              </div>
+            </div>
 
+            {/* Vertical Divider */}
+            <div style={{ width: px(1), background: "#e9e3d5", margin: `${px(12)}px 0` }} />
+
+            {/* Local Representative (Right) */}
+            <div style={{
+              flex: 1,
+              padding: `${px(12)}px ${px(16)}px`,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              minWidth: 0,
+            }}>
+              <div style={{ fontSize: px(9), fontWeight: 800, color: "#1d4ed8", letterSpacing: px(0.5), marginBottom: px(6) }}>LOCAL REPRESENTATIVE</div>
+              <div style={{ display: "flex", alignItems: "center", gap: px(12) }}>
+                <img src={repSrc} alt="" style={{ width: px(52), height: px(52), objectFit: "cover", borderRadius: "50%", border: `${px(2)}px solid #1d4ed8`, flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: px(13), fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>
+                    {issue.representative?.name ? `Sri. ${issue.representative.name}` : "Not Mapped"}
+                  </div>
+                  <div style={{ fontSize: px(11), color: "#475569", fontWeight: 600, marginTop: px(2) }}>
+                    {issue.representative?.role ?? "MLA - Mangaluru North"}
+                  </div>
+                  {issue.representative?.phone && (
+                    <div style={{ display: "flex", alignItems: "center", gap: px(4), fontSize: px(10), color: "#64748b", marginTop: px(3) }}>
+                      {/* Phone Icon */}
+                      <svg width={px(10)} height={px(10)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                      </svg>
+                      {issue.representative.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── FOOTER (Dark Blue Layout) ──────────────────────────────────── */}
+          <div style={{
+            background: "#003366",
+            borderRadius: px(16),
+            padding: `${px(16)}px ${px(20)}px`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            color: "#ffffff",
+            flexShrink: 0,
+            boxSizing: "border-box",
+          }}>
+            {/* Left CTA Column */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ fontSize: px(20), fontWeight: 900, lineHeight: 1.1 }}>
+                Your Small Report
+              </div>
+              <div style={{ fontSize: px(20), fontWeight: 900, color: "#fbbf24", lineHeight: 1.1, marginTop: px(2) }}>
+                Can Create a Big Change!
+              </div>
+              {/* Thin white divider */}
+              <div style={{ height: px(1.5), background: "rgba(255,255,255,0.25)", margin: `${px(10)}px 0`, width: "90%" }} />
+              <div style={{ fontSize: px(11), color: "rgba(255,255,255,0.85)", fontWeight: 500, lineHeight: 1.35 }}>
+                Vote, share and help make<br />Mangaluru a better place to live.
+              </div>
+            </div>
+
+            {/* Right Interactive Container (Buttons + QR Card stacked vertically) */}
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: px(10),
+              width: px(350),
+              flexShrink: 0,
+            }}>
+              {/* Top Buttons Row */}
+              <div style={{ display: "flex", gap: px(10), width: "100%" }}>
+                {/* ISSUE FIXED button */}
+                <div style={{
+                  flex: 1,
+                  background: "#16a34a",
+                  color: "#ffffff",
+                  padding: `${px(8)}px ${px(12)}px`,
+                  borderRadius: px(10),
+                  display: "flex",
+                  alignItems: "center",
+                  gap: px(8),
+                }}>
+                  {/* Thumbs Up Icon */}
+                  <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                  </svg>
+                  <div>
+                    <div style={{ fontSize: px(11), fontWeight: 900 }}>ISSUE FIXED</div>
+                    <div style={{ fontSize: px(8), opacity: 0.9 }}>Vote if the issue is resolved</div>
+                  </div>
+                </div>
+
+                {/* STILL EXISTS button */}
+                <div style={{
+                  flex: 1,
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  padding: `${px(8)}px ${px(12)}px`,
+                  borderRadius: px(10),
+                  display: "flex",
+                  alignItems: "center",
+                  gap: px(8),
+                }}>
+                  {/* Thumbs Down Icon */}
+                  <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm12-4h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
+                  </svg>
+                  <div>
+                    <div style={{ fontSize: px(11), fontWeight: 900 }}>STILL EXISTS</div>
+                    <div style={{ fontSize: px(8), opacity: 0.9 }}>Vote if the issue still exists</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom White QR Banner */}
+              <div style={{
+                background: "#ffffff",
+                borderRadius: px(10),
+                padding: `${px(8)}px ${px(12)}px`,
+                display: "flex",
+                alignItems: "center",
+                gap: px(12),
+                width: "100%",
+                boxSizing: "border-box",
+              }}>
+                {qr && <img src={qr} alt="QR" style={{ width: px(58), height: px(58), display: "block", flexShrink: 0 }} />}
+                <div style={{ color: "#0f172a" }}>
+                  <div style={{ fontSize: px(9), fontWeight: 900, color: "#1d4ed8", letterSpacing: px(0.3) }}>SCAN TO VIEW & SUPPORT</div>
+                  <div style={{ fontSize: px(9), color: "#475569", marginTop: px(1) }}>this issue or visit</div>
+                  <div style={{ fontSize: px(13), fontWeight: 800, color: "#0f172a", marginTop: px(2) }}>{shortLink}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     );
   };
 
-  // Preview frame
   const previewW = PREVIEW_W;
   const previewH = Math.round(POSTER_H * scale);
 
