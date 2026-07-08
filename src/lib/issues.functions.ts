@@ -1,51 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
+import { put } from "@vercel/blob";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
 import { resolveIssue } from "@/lib/resolver";
 import { query } from "@/lib/db";
 
-// ── Supabase client — used ONLY for Storage (photo uploads + signed URLs) ──
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-    );
-    if (init?.headers) {
-      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
-    if (
-      isNewSupabaseApiKey(supabaseKey) &&
-      headers.get("Authorization") === `Bearer ${supabaseKey}`
-    ) {
-      headers.delete("Authorization");
-    }
-    headers.set("apikey", supabaseKey);
-    return fetch(input, { ...init, headers });
-  };
-}
-
-function storageClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl) throw new Error("Missing SUPABASE_URL environment variable");
-  if (!supabaseKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
-
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    global: { fetch: createSupabaseFetch(supabaseKey) },
-    auth: { persistSession: false, autoRefreshToken: false },
+// ── Vercel Blob — photo upload server function ────────────────────────────────
+export const uploadPhotoFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { base64: string; filename: string }) =>
+    z.object({ base64: z.string().min(10), filename: z.string().min(1) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) throw new Error("Missing BLOB_READ_WRITE_TOKEN environment variable");
+    // Decode base64 → Buffer
+    const base64Data = data.base64.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+    const blob = await put(`issue-photos/${data.filename}`, buffer, {
+      access: "public",
+      contentType: "image/jpeg",
+      token,
+    });
+    return { url: blob.url };
   });
-}
-
-async function signUrl(bucket: string, path: string): Promise<string> {
-  const sb = storageClient();
-  const { data } = await sb.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 365);
-  return data?.signedUrl ?? "";
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -61,9 +37,9 @@ const createIssueInput = z.object({
   locality: z.string().optional().nullable(),
   pincode: z.string().optional().nullable(),
   ward_id: z.number().int().optional().nullable(),
-  image_path: z.string().min(3),
+  image_url: z.string().url(),
   image_phash: z.string().optional().nullable(),
-  extra_image_paths: z.array(z.string().min(3)).max(4).optional().nullable(),
+  extra_image_urls: z.array(z.string().url()).max(4).optional().nullable(),
 });
 
 export const createIssueFn = createServerFn({ method: "POST" })
@@ -114,7 +90,7 @@ export const createIssueFn = createServerFn({ method: "POST" })
       [data.device_id],
     );
 
-    const image_url = await signUrl("issue-photos", data.image_path);
+    // image_url comes directly from Vercel Blob upload (already a public URL)
 
     // insert issue
     const { rows: insRows } = await query(
@@ -129,7 +105,7 @@ export const createIssueFn = createServerFn({ method: "POST" })
         public_id, slug, cat.id, data.description, data.severity, data.lat, data.lng,
         data.address ?? null, data.area ?? null, data.locality ?? null, data.pincode ?? null,
         resolution.resolved_ward_id ?? data.ward_id ?? null,
-        image_url, data.image_phash ?? null, data.device_id,
+        data.image_url, data.image_phash ?? null, data.device_id,
         resolution.authority_id, resolution.representative_id, reason,
         resolution.version, resolution.needs_review ?? false,
         resolution.jurisdiction_confidence ?? null,
@@ -142,24 +118,16 @@ export const createIssueFn = createServerFn({ method: "POST" })
       `INSERT INTO public.issue_status_history
         (issue_id, status, note, photo_url, photo_kind, by_admin, by_device_id)
        VALUES ($1, 'reported', 'Issue reported by citizen', $2, 'report', false, $3)`,
-      [ins.id, image_url, data.device_id],
+      [ins.id, data.image_url, data.device_id],
     );
 
-    // Optional extra photos
-    const extraPaths = (data.extra_image_paths ?? []).slice(0, 4);
-    if (extraPaths.length > 0) {
-      const extraRows = await Promise.all(
-        extraPaths.map(async (p, idx) => ({
-          issue_id: ins.id,
-          url: await signUrl("issue-photos", p),
-          path: p,
-          position: idx + 1,
-        })),
-      );
-      for (const row of extraRows) {
+    // Optional extra photos (already uploaded to Vercel Blob — just store URLs)
+    const extraUrls = (data.extra_image_urls ?? []).slice(0, 4);
+    if (extraUrls.length > 0) {
+      for (let idx = 0; idx < extraUrls.length; idx++) {
         await query(
           `INSERT INTO public.issue_photos (issue_id, url, path, position) VALUES ($1,$2,$3,$4)`,
-          [row.issue_id, row.url, row.path, row.position],
+          [ins.id, extraUrls[idx], extraUrls[idx], idx + 1],
         );
       }
     }

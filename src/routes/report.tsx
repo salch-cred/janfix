@@ -8,8 +8,7 @@ import { CATEGORIES, SEVERITY_META, slugify, trustBadge } from "@/lib/civic";
 import { reverseGeocode, getPositionWithFallback, forwardGeocode, isLocationInDakshinaKannada } from "@/lib/geo";
 import { computeImagePHash, hammingHex } from "@/lib/phash";
 import { getDeviceId, getDeviceName, setDeviceName } from "@/lib/device";
-import { supabase } from "@/integrations/supabase/client";
-import { createIssueFn, findDuplicatesFn, supportIssueFn } from "@/lib/issues.functions";
+import { createIssueFn, findDuplicatesFn, supportIssueFn, uploadPhotoFn } from "@/lib/issues.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,6 +44,15 @@ function promptPosterShare() {
   }, 700);
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function ReportPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("photo");
@@ -77,12 +85,14 @@ function ReportPage() {
     (async () => {
       const id = getDeviceId();
       if (!id) return;
-      const { data } = await supabase
-        .from("devices")
-        .select("report_count")
-        .eq("device_id", id)
-        .maybeSingle();
-      setReportCount(data?.report_count ?? 0);
+      try {
+        const { rows } = await fetch("/api/device-count?device_id=" + encodeURIComponent(id))
+          .then((r) => r.json())
+          .catch(() => ({ rows: [] }));
+        setReportCount((rows?.[0] as any)?.report_count ?? 0);
+      } catch {
+        // ignore — count is just cosmetic
+      }
     })();
     // Warm up GPS immediately
     getGPS();
@@ -276,23 +286,19 @@ function ReportPage() {
     try {
       if (name) setDeviceName(name);
       const device_id = getDeviceId();
-      const path = `${device_id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-      const up = await supabase.storage.from("issue-photos").upload(path, file, {
-        contentType: "image/jpeg",
-        cacheControl: "3600",
-      });
-      if (up.error) throw up.error;
+      const filename = `${device_id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+
+      // Convert primary photo File → base64 → server upload to Vercel Blob
+      const base64 = await fileToBase64(file);
+      const { url: image_url } = await uploadPhotoFn({ data: { base64, filename } });
 
       // Upload any optional extra photos alongside the required primary one.
-      const extraPaths = await Promise.all(
+      const extra_image_urls = await Promise.all(
         extraFiles.map(async (ef, idx) => {
-          const p = `${device_id}/${Date.now()}-x${idx}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-          const extraUp = await supabase.storage.from("issue-photos").upload(p, ef, {
-            contentType: "image/jpeg",
-            cacheControl: "3600",
-          });
-          if (extraUp.error) throw extraUp.error;
-          return p;
+          const xFilename = `${device_id}-${Date.now()}-x${idx}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const xBase64 = await fileToBase64(ef);
+          const { url } = await uploadPhotoFn({ data: { base64: xBase64, filename: xFilename } });
+          return url;
         }),
       );
 
@@ -309,9 +315,9 @@ function ReportPage() {
           locality: addr?.locality ?? null,
           pincode: addr?.pincode ?? null,
           ward_id: null,
-          image_path: path,
+          image_url,
           image_phash: phash || null,
-          extra_image_paths: extraPaths.length > 0 ? extraPaths : null,
+          extra_image_urls: extra_image_urls.length > 0 ? extra_image_urls : null,
         },
       });
       toast.success("Reported! Tracking " + res.public_id);
