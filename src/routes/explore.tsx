@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listIssuesFn, listWardsFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
@@ -31,7 +31,15 @@ function Explore() {
   const [status, setStatus] = useState<string>("");
   const [sev, setSev] = useState<string>("");
   const [wardId, setWardId] = useState<number | undefined>();
+  const [searchVal, setSearchVal] = useState<string>("");
   const [q, setQ] = useState<string>("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setQ(searchVal);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchVal]);
 
   const wards = useQuery({ queryKey: ["wards"], queryFn: () => listWardsFn() });
   const issues = useQuery({
@@ -116,8 +124,8 @@ function Explore() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+              value={searchVal}
+              onChange={(e) => setSearchVal(e.target.value)}
               placeholder="Search: pothole, Kankanady, MGR-2026-00091…"
               className="pl-9"
             />

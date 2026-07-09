@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
@@ -9,11 +10,12 @@ import { reverseGeocode, getPositionWithFallback, forwardGeocode, isLocationInDa
 import { computeImagePHash, hammingHex } from "@/lib/phash";
 import { getDeviceId, getDeviceName, setDeviceName } from "@/lib/device";
 import { supabase } from "@/integrations/supabase/client";
-import { createIssueFn, findDuplicatesFn, supportIssueFn } from "@/lib/issues.functions";
+import { createIssueFn, findDuplicatesFn, supportIssueFn, previewAssignmentFn } from "@/lib/issues.functions";
+import { listAuthoritiesFn, listRepresentativesFn } from "@/lib/queries.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, MapPin, Loader2, CheckCircle2, AlertTriangle, X, ImagePlus } from "lucide-react";
+import { Camera, MapPin, Loader2, CheckCircle2, AlertTriangle, X, ImagePlus, Building2 } from "lucide-react";
 
 export const Route = createFileRoute("/report")({
   component: ReportPage,
@@ -69,6 +71,34 @@ function ReportPage() {
   const [working, setWorking] = useState(false);
   const [dupes, setDupes] = useState<any[]>([]);
   const [reportCount, setReportCount] = useState<number>(0);
+  const [customAuthId, setCustomAuthId] = useState<number | null>(null);
+  const [customRepId, setCustomRepId] = useState<number | null>(null);
+
+  const authoritiesQuery = useQuery({
+    queryKey: ["authorities-list"],
+    queryFn: () => listAuthoritiesFn(),
+    enabled: step === "review",
+  });
+  const representativesQuery = useQuery({
+    queryKey: ["representatives-list"],
+    queryFn: () => listRepresentativesFn(),
+    enabled: step === "review",
+  });
+  const assignmentPreviewQuery = useQuery({
+    queryKey: ["assignment-preview", cat, loc?.lat, loc?.lng, addr?.address, addr?.area, addr?.locality],
+    queryFn: () =>
+      previewAssignmentFn({
+        data: {
+          category_slug: cat,
+          lat: loc?.lat ?? 0,
+          lng: loc?.lng ?? 0,
+          address: addr?.address,
+          area: addr?.area,
+          locality: addr?.locality,
+        },
+      }),
+    enabled: step === "review" && !!cat && !!loc,
+  });
 
   const inputRef = useRef<HTMLInputElement>(null);
   const extraInputRef = useRef<HTMLInputElement>(null);
@@ -179,7 +209,7 @@ function ReportPage() {
     if (!manualAddr.trim()) return;
     setSearching(true);
     try {
-      const res = await forwardGeocode(manualAddr + ", Mangaluru");
+      const res = await forwardGeocode(manualAddr + ", Dakshina Kannada");
       setSearchResults(res);
       if (res.length === 0) toast.error("No results found");
     } catch (err: any) {
@@ -238,27 +268,9 @@ function ReportPage() {
           image_phash: phash || null,
         },
       });
-      // rank by combined similarity
-      const scored = candidates
-        .map((c: any) => {
-          const phashDist = c.image_phash ? hammingHex(phash, c.image_phash) : 64;
-          const phashSim = 1 - phashDist / 64;
-          const a = desc.toLowerCase();
-          const b = (c.description ?? "").toLowerCase();
-          const overlap = a.split(/\s+/).filter((w) => w.length > 3 && b.includes(w)).length;
-          const descSim = Math.min(1, overlap / 4);
-          const dx = (c.lat - loc.lat) * 111000;
-          const dy = (c.lng - loc.lng) * 111000 * Math.cos((loc.lat * Math.PI) / 180);
-          const meters = Math.sqrt(dx * dx + dy * dy);
-          const geoSim = meters < 50 ? 1 : meters < 100 ? 0.7 : meters < 200 ? 0.4 : 0.1;
-          const score = 0.45 * geoSim + 0.35 * phashSim + 0.2 * descSim;
-          return { ...c, _score: score, _meters: meters };
-        })
-        .filter((x: any) => x._score >= 0.45)
-        .sort((a: any, b: any) => b._score - a._score);
-
-      if (scored.length > 0) {
-        setDupes(scored);
+      
+      if (candidates && candidates.length > 0) {
+        setDupes(candidates);
         setStep("dupes");
       } else {
         setStep("review");
@@ -312,6 +324,8 @@ function ReportPage() {
           image_path: path,
           image_phash: phash || null,
           extra_image_paths: extraPaths.length > 0 ? extraPaths : null,
+          assigned_authority_id: customAuthId,
+          assigned_representative_id: customRepId,
         },
       });
       toast.success("Reported! Tracking " + res.public_id);
@@ -624,40 +638,167 @@ function ReportPage() {
             )}
 
             {step === "review" && (
-              <div className="space-y-3">
-                <div className="rounded-2xl border bg-card p-4 text-sm">
-                  <div className="flex items-center gap-2 text-success">
+              <div className="space-y-4">
+                <div className="rounded-2xl border bg-card p-4 text-sm space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 text-success font-bold">
                     <CheckCircle2 className="h-4 w-4" /> Ready to submit
                   </div>
-                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <ul className="space-y-1.5 text-xs text-muted-foreground">
                     <li>
-                      Category: <span className="font-medium text-foreground">{cat}</span>
+                      Category: <span className="font-bold text-slate-800 dark:text-slate-100">{cat.toUpperCase()}</span>
                     </li>
                     <li>
                       Severity:{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-bold text-slate-800 dark:text-slate-100 uppercase">
                         {SEVERITY_META[sev].label}
                       </span>
                     </li>
                     <li>
                       Location:{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-bold text-slate-800 dark:text-slate-100">
                         {addr?.address ?? `${loc?.lat.toFixed(5)}, ${loc?.lng.toFixed(5)}`}
                       </span>
                     </li>
                     {extraPreviews.length > 0 && (
                       <li>
                         Extra photos:{" "}
-                        <span className="font-medium text-foreground">{extraPreviews.length}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100">{extraPreviews.length}</span>
                       </li>
                     )}
                   </ul>
                 </div>
+
+                {/* Assignment & Routing Preview */}
+                <div className="rounded-2xl border bg-card p-4 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4 text-primary" /> Routing & Assignment
+                    </h3>
+                    <span className="text-[10px] bg-primary/10 text-primary font-extrabold uppercase px-2 py-0.5 rounded-full">
+                      System Resolved
+                    </span>
+                  </div>
+
+                  {assignmentPreviewQuery.isLoading ? (
+                    <div className="flex items-center justify-center py-4 text-xs text-muted-foreground gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      Resolving nearest civic authority...
+                    </div>
+                  ) : assignmentPreviewQuery.data ? (
+                    <div className="space-y-4">
+                      {/* Authority Card */}
+                      <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        {assignmentPreviewQuery.data.authority?.logo_url ? (
+                          <img
+                            src={assignmentPreviewQuery.data.authority.logo_url}
+                            alt=""
+                            className="h-10 w-10 rounded-lg object-contain bg-white p-1 border shadow-sm"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-extrabold">
+                            {(assignmentPreviewQuery.data.authority?.name ?? "M").slice(0, 1)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Assigned Authority</div>
+                          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                            {assignmentPreviewQuery.data.authority?.name ?? "Mangaluru City Corporation"}
+                          </div>
+                          {assignmentPreviewQuery.data.authority?.department && (
+                            <div className="text-xs text-muted-foreground font-semibold mt-0.5">
+                              {assignmentPreviewQuery.data.authority.department}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Representative Card */}
+                      {assignmentPreviewQuery.data.representative && (
+                        <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                          {assignmentPreviewQuery.data.representative.photo_url ? (
+                            <img
+                              src={assignmentPreviewQuery.data.representative.photo_url}
+                              alt=""
+                              className="h-10 w-10 rounded-full object-cover border shadow-sm"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-extrabold">
+                              {(assignmentPreviewQuery.data.representative.name).slice(0, 1)}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Local Representative</div>
+                            <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                              {assignmentPreviewQuery.data.representative.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground font-semibold mt-0.5">
+                              {assignmentPreviewQuery.data.representative.role}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Assignment Reason badge */}
+                      <div className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border">
+                        <span className="font-bold text-slate-700 dark:text-slate-200">Assignment Logic:</span> {assignmentPreviewQuery.data.reason}
+                      </div>
+
+                      {/* Override selection dropdowns */}
+                      <div className="border-t pt-3 space-y-3">
+                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          Is the assignment incorrect? Adjust below:
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-extrabold uppercase text-muted-foreground block">
+                              Authority Override
+                            </label>
+                            <select
+                              value={customAuthId ?? ""}
+                              onChange={(e) => setCustomAuthId(e.target.value ? Number(e.target.value) : null)}
+                              className="w-full rounded-lg border bg-card px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                            >
+                              <option value="">System Default</option>
+                              {(authoritiesQuery.data ?? []).map((a: any) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-extrabold uppercase text-muted-foreground block">
+                              Representative Override
+                            </label>
+                            <select
+                              value={customRepId ?? ""}
+                              onChange={(e) => setCustomRepId(e.target.value ? Number(e.target.value) : null)}
+                              className="w-full rounded-lg border bg-card px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                            >
+                              <option value="">System Default</option>
+                              {(representativesQuery.data ?? []).map((r: any) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.name} ({r.role})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-red-500 font-semibold">
+                      Could not resolve authority routing. Try verifying your category/location.
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep("details")}>
-                    Edit
+                    Edit Details
                   </Button>
-                  <Button className="flex-1" onClick={submit} disabled={working}>
+                  <Button className="flex-1 font-semibold" onClick={submit} disabled={working}>
                     {working ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit report"}
                   </Button>
                 </div>

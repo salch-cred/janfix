@@ -193,48 +193,18 @@ export const listTaluksFn = createServerFn({ method: "GET" }).handler(async () =
 
 export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data: auths, error: authsError } = await c.from("authorities").select("*").order("name");
-  if (authsError) throw authsError;
-  // PERF: Fetching ALL issues is expensive as the table grows.
-  // Consider using a materialized view or aggregate table instead.
-  // For now, limit to the last 10,000 issues to keep response times reasonable.
-  const { data: agg, error: aggError } = await c
-    .from("issues")
-    .select("assigned_authority_id, status, created_at, updated_at")
-    .order("created_at", { ascending: false })
-    .limit(10000);
-  if (aggError) throw aggError;
-
-  return (auths ?? []).map((a) => {
-    const mine = (agg ?? []).filter((i) => i.assigned_authority_id === a.id);
-    const resolved = mine.filter((i) =>
-      ["resolved", "community_confirmed", "closed"].includes(i.status as string),
-    );
-    const pending = mine.length - resolved.length;
-    const times = resolved.map(
-      (i) =>
-        new Date(i.updated_at as string).getTime() - new Date(i.created_at as string).getTime(),
-    );
-    const avgDays = times.length
-      ? times.reduce((x, y) => x + y, 0) / times.length / 86400000
-      : null;
-    const total = mine.length;
-    const score = total > 0 ? Math.round((resolved.length / total) * 100) : 0;
-    return {
-      ...a,
-      total,
-      resolved: resolved.length,
-      pending,
-      avg_days: avgDays,
-      score,
-    };
-  });
+  const { data, error } = await c
+    .from("authority_stats_view")
+    .select("*")
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
 });
 
 export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
   const { data, error } = await c
-    .from("representatives")
+    .from("representative_stats_view")
     .select("*, authority:authorities(id, name), ward:wards(id, number, name)")
     .eq("active", true)
     .not("role", "ilike", "corporator")
@@ -243,61 +213,30 @@ export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(a
   return data ?? [];
 });
 
-export const wardStatsFn = createServerFn({ method: "GET" })
-  .inputValidator((d?: { ward_id?: number }) =>
-    z.object({ ward_id: z.number().int().optional() }).parse(d ?? {}),
-  )
-  .handler(async ({ data }) => {
-    const c = sb();
-    let q = c
-      .from("issues")
-      .select(
-        "id, status, category_id, severity, lat, lng, ward_id, created_at, category:categories(slug, name_en, color)",
-      )
-      .eq("visibility", "visible");
-    if (data.ward_id) q = q.eq("ward_id", data.ward_id);
-    const { data: rows, error } = await q;
-    if (error) throw error;
-    return rows ?? [];
-  });
+export const wardStatsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const c = sb();
+  const { data, error } = await c
+    .from("ward_stats_view")
+    .select("*")
+    .order("name");
+  if (error) throw error;
+  return data ?? [];
+});
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
   const c = sb();
-  const { data: rows, error } = await c
-    .from("issues")
-    .select("status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id")
-    .eq("visibility", "visible");
+  const { data, error } = await c
+    .from("analytics_view")
+    .select("*")
+    .single();
   if (error) throw error;
-  const list = rows ?? [];
-  const now = Date.now();
-  const dayAgo = now - 86400000;
-  const weekAgo = now - 7 * 86400000;
-  const today = list.filter((r) => new Date(r.created_at as string).getTime() >= dayAgo).length;
-  const week = list.filter((r) => new Date(r.created_at as string).getTime() >= weekAgo).length;
-  const resolved = list.filter((r) =>
-    ["resolved", "community_confirmed", "closed"].includes(r.status as string),
-  );
-  const times = resolved.map(
-    (r) => new Date(r.updated_at as string).getTime() - new Date(r.created_at as string).getTime(),
-  );
-  const avgDays = times.length ? times.reduce((a, b) => a + b, 0) / times.length / 86400000 : 0;
-
-  const byWard: Record<string, number> = {};
-  const byCat: Record<string, number> = {};
-  list.forEach((r) => {
-    if (r.ward_id) byWard[r.ward_id] = (byWard[r.ward_id] ?? 0) + 1;
-    if (r.category_id) byCat[r.category_id] = (byCat[r.category_id] ?? 0) + 1;
-  });
-  const topWard = Object.entries(byWard).sort((a, b) => b[1] - a[1])[0];
-  const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
-
   return {
-    total: list.length,
-    today,
-    week,
-    resolved: resolved.length,
-    avg_days: avgDays,
-    top_ward_id: topWard ? Number(topWard[0]) : null,
-    top_category_id: topCat ? Number(topCat[0]) : null,
+    total: Number(data.total ?? 0),
+    today: Number(data.today ?? 0),
+    week: Number(data.week ?? 0),
+    resolved: Number(data.resolved ?? 0),
+    avg_days: Number(data.avg_days ?? 0),
+    top_ward_id: data.top_ward_id ? Number(data.top_ward_id) : null,
+    top_category_id: data.top_category_id ? Number(data.top_category_id) : null,
   };
 });
