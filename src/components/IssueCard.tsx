@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, ThumbsUp, MessageSquare, Eye, Flame } from "lucide-react";
+import { MapPin, ThumbsUp, Eye, Flame, AlertCircle } from "lucide-react";
 import { STATUS_META, SEVERITY_META, slugify } from "@/lib/civic";
 import { Badge } from "@/components/ui/badge";
 
@@ -29,11 +29,13 @@ export function IssueCard({ issue }: { issue: IssueCardData }) {
   const slug = issue.slug || slugify(issue.description);
   const issueLinkParams = { publicId: issue.public_id, slug };
   const categoryBadgeStyle = { background: issue.category?.color ?? "#64748b" };
+  const score = Math.round(issue.heat_score ?? 0);
+
   return (
     <Link
       to="/issue/$publicId/$slug"
       params={issueLinkParams}
-      className="group block overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md"
+      className="group block overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
         {issue.image_url ? (
@@ -41,62 +43,78 @@ export function IssueCard({ issue }: { issue: IssueCardData }) {
             src={issue.image_url}
             alt={issue.description}
             loading="lazy"
-            className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">
-            No photo
+          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-muted-foreground gap-2">
+            <AlertCircle className="h-8 w-8 opacity-40 text-slate-500" />
+            <span className="text-xs font-semibold tracking-wider uppercase opacity-60">No Photo Attached</span>
           </div>
         )}
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
+        
+        {/* Category & Severity Badges */}
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5 z-10">
           <span
-            className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow"
+            className="rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm"
             style={categoryBadgeStyle}
           >
             {issue.category?.name_en ?? "Issue"}
           </span>
-          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${severity.color}`}>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${severity.color} shadow-sm`}>
             {severity.label}
           </span>
         </div>
-        <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-white backdrop-blur">
-          <Flame className="h-3 w-3" /> {Math.round(issue.heat_score)}
+
+        {/* Heat Score Flame Badge */}
+        <div className={`absolute right-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black text-white backdrop-blur shadow-sm transition-transform duration-300 group-hover:scale-105 ${
+          score >= 70 ? "bg-red-600/90" : score >= 40 ? "bg-amber-500/90" : "bg-slate-900/60"
+        }`}>
+          <Flame className={`h-3.5 w-3.5 ${score >= 40 ? "animate-pulse" : ""}`} /> {score}
         </div>
       </div>
-      <div className="space-y-2 p-3">
-        <p className="line-clamp-2 text-sm font-medium leading-snug">{issue.description}</p>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3" />
-          <span className="truncate">
+      
+      <div className="space-y-3.5 p-4.5">
+        <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">
+          {issue.description}
+        </p>
+        
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 text-primary opacity-80" />
+          <span className="truncate font-medium">
             {[issue.area, issue.locality].filter(Boolean).join(", ") ||
               (issue.ward ? `Ward ${issue.ward.number} · ${issue.ward.name}` : "Mangaluru")}
           </span>
         </div>
+        
         <div className="flex items-center justify-between gap-2 pt-1">
-          <Badge variant="outline" className={`text-[10px] font-semibold ${status.color}`}>
+          <Badge variant="outline" className={`text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 ${status.color}`}>
             {status.label}
           </Badge>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-0.5">
-              <ThumbsUp className="h-3 w-3" /> {issue.supporters_count}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground font-semibold">
+            <span className="flex items-center gap-1 hover:text-primary transition-colors">
+              <ThumbsUp className="h-3.5 w-3.5" /> {issue.supporters_count}
             </span>
-            <span className="flex items-center gap-0.5">
-              <Eye className="h-3 w-3" /> {issue.views}
+            <span className="flex items-center gap-1">
+              <Eye className="h-3.5 w-3.5" /> {issue.views}
             </span>
           </div>
         </div>
+
+        {/* Authority and Rep footer cards */}
         {issue.authority && (
-          <div className="flex items-center gap-2 border-t pt-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 border-t pt-3 mt-1.5 text-xs text-muted-foreground">
             {issue.authority.logo_url && (
-              <img src={issue.authority.logo_url} alt="" className="h-5 w-5 rounded object-cover" />
+              <img src={issue.authority.logo_url} alt="" className="h-5.5 w-5.5 rounded-full object-cover border shadow-sm" />
             )}
-            <span className="truncate font-medium text-foreground">{issue.authority.name}</span>
+            <span className="truncate font-bold text-slate-700 dark:text-slate-200">{issue.authority.name}</span>
             {issue.representative?.photo_url && (
-              <img
-                src={issue.representative.photo_url}
-                alt=""
-                className="ml-auto h-5 w-5 rounded-full object-cover ring-1 ring-muted"
-              />
+              <div className="ml-auto flex items-center" title={`${issue.representative.name} (${issue.representative.role})`}>
+                <img
+                  src={issue.representative.photo_url}
+                  alt={issue.representative.name}
+                  className="h-5.5 w-5.5 rounded-full object-cover ring-2 ring-primary/20 shadow-sm"
+                />
+              </div>
             )}
           </div>
         )}

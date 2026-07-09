@@ -34,12 +34,9 @@ const createIssueInput = z.object({
   lng: z.number(),
   address: z.string().optional().nullable(),
   area: z.string().optional().nullable(),
-  locality: z.string().optional().nullable(),
-  pincode: z.string().optional().nullable(),
-  ward_id: z.number().int().optional().nullable(),
-  image_url: z.string().url(),
-  image_phash: z.string().optional().nullable(),
-  extra_image_urls: z.array(z.string().url()).max(4).optional().nullable(),
+   extra_image_urls: z.array(z.string().url()).max(4).optional().nullable(),
+  assigned_authority_id: z.number().int().optional().nullable(),
+  assigned_representative_id: z.number().int().optional().nullable(),
 });
 
 export const createIssueFn = createServerFn({ method: "POST" })
@@ -53,15 +50,30 @@ export const createIssueFn = createServerFn({ method: "POST" })
     if (!catRows.length) throw new Error("Unknown category");
     const cat = catRows[0] as any;
 
-    // Resolve authority + representative via layered engine
-    // NOTE: resolver.ts now uses the Neon pool directly
-    const resolution = await resolveIssue({
-      category_id: cat.id,
-      ward_id: data.ward_id,
-      area: data.area,
-      locality: data.locality,
-      address: data.address,
-    });
+    let authId = data.assigned_authority_id;
+    let repId = data.assigned_representative_id;
+    let resolvedWardId = data.ward_id;
+    let reason = "Citizen Override";
+    let ruleVersion = 1;
+    let needsReview = false;
+    let jurisdictionConfidence: string | null = null;
+
+    if (!authId || !repId) {
+      const resolution = await resolveIssue({
+        category_id: cat.id,
+        ward_id: data.ward_id,
+        area: data.area,
+        locality: data.locality,
+        address: data.address,
+      });
+      if (!authId) authId = resolution.authority_id;
+      if (!repId) repId = resolution.representative_id;
+      resolvedWardId = resolution.resolved_ward_id ?? data.ward_id ?? null;
+      reason = `Category=${cat.name_en}` + (resolution.reason ? `, ${resolution.reason}` : "");
+      ruleVersion = resolution.version;
+      needsReview = resolution.needs_review ?? false;
+      jurisdictionConfidence = resolution.jurisdiction_confidence ?? null;
+    }
 
     // allocate public id via the DB sequence function
     const { rows: pidRows } = await query(`SELECT public.next_public_id() AS public_id`);
@@ -75,8 +87,6 @@ export const createIssueFn = createServerFn({ method: "POST" })
       .replace(/\s+/g, "-")
       .slice(0, 50);
 
-    const reason = `Category=${cat.name_en}` + (resolution.reason ? `, ${resolution.reason}` : "");
-
     // upsert device + increment count
     await query(
       `INSERT INTO public.devices (device_id, last_seen)
@@ -88,8 +98,6 @@ export const createIssueFn = createServerFn({ method: "POST" })
       `UPDATE public.devices SET report_count = report_count + 1, last_seen = now() WHERE device_id = $1`,
       [data.device_id],
     );
-
-    // image_url comes directly from Vercel Blob upload (already a public URL)
 
     // insert issue
     const { rows: insRows } = await query(
@@ -103,11 +111,11 @@ export const createIssueFn = createServerFn({ method: "POST" })
       [
         public_id, slug, cat.id, data.description, data.severity, data.lat, data.lng,
         data.address ?? null, data.area ?? null, data.locality ?? null, data.pincode ?? null,
-        resolution.resolved_ward_id ?? data.ward_id ?? null,
+        resolvedWardId,
         data.image_url, data.image_phash ?? null, data.device_id,
-        resolution.authority_id, resolution.representative_id, reason,
-        resolution.version, resolution.needs_review ?? false,
-        resolution.jurisdiction_confidence ?? null,
+        authId, repId, reason,
+        ruleVersion, needsReview,
+        jurisdictionConfidence,
       ],
     );
     if (!insRows.length) throw new Error("Failed to create issue");
@@ -146,28 +154,24 @@ const findDupesInput = z.object({
 export const findDuplicatesFn = createServerFn({ method: "POST" })
   .inputValidator((d: z.infer<typeof findDupesInput>) => findDupesInput.parse(d))
   .handler(async ({ data }) => {
-    const { rows: catRows } = await query(
-      `SELECT id FROM public.categories WHERE slug = $1`,
-      [data.category_slug],
-    );
-    if (!catRows.length) return { candidates: [] };
-    const cat = catRows[0] as any;
-
-    const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-    const delta = 0.0006;
-
     const { rows } = await query(
-      `SELECT id, public_id, slug, description, lat, lng, image_phash, image_url, created_at, status, supporters_count
-       FROM public.issues
-       WHERE category_id = $1
-         AND visibility = 'visible'
-         AND created_at >= $2
-         AND lat BETWEEN $3 AND $4
-         AND lng BETWEEN $5 AND $6
-       LIMIT 10`,
-      [cat.id, since, data.lat - delta, data.lat + delta, data.lng - delta, data.lng + delta],
+      `SELECT * FROM public.find_duplicate_issues($1, $2, $3, $4, $5, $6)`,
+      [
+        data.category_slug,
+        data.lat,
+        data.lng,
+        data.description,
+        data.image_phash || null,
+        0.002, // radius degree (~220m)
+      ],
     );
-    return { candidates: rows };
+    return {
+      candidates: (rows ?? []).map((r: any) => ({
+        ...r,
+        _score: Number(r.similarity_score ?? 0),
+        _meters: Number(r.distance_meters ?? 0),
+      })),
+    };
   });
 
 // ── Support an existing issue ────────────────────────────────────────────────
@@ -358,4 +362,60 @@ export const incrementViewFn = createServerFn({ method: "POST" })
       [data.issue_id],
     );
     return { ok: true };
+  });
+
+export const previewAssignmentFn = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    category_slug: string;
+    lat: number;
+    lng: number;
+    address?: string | null;
+    area?: string | null;
+    locality?: string | null;
+    ward_id?: number | null;
+  }) =>
+    z
+      .object({
+        category_slug: z.string(),
+        lat: z.number(),
+        lng: z.number(),
+        address: z.string().optional().nullable(),
+        area: z.string().optional().nullable(),
+        locality: z.string().optional().nullable(),
+        ward_id: z.number().int().optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    // category lookup
+    const { rows: catRows } = await query(
+      `SELECT id, slug, name_en FROM public.categories WHERE slug = $1`,
+      [data.category_slug],
+    );
+    if (!catRows.length) throw new Error("Unknown category");
+    const cat = catRows[0] as any;
+
+    const resolution = await resolveIssue({
+      category_id: cat.id,
+      ward_id: data.ward_id,
+      area: data.area,
+      locality: data.locality,
+      address: data.address,
+    });
+
+    const [authRows, repRows] = await Promise.all([
+      resolution.authority_id
+        ? query(`SELECT id, name, department, logo_url FROM public.authorities WHERE id = $1`, [resolution.authority_id])
+        : Promise.resolve({ rows: [] }),
+      resolution.representative_id
+        ? query(`SELECT id, name, role, photo_url FROM public.representatives WHERE id = $1`, [resolution.representative_id])
+        : Promise.resolve({ rows: [] }),
+    ]);
+
+    return {
+      authority: authRows.rows[0] ?? null,
+      representative: repRows.rows[0] ?? null,
+      resolved_ward_id: resolution.resolved_ward_id,
+      reason: resolution.reason,
+    };
   });

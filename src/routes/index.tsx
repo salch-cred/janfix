@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { listIssuesFn, analyticsFn, listAuthoritiesFn } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
 import { IssueCard } from "@/components/IssueCard";
@@ -57,21 +58,25 @@ const STEPS = [
   },
 ];
 
-const heatSectionLink = { to: "/explore", label: "See all" };
-const recentSectionLink = { to: "/explore", label: "Browse" };
+const feedSectionLink = { to: "/explore", label: "See all reports" };
 const authoritiesSectionLink = { to: "/leaderboard", label: "Full leaderboard" };
 
 function Home() {
+  const [feedTab, setFeedTab] = useState<"trending" | "recent">("trending");
+
   const heat = useQuery({
     queryKey: ["issues", "heat"],
-    queryFn: () => listIssuesFn({ data: { sort: "heat", limit: 6 } }),
+    queryFn: () => listIssuesFn({ data: { sort: "heat", limit: 8 } }),
   });
   const recent = useQuery({
     queryKey: ["issues", "recent"],
-    queryFn: () => listIssuesFn({ data: { sort: "recent", limit: 6 } }),
+    queryFn: () => listIssuesFn({ data: { sort: "recent", limit: 8 } }),
   });
   const analytics = useQuery({ queryKey: ["analytics"], queryFn: () => analyticsFn() });
   const auths = useQuery({ queryKey: ["authorities"], queryFn: () => listAuthoritiesFn() });
+
+  const currentFeedData = feedTab === "trending" ? heat.data : recent.data;
+  const feedLoading = feedTab === "trending" ? heat.isLoading : recent.isLoading;
 
   return (
     <AppShell>
@@ -79,7 +84,7 @@ function Home() {
       <section className="relative overflow-hidden bg-primary text-primary-foreground">
         <div className="mx-auto max-w-6xl px-4 pt-14 pb-24 md:pt-20 md:pb-32">
           <div className="grid items-center gap-12 md:grid-cols-2">
-            <div>
+            <div className="animate-fade-in-up stagger-1">
               <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-4 py-2 text-xs font-semibold ring-1 ring-inset ring-primary-foreground/20">
                 <HugeiconsIcon icon={Location01Icon} size={14} strokeWidth={1.5} /> Ask JanFix. Where do
                 I report an issue?
@@ -128,7 +133,7 @@ function Home() {
               </dl>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[300px]">
+            <div className="relative mx-auto w-full max-w-[300px] animate-fade-in-up stagger-2">
               <div className="overflow-hidden rounded-[2.5rem] border-[6px] border-foreground/90 bg-background text-foreground shadow-2xl">
                 <div className="flex items-center gap-2 border-b px-4 py-3">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -186,17 +191,8 @@ function Home() {
         <WaveDivider className="absolute inset-x-0 bottom-0 h-10 w-full text-background md:h-14" />
       </section>
 
-      {/* Live snapshot */}
-      <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {(heat.data ?? []).slice(0, 4).map((it: any) => (
-            <IssueCard key={it.id} issue={it} />
-          ))}
-        </div>
-      </section>
-
       {/* How it works */}
-      <section className="border-y bg-muted/20">
+      <section className="border-y bg-muted/20 animate-fade-in-up stagger-3">
         <div className="mx-auto max-w-6xl px-4 py-14 md:py-20">
           <div className="mx-auto max-w-2xl text-center">
             <span className="text-xs font-bold uppercase tracking-widest text-primary">
@@ -208,7 +204,7 @@ function Home() {
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {STEPS.map((step, i) => (
-              <div key={step.title} className="relative rounded-3xl border bg-card p-6 shadow-sm">
+              <div key={step.title} className="relative rounded-3xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <HugeiconsIcon icon={step.icon} size={20} strokeWidth={1.5} />
                 </div>
@@ -221,43 +217,68 @@ function Home() {
         </div>
       </section>
 
-      {/* Trending */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <SectionHeader
-          eyebrow="Live right now"
-          icon={<HugeiconsIcon icon={FireIcon} size={20} className="text-warning" strokeWidth={1.5} />}
-          title="Hottest in Mangaluru"
-          subtitle="Ranked by heat score — votes, age, severity & duplicates."
-          link={heatSectionLink}
-        />
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-          {(heat.data ?? []).map((it: any) => (
+      {/* Dynamic Toggleable Civic Feed Section */}
+      <section className="mx-auto max-w-6xl px-4 py-16 animate-fade-in-up stagger-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b pb-5">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-widest text-primary">
+              Live Feed
+            </span>
+            <h2 className="font-display text-3xl font-bold tracking-tight mt-1">
+              Explore reported issues
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Active citizen reports from across Dakshina Kannada.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4.5 mt-2 md:mt-0">
+            {/* Feed Toggles */}
+            <div className="flex gap-1 rounded-full border bg-muted/30 p-1 text-xs font-semibold">
+              <button
+                onClick={() => setFeedTab("trending")}
+                className={`flex items-center gap-1.5 rounded-full px-4.5 py-1.5 transition ${
+                  feedTab === "trending"
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <HugeiconsIcon icon={FireIcon} size={14} /> Trending
+              </button>
+              <button
+                onClick={() => setFeedTab("recent")}
+                className={`flex items-center gap-1.5 rounded-full px-4.5 py-1.5 transition ${
+                  feedTab === "recent"
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <HugeiconsIcon icon={SparklesIcon} size={14} /> Recent
+              </button>
+            </div>
+
+            <Link
+              to={feedSectionLink.to}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+            >
+              {feedSectionLink.label} <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          {(currentFeedData ?? []).map((it: any) => (
             <IssueCard key={it.id} issue={it} />
           ))}
-          {heat.isLoading &&
+          {feedLoading &&
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />
+              <div key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted/60" />
             ))}
         </div>
       </section>
 
-      {/* Recent */}
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <SectionHeader
-          eyebrow="Fresh reports"
-          icon={<HugeiconsIcon icon={SparklesIcon} size={20} className="text-primary" strokeWidth={1.5} />}
-          title="Just reported"
-          link={recentSectionLink}
-        />
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-          {(recent.data ?? []).map((it: any) => (
-            <IssueCard key={it.id} issue={it} />
-          ))}
-        </div>
-      </section>
-
-      {/* Authorities */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
+      {/* Authorities Leaderboard */}
+      <section className="mx-auto max-w-6xl px-4 py-16 border-t animate-fade-in-up">
         <SectionHeader
           eyebrow="Public accountability"
           icon={<HugeiconsIcon icon={Shield01Icon} size={20} className="text-success" strokeWidth={1.5} />}
@@ -265,26 +286,26 @@ function Home() {
           subtitle="Who is fixing — and who isn't."
           link={authoritiesSectionLink}
         />
-        <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {(auths.data ?? []).slice(0, 6).map((a: any) => (
             <Link
               key={a.id}
               to="/authorities/$authorityId"
               params={{ authorityId: String(a.id) }}
-              className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition hover:bg-accent"
+              className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition-all duration-300 hover:shadow-md hover:bg-muted/10"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 font-black text-primary">
                 {a.name.slice(0, 1)}
               </div>
-              <div className="flex-1">
-                <div className="font-semibold">{a.name}</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-slate-800 dark:text-slate-100 truncate">{a.name}</div>
+                <div className="text-xs text-muted-foreground font-medium mt-0.5">
                   {a.resolved}/{a.total} resolved
                   {a.avg_days ? ` \u00b7 avg ${a.avg_days.toFixed(1)}d` : ""}
                 </div>
               </div>
               <div
-                className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                className={`rounded-full px-2.5 py-1 text-xs font-bold shrink-0 ${
                   a.score >= 70
                     ? "bg-success/15 text-success"
                     : a.score >= 40
@@ -300,7 +321,7 @@ function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-4 pb-16">
+      <section className="mx-auto max-w-6xl px-4 pb-16 animate-fade-in-up">
         <div className="overflow-hidden rounded-3xl bg-foreground px-6 py-14 text-center text-background shadow-xl md:px-16">
           <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
             Seen something broken?
@@ -372,7 +393,7 @@ function SectionHeader({
   link?: { to: string; label: string };
 }) {
   return (
-    <div className="flex items-end justify-between gap-3">
+    <div className="flex items-end justify-between gap-3 border-b pb-5">
       <div>
         {eyebrow && (
           <div className="mb-1 text-xs font-bold uppercase tracking-widest text-primary">
@@ -388,7 +409,7 @@ function SectionHeader({
       {link && (
         <Link
           to={link.to}
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
         >
           {link.label} <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.5} />
         </Link>

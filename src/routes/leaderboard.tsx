@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import {
   listAuthoritiesFn,
   listRepresentativesFn,
-  listWardsFn,
   wardStatsFn,
 } from "@/lib/queries.functions";
 import { AppShell } from "@/components/AppShell";
@@ -45,43 +44,14 @@ function LeaderboardPage() {
 
   const auths = useQuery({ queryKey: ["authorities"], queryFn: () => listAuthoritiesFn() });
   const reps = useQuery({ queryKey: ["representatives"], queryFn: () => listRepresentativesFn() });
-  const wards = useQuery({ queryKey: ["wards"], queryFn: () => listWardsFn() });
-  const allStats = useQuery({ queryKey: ["wardStats"], queryFn: () => wardStatsFn({}) });
+  const allStats = useQuery({ queryKey: ["wardStats"], queryFn: () => wardStatsFn() });
 
   const wardLeaderboard = useMemo(() => {
-    const rows = allStats.data ?? [];
-    const byWard: Record<number, { total: number; resolved: number; pending: number }> = {};
-    rows.forEach((r: any) => {
-      if (!r.ward_id) return;
-      if (!byWard[r.ward_id]) byWard[r.ward_id] = { total: 0, resolved: 0, pending: 0 };
-      byWard[r.ward_id].total++;
-      if (["resolved", "community_confirmed", "closed"].includes(r.status)) {
-        byWard[r.ward_id].resolved++;
-      } else {
-        byWard[r.ward_id].pending++;
-      }
-    });
-    return (wards.data ?? [])
-      .map((w: any) => ({
-        ...w,
-        ...(byWard[w.id] ?? { total: 0, resolved: 0, pending: 0 }),
-        score: byWard[w.id] ? Math.round((byWard[w.id].resolved / byWard[w.id].total) * 100) : 0,
-      }))
-      .sort((a: any, b: any) => b.resolved - a.resolved || b.total - a.total);
-  }, [allStats.data, wards.data]);
+    return (allStats.data ?? []).sort((a: any, b: any) => b.resolved - a.resolved || b.total - a.total);
+  }, [allStats.data]);
 
   const repLeaderboard = useMemo(() => {
-    return (reps.data ?? [])
-      .map((r: any) => {
-        const idNum = typeof r.id === "number" ? r.id : parseInt(String(r.id).replace(/\D/g, "") || "0");
-        const seed = (idNum * 17) % 31;
-        const score = 65 + seed;
-        return {
-          ...r,
-          score,
-        };
-      })
-      .sort((a: any, b: any) => b.score - a.score);
+    return (reps.data ?? []).sort((a: any, b: any) => b.score - a.score || b.resolved - a.resolved);
   }, [reps.data]);
 
   return (

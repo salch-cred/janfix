@@ -21,9 +21,21 @@ import { getDeviceId } from "@/lib/device";
 
 const navItemActiveProps = { className: "bg-background text-foreground shadow-sm" };
 
+function EnvWarningBar() {
+  const isMissing = typeof window !== "undefined" && !import.meta.env.VITE_SUPABASE_URL;
+  if (!isMissing) return null;
+  return (
+    <div className="bg-amber-500 text-white text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 shadow-inner border-b border-amber-600">
+      <Sparkles className="h-4 w-4 animate-pulse text-white" />
+      <span>Local Dev Notice: Create a .env file from .env.example with your Supabase credentials to link the database.</span>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
+      <EnvWarningBar />
       <AnnouncementBar />
       <TopBar />
       <main className="pb-28 md:pb-12">{children}</main>
@@ -55,10 +67,10 @@ function TopBar() {
         <Link to="/" className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center">
             <svg width="32" height="38" viewBox="0 0 24 28" fill="none">
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 16 12 16s12-7.75 12-16C24 5.373 18.627 0 12 0z" fill="#1d4ed8"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 8.25 12 16 12 16s12-7.75 12-16C24 5.373 18.627 0 12 0z" fill="#1a5d2b"/>
               <circle cx="12" cy="11" r="9" fill="white"/>
               <path d="M12 5.5 c-1.5-2 -4.5-0.5 -4.5 2.5 0 2.5 4.5 5 4.5 5 s4.5-2.5 4.5-5 c0-3 -3-4.5 -4.5-2.5 z" fill="#dc2626"/>
-              <g fill="#1d4ed8">
+              <g fill="#1a5d2b">
                 <circle cx="12" cy="11.5" r="1.5" />
                 <path d="M9 16 c0-2 2-2.5 3-2.5 s3 0.5 3 2.5 v1 h-6 z" />
                 <circle cx="8" cy="12" r="1" />

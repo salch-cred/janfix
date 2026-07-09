@@ -173,120 +173,43 @@ export const listTaluksFn = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async () => {
-  const { rows: auths } = await query(`SELECT * FROM public.authorities ORDER BY name`);
-  const { rows: agg } = await query(
-    `SELECT assigned_authority_id, status, created_at, updated_at
-     FROM public.issues
-     ORDER BY created_at DESC
-     LIMIT 10000`,
-  );
-
-  return auths.map((a: any) => {
-    const mine = agg.filter((i: any) => i.assigned_authority_id === a.id);
-    const resolved = mine.filter((i: any) =>
-      ["resolved", "community_confirmed", "closed"].includes(i.status),
-    );
-    const pending = mine.length - resolved.length;
-    const times = resolved.map(
-      (i: any) =>
-        new Date(i.updated_at).getTime() - new Date(i.created_at).getTime(),
-    );
-    const avgDays = times.length
-      ? times.reduce((x: number, y: number) => x + y, 0) / times.length / 86400000
-      : null;
-    const total = mine.length;
-    const score = total > 0 ? Math.round((resolved.length / total) * 100) : 0;
-    return {
-      ...a,
-      total,
-      resolved: resolved.length,
-      pending,
-      avg_days: avgDays,
-      score,
-    };
-  });
+  const { rows } = await query(`SELECT * FROM public.authority_stats_view ORDER BY name`);
+  return rows;
 });
 
 export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(async () => {
   const { rows } = await query(
-    `SELECT r.*,
-       json_build_object('id', a.id, 'name', a.name) AS authority,
-       CASE WHEN w.id IS NOT NULL THEN json_build_object('id', w.id, 'number', w.number, 'name', w.name) ELSE NULL END AS ward
-     FROM public.representatives r
-     LEFT JOIN public.authorities a ON a.id = r.authority_id
-     LEFT JOIN public.wards w ON w.id = r.ward_id
-     WHERE r.active = true AND lower(r.role) NOT LIKE 'corporator%'
-     ORDER BY r.name`,
+    `SELECT * FROM public.representative_stats_view WHERE active = true AND lower(role) NOT LIKE 'corporator%' ORDER BY name`
   );
   return rows;
 });
 
-export const wardStatsFn = createServerFn({ method: "GET" })
-  .inputValidator((d?: { ward_id?: number }) =>
-    z.object({ ward_id: z.number().int().optional() }).parse(d ?? {}),
-  )
-  .handler(async ({ data }) => {
-    const params: any[] = [];
-    let sql = `
-      SELECT i.id, i.status, i.category_id, i.severity, i.lat, i.lng, i.ward_id, i.created_at,
-        json_build_object('slug', c.slug, 'name_en', c.name_en, 'color', c.color) AS category
-      FROM public.issues i
-      LEFT JOIN public.categories c ON c.id = i.category_id
-      WHERE i.visibility = 'visible'
-    `;
-    if (data.ward_id) {
-      params.push(data.ward_id);
-      sql += ` AND i.ward_id = $1`;
-    }
-    const { rows } = await query(sql, params);
-    return rows;
-  });
+export const wardStatsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { rows } = await query(`SELECT * FROM public.ward_stats_view ORDER BY name`);
+  return rows;
+});
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
-  const [issuesRes, visitsRes, weeklyRes, monthlyRes] = await Promise.all([
-    query(
-      `SELECT status, severity, ward_id, category_id, created_at, updated_at, assigned_authority_id
-       FROM public.issues
-       WHERE visibility = 'visible'`
-    ),
+  const [analyticsRes, visitsRes, weeklyRes, monthlyRes] = await Promise.all([
+    query(`SELECT * FROM public.analytics_view`),
     query(`SELECT count FROM public.site_visits WHERE id = 1`).catch(() => ({ rows: [] })),
     query(`SELECT SUM(count) as count FROM public.daily_visits WHERE date >= CURRENT_DATE - INTERVAL '7 days'`).catch(() => ({ rows: [] })),
     query(`SELECT SUM(count) as count FROM public.daily_visits WHERE date >= CURRENT_DATE - INTERVAL '30 days'`).catch(() => ({ rows: [] }))
   ]);
-  const list = issuesRes.rows;
+
+  const data = analyticsRes.rows[0] || {};
   const visitors = parseInt(visitsRes.rows[0]?.count ?? 0, 10) || 0;
   const visitors_week = parseInt(weeklyRes.rows[0]?.count ?? 0, 10) || 0;
   const visitors_month = parseInt(monthlyRes.rows[0]?.count ?? 0, 10) || 0;
-  const now = Date.now();
-  const dayAgo = now - 86400000;
-  const weekAgo = now - 7 * 86400000;
-  const today = list.filter((r: any) => new Date(r.created_at).getTime() >= dayAgo).length;
-  const week = list.filter((r: any) => new Date(r.created_at).getTime() >= weekAgo).length;
-  const resolved = list.filter((r: any) =>
-    ["resolved", "community_confirmed", "closed"].includes(r.status),
-  );
-  const times = resolved.map(
-    (r: any) => new Date(r.updated_at).getTime() - new Date(r.created_at).getTime(),
-  );
-  const avgDays = times.length ? times.reduce((a: number, b: number) => a + b, 0) / times.length / 86400000 : 0;
-
-  const byWard: Record<string, number> = {};
-  const byCat: Record<string, number> = {};
-  list.forEach((r: any) => {
-    if (r.ward_id) byWard[r.ward_id] = (byWard[r.ward_id] ?? 0) + 1;
-    if (r.category_id) byCat[r.category_id] = (byCat[r.category_id] ?? 0) + 1;
-  });
-  const topWard = Object.entries(byWard).sort((a, b) => b[1] - a[1])[0];
-  const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
 
   return {
-    total: list.length,
-    today,
-    week,
-    resolved: resolved.length,
-    avg_days: avgDays,
-    top_ward_id: topWard ? Number(topWard[0]) : null,
-    top_category_id: topCat ? Number(topCat[0]) : null,
+    total: Number(data.total ?? 0),
+    today: Number(data.today ?? 0),
+    week: Number(data.week ?? 0),
+    resolved: Number(data.resolved ?? 0),
+    avg_days: Number(data.avg_days ?? 0),
+    top_ward_id: data.top_ward_id ? Number(data.top_ward_id) : null,
+    top_category_id: data.top_category_id ? Number(data.top_category_id) : null,
     visitors,
     visitors_week,
     visitors_month,
