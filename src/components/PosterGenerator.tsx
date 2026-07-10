@@ -169,8 +169,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
       <div style={{
         width: w,
         height: h,
-        background: "#e4e1d9",
-        fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
+        background: "#e9e7df",
+        fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
@@ -182,50 +182,49 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
         <div style={{
           display: "flex",
           justifyContent: "space-between",
-          padding: `${px(28)}px ${px(32)}px`,
-          paddingBottom: px(12),
+          padding: `${px(36)}px ${px(36)}px ${px(16)}px`,
           position: "relative",
           zIndex: 1,
         }}>
           {/* Logo Block (Left) */}
-          <div style={{ display: "flex", gap: px(12) }}>
-            {/* Map Pin logo matching design */}
-            <svg width={px(64)} height={px(76)} viewBox="0 0 64 80" fill="none" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>
-              <path d="M32 0C14.327 0 0 14.327 0 32c0 22 32 48 32 48s32-26 32-48C64 14.327 49.673 0 32 0z" fill="#1b3c20"/>
+          <div style={{ display: "flex", gap: px(14), alignItems: "center" }}>
+            {/* Map Pin logo */}
+            <svg width={px(64)} height={px(80)} viewBox="0 0 64 80" fill="none" style={{ flexShrink: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>
+              <path d="M32 0C14.327 0 0 14.327 0 32c0 22 32 48 32 48s32-26 32-48C64 14.327 49.673 0 32 0z" fill="#1d3b22"/>
               <circle cx="32" cy="27" r="21" fill="white"/>
-              {/* Hearts and people silhouette inside */}
-              <circle cx="32" cy="18" r="3.5" fill="#d73024"/>
-              {/* Simplified people */}
-              <path d="M22 35c0-4 3-6 7-6h6c4 0 7 2 7 6v1H22z" stroke="#1b3c20" strokeWidth="1.5" fill="none"/>
-              <circle cx="25" cy="25" r="3" stroke="#1b3c20" strokeWidth="1.5" fill="none"/>
-              <circle cx="39" cy="25" r="3" stroke="#1b3c20" strokeWidth="1.5" fill="none"/>
+              {/* Heart */}
+              <path d="M32 17.5c-2-2.5-6-2.5-8 0-1.8 2.2-1.8 5.2 0 7.5L32 31l8-6c1.8-2.2 1.8-5.2 0-7.5-2-2.5-6-2.5-8 0z" fill="#d73024"/>
+              {/* Simplified people line art inside pin */}
+              <path d="M22 36c0-4 3-6 7-6h6c4 0 7 2 7 6v2H22v-2z" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
+              <circle cx="26" cy="26" r="3" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
+              <circle cx="38" cy="26" r="3" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
             </svg>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: px(8) }}>
-              <div style={{ fontSize: px(36), fontWeight: 900, color: "#1b3c20", lineHeight: 1, letterSpacing: "-0.5px" }}>
-                Jan<span style={{ color: "#2ea14c" }}>Fix</span>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ fontSize: px(38), fontWeight: 800, color: "#1d3b22", lineHeight: 1, letterSpacing: "-1px" }}>
+                Jan<span style={{ color: "#28a245" }}>Fix</span>
               </div>
-              <div style={{ fontSize: px(14), fontWeight: 800, color: "#1b3c20", letterSpacing: px(1.8), marginTop: px(4) }}>MANGALURU</div>
-              <div style={{ fontSize: px(13), color: "#475569", fontWeight: 700, marginTop: px(8) }}>Report. Track. Fix.</div>
+              <div style={{ fontSize: px(14), fontWeight: 700, color: "#1d3b22", letterSpacing: px(1.2), marginTop: px(4) }}>MANGALURU</div>
+              <div style={{ fontSize: px(13), color: "#475569", fontWeight: 600, marginTop: px(8) }}>Report. Track. Fix.</div>
             </div>
           </div>
 
           {/* Title Block (Right) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: px(120), paddingTop: px(4) }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: px(70), marginTop: px(-8) }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-               <div style={{ fontSize: px(40), fontWeight: 900, color: "#292929", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+               <div style={{ fontSize: px(48), fontWeight: 900, color: "#292929", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
                  ಯಾವಾಗ
                </div>
                {/* 3 lines decoration */}
-               <div style={{ display: "flex", flexDirection: "column", gap: px(4), marginLeft: px(16), marginBottom: px(12) }}>
+               <div style={{ display: "flex", flexDirection: "column", gap: px(4), marginLeft: px(12), marginBottom: px(12) }}>
                   <div style={{ width: px(28), height: px(3), background: "#292929", transform: "rotate(-15deg)" }}></div>
                   <div style={{ width: px(36), height: px(3), background: "#292929" }}></div>
                   <div style={{ width: px(28), height: px(3), background: "#292929", transform: "rotate(15deg)" }}></div>
                </div>
             </div>
-            <div style={{ fontSize: px(56), fontWeight: 900, color: "#254328", lineHeight: 1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+            <div style={{ fontSize: px(64), fontWeight: 900, color: "#254328", lineHeight: 1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
               ಸರಿ ಮಾಡುವುದು ?
             </div>
-            <div style={{ fontSize: px(18), color: "#254328", fontWeight: 800, marginTop: px(8), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(4), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+            <div style={{ fontSize: px(18), color: "#292929", fontWeight: 700, marginTop: px(12), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(4), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
               ನಮ್ಮ ಮಂಗಳೂರು ನಮ್ಮ ಜವಾಬ್ದಾರಿ
             </div>
           </div>
@@ -234,16 +233,15 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
         {/* ── BACKGROUND ILLUSTRATION (Top Right) ───────────────────────── */}
         <div style={{
            position: "absolute",
-           top: px(-20),
-           right: px(-40),
-           width: px(380),
-           height: px(250),
+           top: px(-10),
+           right: px(-20),
+           width: px(340),
+           height: px(230),
            opacity: 0.15,
            zIndex: 0,
            pointerEvents: "none"
         }}>
-           {/* Decorative building illustration - approximated using a generic SVG silhouette */}
-           <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none" stroke="#1b3c20" strokeWidth="2">
+           <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none" stroke="#1b3c20" strokeWidth="1.5">
               <path d="M150,300 V180 H180 V120 H220 V180 H250 V300" />
               <path d="M180,120 L200,80 L220,120" />
               <path d="M250,300 V220 H300 V250 H350 V300" />
@@ -254,40 +252,38 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
         </div>
 
         {/* ── MAIN CONTENT AREA ─────────────────────────────────────────── */}
-        <div style={{ display: "flex", padding: `0 ${px(32)}px`, gap: px(24), marginTop: px(12), zIndex: 1, flex: 1 }}>
+        <div style={{ display: "flex", padding: `0 ${px(36)}px`, gap: px(24), marginTop: px(8), zIndex: 1, flex: 1 }}>
           
           {/* LEFT COLUMN */}
           <div style={{ flex: 1.6, display: "flex", flexDirection: "column" }}>
             
-            {/* Metadata Bar: Issue ID | Reported On | Status */}
-            <div style={{ display: "flex", alignItems: "stretch", marginBottom: px(24) }}>
-               {/* ISSUE ID block */}
-               <div style={{ background: "#1c3822", color: "white", borderRadius: px(12), padding: `${px(12)}px ${px(24)}px`, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <div style={{ fontSize: px(10), fontWeight: 700, opacity: 0.8, letterSpacing: px(0.5) }}>ISSUE ID</div>
-                  <div style={{ fontSize: px(20), fontWeight: 800 }}>{issue.public_id}</div>
+            {/* Metadata Bar container (Cream box) */}
+            <div style={{ display: "flex", background: "#f0efe9", borderRadius: px(12), marginBottom: px(24), overflow: "hidden", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+               {/* ISSUE ID block (Dark Green) */}
+               <div style={{ background: "#1c3822", color: "white", padding: `${px(14)}px ${px(24)}px`, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minWidth: px(180) }}>
+                  <div style={{ fontSize: px(10), fontWeight: 700, letterSpacing: px(0.5), color: "rgba(255,255,255,0.8)" }}>ISSUE ID</div>
+                  <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(2) }}>{issue.public_id}</div>
                </div>
-               {/* Divider */}
-               <div style={{ width: px(1), background: "#b5b0a3", margin: `0 ${px(16)}px` }}></div>
                {/* Reported On block */}
-               <div style={{ display: "flex", alignItems: "center", gap: px(12) }}>
-                  <svg width={px(28)} height={px(28)} viewBox="0 0 24 24" fill="none" stroke="#292929" strokeWidth="1.5">
+               <div style={{ display: "flex", alignItems: "center", gap: px(12), padding: `0 ${px(20)}px` }}>
+                  <svg width={px(26)} height={px(26)} viewBox="0 0 24 24" fill="none" stroke="#292929" strokeWidth="1.5">
                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                      <line x1="16" y1="2" x2="16" y2="6"/>
                      <line x1="8" y1="2" x2="8" y2="6"/>
                      <line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                   <div style={{ display: "flex", flexDirection: "column" }}>
-                     <div style={{ fontSize: px(10), fontWeight: 700, color: "#666", letterSpacing: px(0.5) }}>REPORTED ON</div>
-                     <div style={{ fontSize: px(13), fontWeight: 800, color: "#292929" }}>{dateLine}</div>
+                     <div style={{ fontSize: px(9), fontWeight: 700, color: "#666", letterSpacing: px(0.5) }}>REPORTED ON</div>
+                     <div style={{ fontSize: px(13), fontWeight: 800, color: "#111" }}>{dateLine.toUpperCase()}</div>
                      <div style={{ fontSize: px(11), fontWeight: 600, color: "#666" }}>{timeLine}</div>
                   </div>
                </div>
                {/* Divider */}
-               <div style={{ width: px(1), background: "#b5b0a3", margin: `0 ${px(16)}px` }}></div>
+               <div style={{ width: px(1), background: "#dcdacc", margin: `${px(12)}px 0` }}></div>
                {/* Status block */}
-               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <div style={{ fontSize: px(10), fontWeight: 700, color: "#666", letterSpacing: px(0.5), marginBottom: px(4), textAlign: "center" }}>STATUS</div>
-                  <div style={{ background: "#f2b134", color: "#1c3822", padding: `${px(4)}px ${px(12)}px`, borderRadius: px(16), fontSize: px(10), fontWeight: 900, display: "flex", alignItems: "center", gap: px(6) }}>
+               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: `0 ${px(20)}px` }}>
+                  <div style={{ fontSize: px(9), fontWeight: 700, color: "#666", letterSpacing: px(0.5), marginBottom: px(4), textAlign: "center" }}>STATUS</div>
+                  <div style={{ background: "#fbd158", color: "#1c3822", padding: `${px(4)}px ${px(12)}px`, borderRadius: px(16), fontSize: px(11), fontWeight: 800, display: "flex", alignItems: "center", gap: px(6) }}>
                      <div style={{ width: px(12), height: px(12), border: `${px(2)}px dotted #1c3822`, borderRadius: "50%" }}></div>
                      {statusLabel}
                   </div>
@@ -295,80 +291,79 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             </div>
 
             {/* Title Section */}
-            <div style={{ background: "#d6392b", color: "white", padding: `${px(4)}px ${px(12)}px`, borderRadius: px(6), fontSize: px(11), fontWeight: 800, alignSelf: "flex-start", marginBottom: px(8) }}>
+            <div style={{ background: "#da3d2b", color: "white", padding: `${px(4)}px ${px(10)}px`, borderRadius: px(4), fontSize: px(10), fontWeight: 800, alignSelf: "flex-start", marginBottom: px(6), letterSpacing: px(0.5) }}>
                ISSUE
             </div>
-            <div style={{ fontSize: px(56), fontWeight: 900, color: "#111827", lineHeight: 1, textTransform: "uppercase", letterSpacing: "-1px" }}>
+            <div style={{ fontSize: px(52), fontWeight: 800, color: "#111827", lineHeight: 1, textTransform: "uppercase", letterSpacing: "-1px" }}>
                {cat.name_en}
             </div>
-            <div style={{ fontSize: px(18), color: "#374151", fontWeight: 600, lineHeight: 1.3, marginTop: px(8), maxWidth: "90%" }}>
+            <div style={{ fontSize: px(18), color: "#374151", fontWeight: 500, lineHeight: 1.3, marginTop: px(8), maxWidth: "90%" }}>
                {issue.description.length > 90 ? issue.description.slice(0, 87) + "…" : issue.description}
             </div>
 
             {/* Location */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: px(8), marginTop: px(16), marginBottom: px(20) }}>
-               <svg width={px(24)} height={px(24)} viewBox="0 0 24 24" fill="#292929" style={{ flexShrink: 0, marginTop: px(2) }}>
+               <svg width={px(24)} height={px(24)} viewBox="0 0 24 24" fill="#1b3c20" style={{ flexShrink: 0, marginTop: px(2) }}>
                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                </svg>
-               <div style={{ fontSize: px(14), fontWeight: 700, color: "#111827", lineHeight: 1.4 }}>
-                  Near {locationLabel}
+               <div style={{ fontSize: px(15), fontWeight: 600, color: "#111827", lineHeight: 1.4 }}>
+                  <span style={{ fontWeight: 700 }}>Near {issue.area || issue.locality || "Location"}</span><br/>
+                  <span style={{ fontWeight: 500 }}>Mangaluru - {issue.address?.match(/\b575\d{3}\b/)?.[0] ?? "575001"}</span>
                </div>
             </div>
 
             {/* Photo Section */}
             <div style={{ 
                width: "100%", 
-               height: px(340), 
+               height: px(270), 
                borderRadius: `${px(12)}px ${px(12)}px 0 0`, 
                overflow: "hidden", 
                position: "relative",
-               boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
             }}>
                <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
 
             {/* Stats Bar */}
             <div style={{
-               background: "#24442a",
+               background: "#1c3822",
                borderRadius: `0 0 ${px(12)}px ${px(12)}px`,
-               padding: `${px(20)}px 0`,
+               padding: `${px(16)}px 0`,
                display: "flex",
                color: "white",
-               boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+               marginBottom: px(24)
             }}>
                {/* Views */}
                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: `${px(1)}px solid rgba(255,255,255,0.2)` }}>
-                  <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="white"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                  <svg width={px(28)} height={px(28)} viewBox="0 0 24 24" fill="white"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
                   <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>{viewsCount}</div>
-                  <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1), marginTop: px(2) }}>VIEWS</div>
+                  <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(1), marginTop: px(2) }}>VIEWS</div>
                </div>
                {/* Supports */}
                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: `${px(1)}px solid rgba(255,255,255,0.2)` }}>
-                  <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="white"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                  <svg width={px(28)} height={px(28)} viewBox="0 0 24 24" fill="white"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                   <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>{supportsCount}</div>
-                  <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1), marginTop: px(2) }}>SUPPORTS</div>
+                  <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(1), marginTop: px(2) }}>SUPPORTS</div>
                </div>
                {/* Votes Fixed */}
                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: `${px(1)}px solid rgba(255,255,255,0.2)` }}>
-                  <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="white"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.91l-.01-.01L23 10z"/></svg>
+                  <svg width={px(28)} height={px(28)} viewBox="0 0 24 24" fill="white"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.91l-.01-.01L23 10z"/></svg>
                   <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>{votesFixed}</div>
-                  <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1), marginTop: px(2) }}>VOTES FIXED</div>
+                  <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(1), marginTop: px(2) }}>VOTES FIXED</div>
                </div>
                {/* Still Exists */}
                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="white"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v1.91l.01.01L1 14c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
+                  <svg width={px(28)} height={px(28)} viewBox="0 0 24 24" fill="white"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v1.91l.01.01L1 14c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
                   <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>{votesExists}</div>
-                  <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1), marginTop: px(2) }}>STILL EXISTS</div>
+                  <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(1), marginTop: px(2) }}>STILL EXISTS</div>
                </div>
             </div>
 
-            {/* Small Report CTA illustration */}
-            <div style={{ display: "flex", alignItems: "center", gap: px(20), marginTop: px(24) }}>
+            {/* Bottom CTA container (Cream Box) */}
+            <div style={{ display: "flex", alignItems: "center", gap: px(20), background: "#f0efe9", padding: px(16), borderRadius: px(12), boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
                {/* Line art family with heart */}
-               <div style={{ width: px(80), height: px(70), position: "relative" }}>
+               <div style={{ width: px(70), height: px(60), position: "relative" }}>
                   <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none" stroke="#292929" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                     <path d="M50 20 C60 5, 85 10, 85 30 C85 50, 50 75, 50 75 C50 75, 15 50, 15 30 C15 10, 40 5, 50 20 Z" fill="#d7392b" stroke="none" />
-                     {/* People outlines */}
+                     <path d="M50 20 C60 5, 85 10, 85 30 C85 50, 50 75, 50 75 C50 75, 15 50, 15 30 C15 10, 40 5, 50 20 Z" fill="#da3d2b" stroke="none" />
                      <circle cx="25" cy="80" r="8" />
                      <path d="M10 100 Q25 90 40 100" />
                      <circle cx="50" cy="85" r="9" />
@@ -378,111 +373,118 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                   </svg>
                </div>
                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: px(20), fontWeight: 800, color: "#111827", lineHeight: 1.1 }}>Your Small Report</div>
-                  <div style={{ fontSize: px(24), fontFamily: '"Caveat", cursive', color: "#254328", marginTop: px(2) }}>Can Create a Big Change!</div>
+                  <div style={{ fontSize: px(18), fontWeight: 800, color: "#111827", lineHeight: 1.1 }}>Your Small Report</div>
+                  <div style={{ fontSize: px(22), fontFamily: '"Caveat", cursive', color: "#254328", marginTop: px(4) }}>Can Create a Big Change!</div>
                </div>
                {/* Kannada text */}
-               <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: px(4), paddingRight: px(12), borderLeft: `${px(1)}px solid #b5b0a3`, paddingLeft: px(20) }}>
-                  <div style={{ fontSize: px(13), fontWeight: 700, color: "#292929" }}>ಸಮಸ್ಯೆ ನೀವು ತೋರಿಸಿ,</div>
-                  <div style={{ fontSize: px(13), fontWeight: 700, color: "#292929" }}>ಪರಿಹಾರ ನಾವು ಕಂಡುಕೊಳ್ಳೋಣ.</div>
-                  <div style={{ fontSize: px(13), fontWeight: 700, color: "#292929" }}>ಒಟ್ಟಿಗೆ ಬದಲಾವಣೆ ತರುವ!</div>
+               <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: px(4), paddingRight: px(4), borderLeft: `${px(1)}px solid #dcdacc`, paddingLeft: px(16) }}>
+                  <div style={{ fontSize: px(11), fontWeight: 700, color: "#111" }}>ಸಮಸ್ಯೆ ನೀವು ತೋರಿಸಿ,</div>
+                  <div style={{ fontSize: px(11), fontWeight: 700, color: "#111" }}>ಪರಿಹಾರ ನಾವು ಕಂಡುಕೊಳ್ಳೋಣ.</div>
+                  <div style={{ fontSize: px(11), fontWeight: 700, color: "#111" }}>ಒಟ್ಟಿಗೆ ಬದಲಾವಣೆ ತರುವ!</div>
                </div>
             </div>
 
           </div>
 
           {/* RIGHT COLUMN */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: px(20) }}>
+          <div style={{ flex: 1.05, display: "flex", flexDirection: "column", gap: px(16) }}>
             
-            {/* Responsible Authority */}
-            <div style={{ background: "#eeeae1", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-               <div style={{ background: "#254328", color: "white", padding: `${px(12)}px`, fontSize: px(11), fontWeight: 800, letterSpacing: px(0.5), textAlign: "center" }}>
+            {/* Responsible Authority Card */}
+            <div style={{ background: "#f0efe9", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+               <div style={{ background: "#254328", color: "white", padding: `${px(10)}px`, fontSize: px(10), fontWeight: 700, letterSpacing: px(0.5), textAlign: "center" }}>
                   RESPONSIBLE AUTHORITY
                </div>
-               <div style={{ padding: px(20), display: "flex", alignItems: "flex-start", gap: px(16) }}>
-                  <div style={{ width: px(70), height: px(70), background: "white", borderRadius: "50%", padding: px(4), flexShrink: 0, border: `${px(1)}px solid #cbd5e1` }}>
+               <div style={{ padding: px(16), display: "flex", alignItems: "flex-start", gap: px(12) }}>
+                  <div style={{ width: px(64), height: px(64), background: "white", borderRadius: "50%", padding: px(4), flexShrink: 0, border: `${px(1)}px solid #cbd5e1` }}>
                      <img src={logoSrc} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }} />
                   </div>
                   <div>
-                     <div style={{ fontSize: px(18), fontWeight: 900, color: "#111827", lineHeight: 1.1 }}>{issue.authority?.name ?? "MCC"}</div>
-                     <div style={{ fontSize: px(13), fontWeight: 800, color: "#374151", marginTop: px(4) }}>{issue.authority?.department ?? "ROADS DIVISION"}</div>
-                     <div style={{ fontSize: px(12), color: "#4b5563", marginTop: px(4), lineHeight: 1.3 }}>Mangaluru City<br/>Corporation</div>
+                     <div style={{ fontSize: px(16), fontWeight: 800, color: "#111827", lineHeight: 1.1 }}>{issue.authority?.name ?? "MCC"}</div>
+                     <div style={{ fontSize: px(12), fontWeight: 700, color: "#111", marginTop: px(4) }}>{issue.authority?.department ?? "ROADS DIVISION"}</div>
+                     <div style={{ fontSize: px(11), color: "#4b5563", marginTop: px(2), lineHeight: 1.3 }}>Mangaluru City<br/>Corporation</div>
                   </div>
                </div>
-               <div style={{ padding: `0 ${px(20)}px ${px(20)}px`, display: "flex", flexDirection: "column", gap: px(12) }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: px(12), fontSize: px(12), color: "#111827", fontWeight: 600 }}>
-                     <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+               <div style={{ padding: `0 ${px(16)}px ${px(16)}px`, display: "flex", flexDirection: "column", gap: px(10) }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: px(10), fontSize: px(11), color: "#111", fontWeight: 600 }}>
+                     <svg width={px(12)} height={px(12)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                      0824-2445000
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: px(12), fontSize: px(12), color: "#111827", fontWeight: 600 }}>
-                     <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <div style={{ display: "flex", alignItems: "center", gap: px(10), fontSize: px(11), color: "#111", fontWeight: 600 }}>
+                     <svg width={px(12)} height={px(12)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                      ro@mcc.gov.in
                   </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: px(12), fontSize: px(12), color: "#111827", fontWeight: 600, lineHeight: 1.4 }}>
-                     <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginTop: px(2), flexShrink: 0 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: px(10), fontSize: px(11), color: "#111", fontWeight: 600, lineHeight: 1.4 }}>
+                     <svg width={px(12)} height={px(12)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginTop: px(2), flexShrink: 0 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                      MCC Office, Light House Hill,<br/>Mangaluru - 575001
                   </div>
                </div>
             </div>
 
-            {/* Local Representative */}
-            <div style={{ background: "#eeeae1", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-               <div style={{ background: "#254328", color: "white", padding: `${px(12)}px`, fontSize: px(11), fontWeight: 800, letterSpacing: px(0.5), textAlign: "center" }}>
+            {/* Local Representative Card */}
+            <div style={{ background: "#f0efe9", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+               <div style={{ background: "#254328", color: "white", padding: `${px(10)}px`, fontSize: px(10), fontWeight: 700, letterSpacing: px(0.5), textAlign: "center" }}>
                   LOCAL REPRESENTATIVE
                </div>
-               <div style={{ padding: px(20), display: "flex", alignItems: "flex-start", gap: px(16) }}>
-                  <img src={repSrc} alt="rep" style={{ width: px(70), height: px(70), objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
+               <div style={{ padding: px(16), display: "flex", alignItems: "flex-start", gap: px(12) }}>
+                  <img src={repSrc} alt="rep" style={{ width: px(64), height: px(64), objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
                   <div>
-                     <div style={{ fontSize: px(14), fontWeight: 900, color: "#111827", lineHeight: 1.2 }}>
+                     <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", lineHeight: 1.2 }}>
                         {issue.representative?.name ? `Sri. ${issue.representative.name}` : "Sri. D. Vedavyas Kamath"}
                      </div>
-                     <div style={{ fontSize: px(12), color: "#4b5563", marginTop: px(6), lineHeight: 1.3 }}>
+                     <div style={{ fontSize: px(11), color: "#111", marginTop: px(4), lineHeight: 1.3, fontWeight: 500 }}>
                         {issue.representative?.role ?? "MLA - Mangaluru North"}
                      </div>
                   </div>
                </div>
-               <div style={{ padding: `0 ${px(20)}px ${px(20)}px`, display: "flex", flexDirection: "column", gap: px(12) }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: px(12), fontSize: px(12), color: "#111827", fontWeight: 600 }}>
-                     <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+               <div style={{ padding: `0 ${px(16)}px ${px(16)}px`, display: "flex", flexDirection: "column", gap: px(10) }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: px(10), fontSize: px(11), color: "#111", fontWeight: 600 }}>
+                     <svg width={px(12)} height={px(12)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                      {issue.representative?.phone ?? "0824-2446800"}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: px(12), fontSize: px(10), color: "#111827", fontWeight: 600 }}>
-                     <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <div style={{ display: "flex", alignItems: "center", gap: px(10), fontSize: px(10), color: "#111", fontWeight: 600 }}>
+                     <svg width={px(12)} height={px(12)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                      vedavyaskamath@gmail.com
                   </div>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: px(12), fontSize: px(11), color: "#111827", fontWeight: 600, lineHeight: 1.4 }}>
-                     <svg width={px(14)} height={px(14)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginTop: px(2), flexShrink: 0 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: px(10), fontSize: px(11), color: "#111", fontWeight: 600, lineHeight: 1.4 }}>
+                     <svg width={px(12)} height={px(12)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginTop: px(2), flexShrink: 0 }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                      Constituency Office,<br/>Mangaluru
                   </div>
                </div>
             </div>
 
             {/* Scan / QR Code Section */}
-            <div style={{ background: "#e8e1d5", borderRadius: px(12), padding: px(16), display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
-               <div style={{ fontSize: px(10), fontWeight: 900, color: "#111827", letterSpacing: px(0.5) }}>SCAN TO VIEW & SUPPORT</div>
-               <div style={{ display: "flex", alignItems: "center", gap: px(16), marginTop: px(12) }}>
-                  <div style={{ background: "white", padding: px(8), borderRadius: px(8) }}>
-                     {qr && <img src={qr} alt="QR" style={{ width: px(76), height: px(76), display: "block" }} />}
+            <div style={{ background: "#e1ddd1", borderRadius: px(12), padding: px(16), display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+               <div style={{ fontSize: px(10), fontWeight: 800, color: "#111827", letterSpacing: px(0.5) }}>SCAN TO VIEW & SUPPORT</div>
+               
+               <div style={{ display: "flex", alignItems: "center", gap: px(12), marginTop: px(12) }}>
+                  {/* QR Image */}
+                  <div style={{ background: "white", padding: px(6), borderRadius: px(8) }}>
+                     {qr && <img src={qr} alt="QR" style={{ width: px(70), height: px(70), display: "block" }} />}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                     <div style={{ fontSize: px(14), fontWeight: 900, color: "#111827" }}>{shortLink}</div>
-                     <div style={{ fontSize: px(10), color: "#6b7280", marginTop: px(4) }}>or scan the QR code</div>
+                  
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                     {/* Hand drawn arrow pointing at URL */}
+                     <svg width={px(24)} height={px(32)} viewBox="0 0 24 32" fill="none" stroke="#254328" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", marginLeft: px(-14), marginTop: px(16) }}>
+                        <path d="M4 2 Q8 16 20 16 M16 10 L22 16 L16 22" />
+                     </svg>
+                     <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", marginLeft: px(14) }}>{shortLink}</div>
+                     <div style={{ fontSize: px(10), color: "#6b7280", marginTop: px(4), marginLeft: px(14) }}>or scan the QR code</div>
                   </div>
                </div>
                
-               {/* Share / Support / Make a change */}
+               {/* Share / Support / Make a change icons */}
                <div style={{ display: "flex", justifyContent: "space-around", marginTop: px(16), paddingTop: px(12), borderTop: `${px(1)}px solid rgba(0,0,0,0.1)` }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: px(4) }}>
                      <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="#254328" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                     <div style={{ fontSize: px(9), fontWeight: 800, color: "#111827" }}>SHARE</div>
+                     <div style={{ fontSize: px(9), fontWeight: 700, color: "#111827" }}>SHARE</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: px(4) }}>
                      <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="#254328"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                     <div style={{ fontSize: px(9), fontWeight: 800, color: "#111827" }}>SUPPORT</div>
+                     <div style={{ fontSize: px(9), fontWeight: 700, color: "#111827" }}>SUPPORT</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: px(4) }}>
                      <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="#254328"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-                     <div style={{ fontSize: px(9), fontWeight: 800, color: "#111827", textAlign: "center", lineHeight: 1 }}>MAKE A<br/>CHANGE</div>
+                     <div style={{ fontSize: px(9), fontWeight: 700, color: "#111827", textAlign: "center", lineHeight: 1 }}>MAKE A<br/>CHANGE</div>
                   </div>
                </div>
             </div>
@@ -492,39 +494,39 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
         {/* ── FOOTER ──────────────────────────────────────────────────────── */}
         <div style={{
-          background: "#2a422d",
-          color: "rgba(255,255,255,0.85)",
+          background: "#254328",
+          color: "rgba(255,255,255,0.9)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: `${px(16)}px ${px(32)}px`,
+          padding: `${px(14)}px ${px(36)}px`,
           zIndex: 1,
           marginTop: "auto"
         }}>
            <div style={{ display: "flex", alignItems: "center", gap: px(20) }}>
               <div style={{ display: "flex", alignItems: "center", gap: px(8) }}>
-                 <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-                 <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(0.5), lineHeight: 1.2 }}>INDEPENDENT<br/>CITIZEN INITIATIVE</div>
+                 <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                 <div style={{ fontSize: px(9), fontWeight: 500, letterSpacing: px(0.5), lineHeight: 1.2 }}>INDEPENDENT<br/>CITIZEN INITIATIVE</div>
               </div>
               <div style={{ width: px(1), height: px(24), background: "rgba(255,255,255,0.3)" }}></div>
               <div style={{ display: "flex", alignItems: "center", gap: px(8) }}>
-                 <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                 <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(0.5), lineHeight: 1.2 }}>ANONYMOUS<br/>REPORTING</div>
+                 <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                 <div style={{ fontSize: px(9), fontWeight: 500, letterSpacing: px(0.5), lineHeight: 1.2 }}>ANONYMOUS<br/>REPORTING</div>
               </div>
               <div style={{ width: px(1), height: px(24), background: "rgba(255,255,255,0.3)" }}></div>
               <div style={{ display: "flex", alignItems: "center", gap: px(8) }}>
-                 <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                 <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(0.5), lineHeight: 1.2 }}>TRANSPARENT<br/>TRACKING</div>
+                 <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                 <div style={{ fontSize: px(9), fontWeight: 500, letterSpacing: px(0.5), lineHeight: 1.2 }}>TRANSPARENT<br/>TRACKING</div>
               </div>
               <div style={{ width: px(1), height: px(24), background: "rgba(255,255,255,0.3)" }}></div>
               <div style={{ display: "flex", alignItems: "center", gap: px(8) }}>
-                 <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-                 <div style={{ fontSize: px(9), fontWeight: 600, letterSpacing: px(0.5), lineHeight: 1.2 }}>ACCOUNTABLE<br/>GOVERNANCE</div>
+                 <svg width={px(18)} height={px(18)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                 <div style={{ fontSize: px(9), fontWeight: 500, letterSpacing: px(0.5), lineHeight: 1.2 }}>ACCOUNTABLE<br/>GOVERNANCE</div>
               </div>
            </div>
 
            <div style={{ display: "flex", alignItems: "center", gap: px(6) }}>
-              <div style={{ fontSize: px(16), fontStyle: "italic", fontWeight: 500, fontFamily: '"Caveat", cursive', color: "#e4e1d9" }}>
+              <div style={{ fontSize: px(18), fontStyle: "italic", fontWeight: 500, fontFamily: '"Caveat", cursive', color: "#e9e7df" }}>
                  Together for<br/>a Better Mangaluru
               </div>
               <svg width={px(16)} height={px(16)} viewBox="0 0 24 24" fill="none" stroke="#d73024" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
