@@ -202,76 +202,113 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
         {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: `${px(240)}px 1fr`,
-          gap: px(20),
-          padding: `${px(36)}px ${px(36)}px ${px(16)}px`,
+          display: "flex",
+          alignItems: "center",
+          padding: `${px(32)}px ${px(36)}px ${px(20)}px`,
           position: "relative",
           zIndex: 1,
-          alignItems: "flex-start",
+          gap: px(28),
         }}>
-          {/* Logo Block (Left column) */}
-          <div style={{ display: "flex", gap: px(14), alignItems: "center" }}>
+          {/* Logo Block (Left) */}
+          <div style={{ display: "flex", gap: px(16), alignItems: "center", flexShrink: 0 }}>
             {/* Map Pin logo */}
-            <svg width={px(64)} height={px(80)} viewBox="0 0 64 80" fill="none" style={{ flexShrink: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>
+            <svg width={px(72)} height={px(90)} viewBox="0 0 64 80" fill="none" style={{ flexShrink: 0, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.15))" }}>
               <path d="M32 0C14.327 0 0 14.327 0 32c0 22 32 48 32 48s32-26 32-48C64 14.327 49.673 0 32 0z" fill="#1d3b22"/>
               <circle cx="32" cy="27" r="21" fill="white"/>
-              {/* Heart */}
               <path d="M32 17.5c-2-2.5-6-2.5-8 0-1.8 2.2-1.8 5.2 0 7.5L32 31l8-6c1.8-2.2 1.8-5.2 0-7.5-2-2.5-6-2.5-8 0z" fill="#d73024"/>
-              {/* Simplified people line art inside pin */}
               <path d="M22 36c0-4 3-6 7-6h6c4 0 7 2 7 6v2H22v-2z" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
               <circle cx="26" cy="26" r="3" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
               <circle cx="38" cy="26" r="3" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
             </svg>
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ fontSize: px(36), fontWeight: 800, color: "#1d3b22", lineHeight: 1, letterSpacing: "-1px" }}>
+              <div style={{ fontSize: px(40), fontWeight: 800, color: "#1d3b22", lineHeight: 1, letterSpacing: "-1px" }}>
                 Jan<span style={{ color: "#28a245" }}>Fix</span>
               </div>
-              <div style={{ fontSize: px(13), fontWeight: 700, color: "#1d3b22", letterSpacing: px(1.2), marginTop: px(4) }}>MANGALURU</div>
-              <div style={{ fontSize: px(12), color: "#475569", fontWeight: 600, marginTop: px(6) }}>Report. Track. Fix.</div>
+              <div style={{ fontSize: px(14), fontWeight: 700, color: "#1d3b22", letterSpacing: px(2), marginTop: px(4) }}>MANGALURU</div>
+              <div style={{ fontSize: px(13), color: "#475569", fontWeight: 600, marginTop: px(6) }}>Report. Track. Fix.</div>
             </div>
           </div>
 
-          {/* Title Block (Right column — contained, no overflow) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: px(10) }}>
-               <div style={{ fontSize: px(38), fontWeight: 900, color: "#292929", lineHeight: 1.2, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
-                 ಯಾವಾಗ
-               </div>
-               {/* 3 lines decoration */}
-               <div style={{ display: "flex", flexDirection: "column", gap: px(4) }}>
-                  <div style={{ width: px(24), height: px(3), background: "#292929", transform: "rotate(-15deg)" }}></div>
-                  <div style={{ width: px(32), height: px(3), background: "#292929" }}></div>
-                  <div style={{ width: px(24), height: px(3), background: "#292929", transform: "rotate(15deg)" }}></div>
-               </div>
+          {/* Vertical Divider */}
+          <div style={{ width: px(3), height: px(110), background: "#1d3b22", borderRadius: px(2), flexShrink: 0 }}></div>
+
+          {/* Title Block (Right) */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: px(12) }}>
+              <div style={{ fontSize: px(44), fontWeight: 900, color: "#1a1a1a", lineHeight: 1.15, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+                ಯಾವಾಗ
+              </div>
+              {/* Decorative arrow lines — like the reference ≤ symbol */}
+              <div style={{ display: "flex", flexDirection: "column", gap: px(5) }}>
+                <div style={{ width: px(30), height: px(3), background: "#1a1a1a", transform: "rotate(-20deg)", transformOrigin: "right center" }}></div>
+                <div style={{ width: px(38), height: px(3), background: "#1a1a1a" }}></div>
+                <div style={{ width: px(30), height: px(3), background: "#1a1a1a", transform: "rotate(20deg)", transformOrigin: "right center" }}></div>
+              </div>
             </div>
-            <div style={{ fontSize: px(50), fontWeight: 900, color: "#254328", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif', marginTop: px(4) }}>
-              ಸರಿ ಮಾಡುವುದು ?
+            <div style={{ fontSize: px(54), fontWeight: 900, color: "#254328", lineHeight: 1.05, fontFamily: '"Noto Sans Kannada", sans-serif', marginTop: px(2) }}>
+              ಸರಿ ಮಾಡುದು ?
             </div>
-            <div style={{ fontSize: px(16), color: "#292929", fontWeight: 700, marginTop: px(10), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(4), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+            <div style={{ fontSize: px(17), color: "#1a1a1a", fontWeight: 700, marginTop: px(10), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(5), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
               ನಮ್ಮ ಮಂಗಳೂರು ನಮ್ಮ ಜವಾಬ್ದಾರಿ
             </div>
           </div>
         </div>
 
-        {/* ── BACKGROUND ILLUSTRATION (Top Right) ───────────────────────── */}
+        {/* ── BACKGROUND ILLUSTRATION (Mangaluru Cathedral skyline, Top Right) ── */}
         <div style={{
            position: "absolute",
-           top: px(-10),
-           right: px(-20),
-           width: px(340),
-           height: px(230),
-           opacity: 0.15,
+           top: px(0),
+           right: px(0),
+           width: px(320),
+           height: px(240),
+           opacity: 0.12,
            zIndex: 0,
-           pointerEvents: "none"
+           pointerEvents: "none",
+           overflow: "hidden",
         }}>
-           <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none" stroke="#1b3c20" strokeWidth="1.5">
-              <path d="M150,300 V180 H180 V120 H220 V180 H250 V300" />
-              <path d="M180,120 L200,80 L220,120" />
-              <path d="M250,300 V220 H300 V250 H350 V300" />
-              <path d="M50,300 V250 H100 V220 H150" />
-              <circle cx="200" cy="140" r="15" />
-              <line x1="200" y1="80" x2="200" y2="40" />
+           <svg width="100%" height="100%" viewBox="0 0 400 280" fill="none" stroke="#1b3c20" strokeWidth="1.2">
+             {/* Cathedral / Basilica */}
+             <rect x="160" y="120" width="80" height="160" />
+             <path d="M160,120 L200,60 L240,120" />
+             {/* Central dome */}
+             <ellipse cx="200" cy="60" rx="18" ry="22" />
+             {/* Cross on top */}
+             <line x1="200" y1="38" x2="200" y2="10" />
+             <line x1="190" y1="22" x2="210" y2="22" />
+             {/* Side towers */}
+             <rect x="130" y="150" width="30" height="130" />
+             <path d="M130,150 L145,110 L160,150" />
+             <rect x="240" y="150" width="30" height="130" />
+             <path d="M240,150 L255,110 L270,150" />
+             {/* Tower tops */}
+             <line x1="145" y1="110" x2="145" y2="90" />
+             <line x1="138" y1="98" x2="152" y2="98" />
+             <line x1="255" y1="110" x2="255" y2="90" />
+             <line x1="248" y1="98" x2="262" y2="98" />
+             {/* Windows */}
+             <rect x="185" y="150" width="14" height="20" rx="7" />
+             <rect x="201" y="150" width="14" height="20" rx="7" />
+             <rect x="185" y="185" width="14" height="18" />
+             <rect x="201" y="185" width="14" height="18" />
+             {/* Side buildings */}
+             <rect x="50" y="180" width="50" height="100" />
+             <path d="M50,180 L75,150 L100,180" />
+             <rect x="300" y="190" width="60" height="90" />
+             <path d="M300,190 L330,155 L360,190" />
+             {/* Palm trees */}
+             <line x1="30" y1="280" x2="30" y2="200" />
+             <path d="M30,200 C20,185 10,178 5,170" />
+             <path d="M30,200 C40,185 50,178 55,170" />
+             <path d="M30,205 C15,195 5,192 0,188" />
+             <line x1="380" y1="280" x2="380" y2="210" />
+             <path d="M380,210 C370,195 360,188 355,180" />
+             <path d="M380,210 C390,195 395,185 398,178" />
+             {/* Birds */}
+             <path d="M310,40 C315,35 320,35 325,40" />
+             <path d="M330,30 C336,25 341,25 346,30" />
+             <path d="M350,50 C354,46 358,46 362,50" />
+             {/* Ground line */}
+             <line x1="0" y1="280" x2="400" y2="280" />
            </svg>
         </div>
 
