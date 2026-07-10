@@ -521,19 +521,21 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
             <div style={{ background: "#e1ddd1", borderRadius: px(12), padding: px(16), display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
                <div style={{ fontSize: px(10), fontWeight: 800, color: "#111827", letterSpacing: px(0.5) }}>SCAN TO VIEW & SUPPORT</div>
                
-               <div style={{ display: "flex", alignItems: "center", gap: px(12), marginTop: px(12) }}>
+               <div style={{ display: "flex", alignItems: "center", gap: px(14), marginTop: px(12) }}>
                   {/* QR Image */}
                   <div style={{ background: "white", padding: px(6), borderRadius: px(8), flexShrink: 0 }}>
                      {qr && <img src={qr} alt="QR" style={{ width: px(70), height: px(70), display: "block" }} />}
                   </div>
                   
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                     {/* Hand drawn arrow pointing at URL */}
-                     <svg width={px(24)} height={px(32)} viewBox="0 0 24 32" fill="none" stroke="#254328" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", marginLeft: px(-14), marginTop: px(16) }}>
-                        <path d="M4 2 Q8 16 20 16 M16 10 L22 16 L16 22" />
-                     </svg>
-                     <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", marginLeft: px(14) }}>{shortLink}</div>
-                     <div style={{ fontSize: px(10), color: "#6b7280", marginTop: px(4), marginLeft: px(14) }}>or scan the QR code</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: px(4), minWidth: 0 }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: px(6) }}>
+                        {/* Hand drawn arrow */}
+                        <svg width={px(20)} height={px(24)} viewBox="0 0 24 32" fill="none" stroke="#254328" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                           <path d="M4 2 Q8 16 20 16 M16 10 L22 16 L16 22" />
+                        </svg>
+                        <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortLink}</div>
+                     </div>
+                     <div style={{ fontSize: px(10), color: "#6b7280", paddingLeft: px(26) }}>or scan the QR code</div>
                   </div>
                </div>
                

@@ -67,27 +67,6 @@ export function IssueMap({
     return () => io.disconnect();
   }, [shouldLoad, loadOn]);
 
-  // Build GeoJSON features
-  const buildGeoJson = (pts: MapPoint[] | undefined) => {
-    return {
-      type: "FeatureCollection",
-      features: (pts ?? [])
-        .filter((p) => isFiniteNumber(p.lat) && isFiniteNumber(p.lng))
-        .map((p) => ({
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [Number(p.lng), Number(p.lat)],
-          },
-          properties: {
-            id: p.id,
-            color: p.color ?? "#1a5d2b",
-            popup: p.popup,
-          },
-        })),
-    };
-  };
-
   // Map init
   useEffect(() => {
     if (!shouldLoad) return;
@@ -112,7 +91,7 @@ export function IssueMap({
       const map = new ML.Map({
         container: ref.current,
         style: MAP_STYLE_URL,
-        center: [c.lng, c.lat],
+        center: [Number(c.lng), Number(c.lat)],
         zoom,
         pitch: 45,
         bearing: -12,
@@ -135,125 +114,12 @@ export function IssueMap({
 
       if (onClick) {
         map.on("click", (e) => {
-          // If clicked a cluster or point, do not fire map click coordinates
-          const features = map.queryRenderedFeatures(e.point, {
-            layers: ["clusters", "unclustered-point"],
-          });
-          if (features.length === 0) {
-            onClick(e.lngLat.lat, e.lngLat.lng);
-          }
+          onClick(e.lngLat.lat, e.lngLat.lng);
         });
       }
 
       map.on("load", () => {
         if (cancelled) return;
-
-        // Add GeoJSON source with clustering enabled
-        map.addSource("issues-source", {
-          type: "geojson",
-          data: buildGeoJson(points) as any,
-          cluster: true,
-          clusterMaxZoom: 14,
-          clusterRadius: 50,
-        });
-
-        // Layer 1: Clusters Circle (visual coloring by size)
-        map.addLayer({
-          id: "clusters",
-          type: "circle",
-          source: "issues-source",
-          filter: ["has", "point_count"],
-          paint: {
-            "circle-color": [
-              "step",
-              ["get", "point_count"],
-              "#16a34a", // green for small clusters < 10
-              10,
-              "#e4ac12", // yellow for medium clusters < 30
-              30,
-              "#dc2626", // red for large clusters >= 30
-            ],
-            "circle-radius": [
-              "step",
-              ["get", "point_count"],
-              18,
-              10,
-              24,
-              30,
-              30,
-            ],
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#ffffff",
-          },
-        });
-
-        // Layer 2: Cluster count label text
-        map.addLayer({
-          id: "cluster-count",
-          type: "symbol",
-          source: "issues-source",
-          filter: ["has", "point_count"],
-          layout: {
-            "text-field": "{point_count}",
-            "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
-            "text-size": 12,
-          },
-          paint: {
-            "text-color": "#ffffff",
-          },
-        });
-
-        // Layer 3: Unclustered individual points
-        map.addLayer({
-          id: "unclustered-point",
-          type: "circle",
-          source: "issues-source",
-          filter: ["!", ["has", "point_count"]],
-          paint: {
-            "circle-color": ["coalesce", ["get", "color"], "#1a5d2b"],
-            "circle-radius": 9,
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#ffffff",
-          },
-        });
-
-        // Click on cluster - expand zoom
-        map.on("click", "clusters", async (e) => {
-          const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
-          const clusterId = features[0].properties.cluster_id;
-          const source = map.getSource("issues-source") as any;
-          const expansionZoom = await source.getClusterExpansionZoom(clusterId);
-          
-          map.easeTo({
-            center: (features[0].geometry as any).coordinates,
-            zoom: expansionZoom,
-          });
-        });
-
-        // Click on single point - open Popup
-        map.on("click", "unclustered-point", (e) => {
-          if (!e.features || e.features.length === 0) return;
-          const feat = e.features[0];
-          const coordinates = (feat.geometry as any).coordinates.slice();
-          const properties = feat.properties;
-
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-          }
-
-          if (properties.popup) {
-            new ML.Popup({ offset: 10, maxWidth: "280px" })
-              .setLngLat(coordinates)
-              .setHTML(properties.popup)
-              .addTo(map);
-          }
-        });
-
-        // Change cursor over interactive elements
-        map.on("mouseenter", "clusters", () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", "clusters", () => { map.getCanvas().style.cursor = ""; });
-        map.on("mouseenter", "unclustered-point", () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", "unclustered-point", () => { map.getCanvas().style.cursor = ""; });
 
         // Add optional 3D Building Extrusions
         try {
@@ -300,13 +166,34 @@ export function IssueMap({
     };
   }, [shouldLoad]);
 
-  // Update source points when prop changes
+  // Render individual markers for all points (colored by category)
+  const pointMarkersRef = useRef<any[]>([]);
+
   useEffect(() => {
-    if (!ready || !mapRef.current) return;
-    const source = mapRef.current.getSource("issues-source") as any;
-    if (source) {
-      source.setData(buildGeoJson(points));
-    }
+    if (!ready || !mapRef.current || !MLRef.current) return;
+    const ML = MLRef.current;
+    const map = mapRef.current;
+
+    // Remove old markers
+    pointMarkersRef.current.forEach((m) => m.remove());
+    pointMarkersRef.current = [];
+
+    // Add new markers
+    (points ?? []).forEach((p) => {
+      if (!isFiniteNumber(p.lat) || !isFiniteNumber(p.lng)) return;
+
+      const m = new ML.Marker({ color: p.color ?? "#1a5d2b" })
+        .setLngLat([Number(p.lng), Number(p.lat)])
+        .addTo(map);
+
+      if (p.popup) {
+        m.setPopup(
+          new ML.Popup({ offset: 25, maxWidth: "280px" }).setHTML(p.popup)
+        );
+      }
+
+      pointMarkersRef.current.push(m);
+    });
   }, [points, ready]);
 
   // Update center/marker
