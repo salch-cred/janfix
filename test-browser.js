@@ -1,0 +1,1 @@
+const { chromium } = require('playwright'); (async () = const browser = await chromium.launch(); const page = await browser.newPage(); page.on('console', msg = LOG:', msg.text())); page.on('pageerror', err = ERROR:', err)); await page.goto('http://localhost:8081/explore', { waitUntil: 'networkidle' }); await browser.close(); })();  
