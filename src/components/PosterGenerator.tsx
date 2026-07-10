@@ -64,26 +64,36 @@ const REPRESENTATIVE_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://w
 const AUTHORITY_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23eff6ff"/><rect x="20" y="35" width="60" height="45" fill="none" stroke="%231d4ed8" stroke-width="6"/><rect x="38" y="55" width="24" height="25" fill="%231d4ed8"/><polygon points="50,10 85,35 15,35" fill="%231d4ed8"/></svg>`;
 const ISSUE_PLACEHOLDER = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="%23e2e8f0"><rect width="800" height="500"/><text x="400" y="260" text-anchor="middle" font-size="32" fill="%2394a3b8">No photo</text></svg>`;
 
-function useImageDataUrls(urls: (string | null | undefined)[]): Map<string, string> {
+function useImageDataUrls(urls: (string | null | undefined)[]): { map: Map<string, string>; ready: boolean } {
   const cache = useRef<Map<string, string>>(new Map());
-  const [, setTick] = useState(0);
+  const [loaded, setLoaded] = useState(0);
+  const nonNullUrls = urls.filter(Boolean) as string[];
 
   useEffect(() => {
     let cancelled = false;
+    cache.current.clear();
+    setLoaded(0);
     (async () => {
-      for (const url of urls) {
-        if (!url || cache.current.has(url)) continue;
+      for (const url of nonNullUrls) {
         try {
-          if (url.startsWith("data:")) { cache.current.set(url, url); continue; }
+          if (url.startsWith("data:")) {
+            if (!cancelled) { cache.current.set(url, url); setLoaded((n) => n + 1); }
+            continue;
+          }
           const res = await getBase64ImageFn({ data: { url } });
-          if (res.base64 && !cancelled) { cache.current.set(url, res.base64); setTick((t) => t + 1); }
-        } catch { /* ignore */ }
+          if (res.base64 && !cancelled) { cache.current.set(url, res.base64); setLoaded((n) => n + 1); }
+          else if (!cancelled) { setLoaded((n) => n + 1); } // count failed too so ready resolves
+        } catch {
+          if (!cancelled) setLoaded((n) => n + 1);
+        }
       }
     })();
-    return () => { cancelled = true; cache.current.clear(); };
-  }, [JSON.stringify(urls)]);
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(nonNullUrls)]);
 
-  return cache.current;
+  const ready = nonNullUrls.length === 0 || loaded >= nonNullUrls.length;
+  return { map: cache.current, ready };
 }
 
 export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; publicUrl: string }) {
@@ -101,7 +111,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     issue.authority?.logo_url,
     issue.representative?.photo_url,
   ], [issue.image_url, issue.authority?.logo_url, issue.representative?.photo_url]);
-  const dataUrls = useImageDataUrls(imageUrls);
+  const { map: dataUrls, ready: imagesReady } = useImageDataUrls(imageUrls);
 
   const imgSrc  = issue.image_url             ? (dataUrls.get(issue.image_url)             ?? ISSUE_PLACEHOLDER)         : ISSUE_PLACEHOLDER;
   const logoSrc = issue.authority?.logo_url   ? (dataUrls.get(issue.authority.logo_url)    ?? AUTHORITY_PLACEHOLDER)     : AUTHORITY_PLACEHOLDER;
@@ -127,21 +137,33 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     if (!downloadRef.current || downloading) return;
     setDownloading(true);
     try {
-      await new Promise((r) => setTimeout(r, 150));
-      // iOS Safari workaround: run toPng twice to ensure external/base64 images are painted
+      // Wait for all images to be available as base64
+      if (!imagesReady) {
+        await new Promise<void>((resolve) => {
+          const check = setInterval(() => {
+            if (imagesReady) { clearInterval(check); resolve(); }
+          }, 200);
+          setTimeout(() => { clearInterval(check); resolve(); }, 8000);
+        });
+      }
+      await new Promise((r) => setTimeout(r, 300));
+      // Run toPng twice — first call "warms" the canvas, second is the real capture
       await toPng(downloadRef.current, {
         cacheBust: true,
         pixelRatio: 2,
         width: POSTER_W,
         height: POSTER_H,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#e9e7df",
+        skipAutoScale: true,
       });
+      await new Promise((r) => setTimeout(r, 200));
       const data = await toPng(downloadRef.current, {
         cacheBust: true,
         pixelRatio: 2,
         width: POSTER_W,
         height: POSTER_H,
-        backgroundColor: "#ffffff",
+        backgroundColor: "#e9e7df",
+        skipAutoScale: true,
       });
       const a = document.createElement("a");
       a.href = data;
@@ -320,7 +342,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                overflow: "hidden", 
                position: "relative",
             }}>
-               <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+               <img src={imgSrc} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
 
             {/* Stats Bar */}
@@ -396,7 +418,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                </div>
                <div style={{ padding: px(16), display: "flex", alignItems: "flex-start", gap: px(12) }}>
                   <div style={{ width: px(64), height: px(64), background: "white", borderRadius: "50%", padding: px(4), flexShrink: 0, border: `${px(1)}px solid #cbd5e1` }}>
-                     <img src={logoSrc} alt="logo" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }} />
+                     <img src={logoSrc} alt="logo" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }} />
                   </div>
                   <div>
                      <div style={{ fontSize: px(16), fontWeight: 800, color: "#111827", lineHeight: 1.1 }}>{issue.authority?.name ?? "MCC"}</div>
@@ -426,7 +448,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                   LOCAL REPRESENTATIVE
                </div>
                <div style={{ padding: px(16), display: "flex", alignItems: "flex-start", gap: px(12) }}>
-                  <img src={repSrc} alt="rep" style={{ width: px(64), height: px(64), objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
+                  <img src={repSrc} alt="rep" crossOrigin="anonymous" style={{ width: px(64), height: px(64), objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
                   <div>
                      <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", lineHeight: 1.2 }}>
                         {issue.representative?.name ? `Sri. ${issue.representative.name}` : "Sri. D. Vedavyas Kamath"}
@@ -582,9 +604,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2.5">
-        <Button onClick={download} disabled={downloading} className="gap-2 px-5 font-semibold">
+        <Button onClick={download} disabled={downloading || !imagesReady} className="gap-2 px-5 font-semibold">
           <Download className="h-4 w-4" />
-          {downloading ? "Generating…" : `Download PNG (${SIZES[size].label})`}
+          {downloading ? "Generating…" : !imagesReady ? "Loading images…" : `Download PNG (${SIZES[size].label})`}
         </Button>
         <ShareButtons url={publicUrl} text={`${issue.description} — ${issue.public_id} on JanFix Mangaluru`} />
       </div>
