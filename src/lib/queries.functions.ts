@@ -174,19 +174,38 @@ export const listTaluksFn = createServerFn({ method: "GET" }).handler(async () =
 
 export const listAuthoritiesFn = createServerFn({ method: "GET" }).handler(async () => {
   const { rows } = await query(`SELECT * FROM public.authority_stats_view ORDER BY name`);
-  return rows;
+  return rows.map((r: any) => ({
+    ...r,
+    total: Number(r.total ?? 0),
+    resolved: Number(r.resolved ?? 0),
+    pending: Number(r.pending ?? 0),
+    avg_days: Number(r.avg_days ?? 0),
+    score: Number(r.score ?? 0),
+  }));
 });
 
 export const listRepresentativesFn = createServerFn({ method: "GET" }).handler(async () => {
   const { rows } = await query(
     `SELECT * FROM public.representative_stats_view WHERE active = true AND lower(role) NOT LIKE 'corporator%' ORDER BY name`
   );
-  return rows;
+  return rows.map((r: any) => ({
+    ...r,
+    total: Number(r.total ?? 0),
+    resolved: Number(r.resolved ?? 0),
+    pending: Number(r.pending ?? 0),
+    score: Number(r.score ?? 0),
+  }));
 });
 
 export const wardStatsFn = createServerFn({ method: "GET" }).handler(async () => {
   const { rows } = await query(`SELECT * FROM public.ward_stats_view ORDER BY name`);
-  return rows;
+  return rows.map((r: any) => ({
+    ...r,
+    total: Number(r.total ?? 0),
+    resolved: Number(r.resolved ?? 0),
+    pending: Number(r.pending ?? 0),
+    score: Number(r.score ?? 0),
+  }));
 });
 
 export const analyticsFn = createServerFn({ method: "GET" }).handler(async () => {
