@@ -202,13 +202,15 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
 
         {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
         <div style={{
-          display: "flex",
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: `${px(240)}px 1fr`,
+          gap: px(20),
           padding: `${px(36)}px ${px(36)}px ${px(16)}px`,
           position: "relative",
           zIndex: 1,
+          alignItems: "flex-start",
         }}>
-          {/* Logo Block (Left) */}
+          {/* Logo Block (Left column) */}
           <div style={{ display: "flex", gap: px(14), alignItems: "center" }}>
             {/* Map Pin logo */}
             <svg width={px(64)} height={px(80)} viewBox="0 0 64 80" fill="none" style={{ flexShrink: 0, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.1))" }}>
@@ -222,31 +224,31 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               <circle cx="38" cy="26" r="3" stroke="#1d3b22" strokeWidth="1.5" fill="none"/>
             </svg>
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ fontSize: px(38), fontWeight: 800, color: "#1d3b22", lineHeight: 1, letterSpacing: "-1px" }}>
+              <div style={{ fontSize: px(36), fontWeight: 800, color: "#1d3b22", lineHeight: 1, letterSpacing: "-1px" }}>
                 Jan<span style={{ color: "#28a245" }}>Fix</span>
               </div>
-              <div style={{ fontSize: px(14), fontWeight: 700, color: "#1d3b22", letterSpacing: px(1.2), marginTop: px(4) }}>MANGALURU</div>
-              <div style={{ fontSize: px(13), color: "#475569", fontWeight: 600, marginTop: px(8) }}>Report. Track. Fix.</div>
+              <div style={{ fontSize: px(13), fontWeight: 700, color: "#1d3b22", letterSpacing: px(1.2), marginTop: px(4) }}>MANGALURU</div>
+              <div style={{ fontSize: px(12), color: "#475569", fontWeight: 600, marginTop: px(6) }}>Report. Track. Fix.</div>
             </div>
           </div>
 
-          {/* Title Block (Right) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: px(70), marginTop: 0 }}>
-            <div style={{ display: "flex", alignItems: "center" }}>
-               <div style={{ fontSize: px(42), fontWeight: 900, color: "#292929", lineHeight: 1.2, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+          {/* Title Block (Right column — contained, no overflow) */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: px(10) }}>
+               <div style={{ fontSize: px(38), fontWeight: 900, color: "#292929", lineHeight: 1.2, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
                  ಯಾವಾಗ
                </div>
                {/* 3 lines decoration */}
-               <div style={{ display: "flex", flexDirection: "column", gap: px(4), marginLeft: px(12), marginBottom: px(12) }}>
-                  <div style={{ width: px(28), height: px(3), background: "#292929", transform: "rotate(-15deg)" }}></div>
-                  <div style={{ width: px(36), height: px(3), background: "#292929" }}></div>
-                  <div style={{ width: px(28), height: px(3), background: "#292929", transform: "rotate(15deg)" }}></div>
+               <div style={{ display: "flex", flexDirection: "column", gap: px(4) }}>
+                  <div style={{ width: px(24), height: px(3), background: "#292929", transform: "rotate(-15deg)" }}></div>
+                  <div style={{ width: px(32), height: px(3), background: "#292929" }}></div>
+                  <div style={{ width: px(24), height: px(3), background: "#292929", transform: "rotate(15deg)" }}></div>
                </div>
             </div>
-            <div style={{ fontSize: px(56), fontWeight: 900, color: "#254328", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+            <div style={{ fontSize: px(50), fontWeight: 900, color: "#254328", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif', marginTop: px(4) }}>
               ಸರಿ ಮಾಡುವುದು ?
             </div>
-            <div style={{ fontSize: px(18), color: "#292929", fontWeight: 700, marginTop: px(12), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(4), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+            <div style={{ fontSize: px(16), color: "#292929", fontWeight: 700, marginTop: px(10), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(4), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
               ನಮ್ಮ ಮಂಗಳೂರು ನಮ್ಮ ಜವಾಬ್ದಾರಿ
             </div>
           </div>
