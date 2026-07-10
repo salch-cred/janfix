@@ -5,6 +5,7 @@ import { CATEGORIES, SEVERITY_META, slugify } from "@/lib/civic";
 import { reverseGeocode, getPositionWithFallback, isLocationInDakshinaKannada } from "@/lib/geo";
 import { computeImagePHash } from "@/lib/phash";
 import { getDeviceId } from "@/lib/device";
+import { classifyImage } from "@/lib/imageClassifier";
 import { createIssueFn, uploadPhotoFn } from "@/lib/issues.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +45,7 @@ export function QuickReportCard({
   } | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [working, setWorking] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const extraRef = useRef<HTMLInputElement>(null);
@@ -88,6 +90,28 @@ export function QuickReportCard({
         safeRevokeObjectURL(prevUrl);
         return URL.createObjectURL(compressed);
       });
+      
+      // Run AI classification
+      setAiLoading(true);
+      const aiResult = await classifyImage(compressed).catch((err) => {
+        console.error("TensorFlow error:", err);
+        return null;
+      });
+      setAiLoading(false);
+
+      if (aiResult?.isRejected) {
+        toast.error(aiResult.rejectReason || "Photo rejected. Please upload a clear photo of the civic issue.");
+        setFile(null);
+        setPreview("");
+        return;
+      }
+
+      if (aiResult?.slug && aiResult.confidence > 0.12) {
+        setCat(aiResult.slug); // Automatically select it
+      } else {
+        setCat("others"); // Fallback
+      }
+
       const ph = await computeImagePHash(compressed);
       setPhash(ph);
       getGPS();
