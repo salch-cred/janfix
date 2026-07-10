@@ -90,6 +90,13 @@ function AdminDashboard() {
     enabled: !!session,
   });
 
+  const sessionData = useQuery({
+    queryKey: ["admin-session-analytics-dash", session],
+    queryFn: () => adminSessionAnalyticsFn({ data: { access_token: session } }),
+    enabled: !!session,
+    refetchInterval: 30000,
+  });
+
   const handleLogout = logout;
 
   if (checking) {
@@ -99,13 +106,6 @@ function AdminDashboard() {
       </div>
     );
   }
-
-  const sessionData = useQuery({
-    queryKey: ["admin-session-analytics-dash", session],
-    queryFn: () => adminSessionAnalyticsFn({ data: { access_token: session } }),
-    enabled: !!session,
-    refetchInterval: 30000,
-  });
 
   const stats = [
     {
