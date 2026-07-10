@@ -25,7 +25,7 @@ function escapeHtml(input: string) {
 }
 
 function Explore() {
-  const [view, setView] = useState<"list" | "map">("list");
+  const [view, setView] = useState<"list" | "map">("map");
   const [sort, setSort] = useState<"recent" | "heat">("heat");
   const [cat, setCat] = useState<string>("");
   const [status, setStatus] = useState<string>("");
@@ -194,7 +194,56 @@ function Explore() {
         {/* Content */}
         <div className="mt-6">
           {view === "map" ? (
-            <IssueMap points={mapPoints} height={520} />
+            <div className="space-y-4">
+              <IssueMap
+                points={mapPoints}
+                height={480}
+                center={{ lat: 12.9141, lng: 74.856 }}
+                zoom={12}
+                loadOn="eager"
+              />
+              {/* Compact horizontal scroll list below map */}
+              <div className="-mx-1 overflow-x-auto">
+                <div className="flex gap-3 px-1 pb-2" style={{ width: "max-content" }}>
+                  {issues.isLoading &&
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-24 w-40 shrink-0 animate-pulse rounded-xl bg-muted" />
+                    ))}
+                  {(issues.data ?? []).map((it: any) => {
+                    const c = it.category ?? categoryBySlug("others");
+                    const slug = it.slug || slugify(it.description ?? "");
+                    const href = `/issue/${encodeURIComponent(it.public_id)}/${encodeURIComponent(slug)}`;
+                    const statusMeta = STATUS_META[it.status as keyof typeof STATUS_META] ?? STATUS_META.reported;
+                    return (
+                      <a
+                        key={it.id}
+                        href={href}
+                        className="flex shrink-0 w-44 flex-col gap-1.5 rounded-xl border bg-card p-3 text-left shadow-sm transition hover:bg-accent hover:shadow-md"
+                      >
+                        {it.image_url && (
+                          <img src={it.image_url} alt="" className="h-20 w-full rounded-lg object-cover" />
+                        )}
+                        <div className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: c.color ?? "#1d4ed8" }}>
+                          {c.name_en}
+                        </div>
+                        <div className="text-xs font-bold text-foreground truncate">{it.public_id}</div>
+                        <div className="text-[11px] text-muted-foreground line-clamp-2 leading-snug">
+                          {it.description}
+                        </div>
+                        <div className="mt-auto text-[10px] font-semibold" style={{ color: statusMeta.color ?? "#64748b" }}>
+                          {statusMeta.label}
+                        </div>
+                      </a>
+                    );
+                  })}
+                  {!issues.isLoading && (issues.data ?? []).length === 0 && (
+                    <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+                      No issues match these filters yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
               {(issues.data ?? []).map((it: any) => (
