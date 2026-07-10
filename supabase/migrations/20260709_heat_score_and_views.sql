@@ -148,8 +148,9 @@ BEGIN
   -- Status multiplier
   v_status_mult := CASE v_status
     WHEN 'reported' THEN 1.0
-    WHEN 'acknowledged' THEN 0.9
-    WHEN 'in_progress' THEN 0.7
+    WHEN 'community_verified' THEN 0.95
+    WHEN 'assigned' THEN 0.9
+    WHEN 'work_started' THEN 0.7
     WHEN 'resolved' THEN 0.3
     WHEN 'community_confirmed' THEN 0.2
     WHEN 'closed' THEN 0.1
