@@ -29,7 +29,7 @@ export const listIssuesFn = createServerFn({ method: "POST" })
           status: z.string().optional(),
           severity: z.string().optional(),
           q: z.string().optional(),
-          limit: z.number().int().min(1).max(100).optional(),
+          limit: z.number().int().min(1).max(1000).optional(),
         })
         .parse(d ?? {}),
   )
@@ -77,7 +77,7 @@ export const listIssuesFn = createServerFn({ method: "POST" })
     }
 
     const orderBy = data.sort === "heat" ? "i.heat_score DESC" : "i.created_at DESC";
-    const limit = data.limit ?? 30;
+    const limit = data.limit ?? 500;
     params.push(limit);
 
     const sql = `

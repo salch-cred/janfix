@@ -53,7 +53,7 @@ function Explore() {
           severity: sev || undefined,
           ward_id: wardId,
           q: q || undefined,
-          limit: 60,
+          limit: 1000,
         },
       }),
   });

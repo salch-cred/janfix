@@ -246,7 +246,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
               </div>
             </div>
             <div style={{ fontSize: px(54), fontWeight: 900, color: "#254328", lineHeight: 1.05, fontFamily: '"Noto Sans Kannada", sans-serif', marginTop: px(2) }}>
-              ಸರಿ ಮಾಡುದು ?
+              ಸರಿ ಮಾಡುವುದು ?
             </div>
             <div style={{ fontSize: px(17), color: "#1a1a1a", fontWeight: 700, marginTop: px(10), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(5), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
               ನಮ್ಮ ಮಂಗಳೂರು ನಮ್ಮ ಜವಾಬ್ದಾರಿ
