@@ -121,6 +121,18 @@ export function IssueMap({
 
       map.addControl(new ML.NavigationControl({ visualizePitch: true }), "top-right");
 
+      map.on("styleimagemissing", (e) => {
+        const id = e.id;
+        if (map.hasImage(id)) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          map.addImage(id, ctx.getImageData(0, 0, 1, 1));
+        }
+      });
+
       if (onClick) {
         map.on("click", (e) => {
           // If clicked a cluster or point, do not fire map click coordinates
