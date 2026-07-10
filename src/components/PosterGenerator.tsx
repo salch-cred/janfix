@@ -33,6 +33,10 @@ type IssueLike = {
     photo_url: string | null;
     phone?: string | null;
   } | null;
+  votes?: {
+    exists: number;
+    fixed: number;
+  } | null;
 };
 
 const POSTER_W = 750;
@@ -114,6 +118,8 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const timeLine      = reportedDate ? reportedDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "";
   const supportsCount = issue.supporters_count ?? 0;
   const viewsCount    = issue.views ?? 0;
+  const votesFixed    = issue.votes?.fixed ?? 0;
+  const votesExists   = issue.votes?.exists ?? 0;
   const idTail        = issue.public_id.includes("-") ? issue.public_id.split("-").pop() : issue.public_id;
   const shortLink     = `janfix.in/${idTail}`;
 
@@ -122,6 +128,14 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
     setDownloading(true);
     try {
       await new Promise((r) => setTimeout(r, 150));
+      // iOS Safari workaround: run toPng twice to ensure external/base64 images are painted
+      await toPng(downloadRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        width: POSTER_W,
+        height: POSTER_H,
+        backgroundColor: "#ffffff",
+      });
       const data = await toPng(downloadRef.current, {
         cacheBust: true,
         pixelRatio: 2,
@@ -337,13 +351,13 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                {/* Votes Fixed */}
                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: `${px(1)}px solid rgba(255,255,255,0.2)` }}>
                   <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="white"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.91l-.01-.01L23 10z"/></svg>
-                  <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>12</div>
+                  <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>{votesFixed}</div>
                   <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1), marginTop: px(2) }}>VOTES FIXED</div>
                </div>
                {/* Still Exists */}
                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <svg width={px(32)} height={px(32)} viewBox="0 0 24 24" fill="white"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v1.91l.01.01L1 14c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>
-                  <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>6</div>
+                  <div style={{ fontSize: px(22), fontWeight: 800, marginTop: px(8) }}>{votesExists}</div>
                   <div style={{ fontSize: px(9), fontWeight: 700, letterSpacing: px(1), marginTop: px(2) }}>STILL EXISTS</div>
                </div>
             </div>
