@@ -523,7 +523,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                
                <div style={{ display: "flex", alignItems: "center", gap: px(12), marginTop: px(12) }}>
                   {/* QR Image */}
-                  <div style={{ background: "white", padding: px(6), borderRadius: px(8) }}>
+                  <div style={{ background: "white", padding: px(6), borderRadius: px(8), flexShrink: 0 }}>
                      {qr && <img src={qr} alt="QR" style={{ width: px(70), height: px(70), display: "block" }} />}
                   </div>
                   
