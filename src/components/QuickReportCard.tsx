@@ -194,8 +194,7 @@ export function QuickReportCard({
       const mainUpload = await uploadPhotoFn({
         data: {
           filename,
-          contentType: "image/jpeg",
-          base64Data,
+          base64: base64Data,
         },
       });
 
@@ -211,8 +210,7 @@ export function QuickReportCard({
           const up = await uploadPhotoFn({
             data: {
               filename: fn,
-              contentType: "image/jpeg",
-              base64Data: b64,
+              base64: b64,
             },
           });
           if (!up?.url) throw new Error(`Failed to upload extra photo ${idx + 1}`);
