@@ -75,7 +75,7 @@ function AuthoritiesIndex() {
                         <CheckCircle2 className="h-3 w-3 text-success" /> {a.resolved}/{a.total}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {a.avg_days ? `${a.avg_days.toFixed(1)}d` : "—"}
+                        <Clock className="h-3 w-3" /> {a.avg_days ? `${Number(a.avg_days).toFixed(1)}d` : "—"}
                       </span>
                     </div>
                   </div>

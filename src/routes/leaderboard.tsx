@@ -111,7 +111,7 @@ function LeaderboardPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />{" "}
-                        {a.avg_days ? `${a.avg_days.toFixed(1)}d avg` : "—"}
+                        {a.avg_days ? `${Number(a.avg_days).toFixed(1)}d avg` : "—"}
                       </span>
                       <span className="flex items-center gap-1">
                         <AlertCircle className="h-3 w-3 text-warning" /> {a.pending} pending

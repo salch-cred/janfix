@@ -128,7 +128,7 @@ function Home() {
                 <Stat label="Resolved" value={analytics.data?.resolved ?? 0} />
                 <Stat
                   label="Avg. fix days"
-                  value={analytics.data?.avg_days ? analytics.data.avg_days.toFixed(1) : "\u2014"}
+                  value={analytics.data?.avg_days ? Number(analytics.data.avg_days).toFixed(1) : "\u2014"}
                 />
               </dl>
             </div>
@@ -301,7 +301,7 @@ function Home() {
                 <div className="font-bold text-slate-800 dark:text-slate-100 truncate">{a.name}</div>
                 <div className="text-xs text-muted-foreground font-medium mt-0.5">
                   {a.resolved}/{a.total} resolved
-                  {a.avg_days ? ` \u00b7 avg ${a.avg_days.toFixed(1)}d` : ""}
+                  {a.avg_days ? ` \u00b7 avg ${Number(a.avg_days).toFixed(1)}d` : ""}
                 </div>
               </div>
               <div

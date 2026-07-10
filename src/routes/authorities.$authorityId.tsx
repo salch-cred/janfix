@@ -102,7 +102,7 @@ function AuthorityDetail() {
     {
       icon: <Clock className="h-4 w-4 text-primary" />,
       label: "Avg resolution",
-      value: authority.avg_days ? `${authority.avg_days.toFixed(1)}d` : "—",
+      value: authority.avg_days ? `${Number(authority.avg_days).toFixed(1)}d` : "—",
     },
   ];
 

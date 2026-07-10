@@ -192,7 +192,7 @@ function AdminDashboard() {
           <div className="rounded-xl border bg-card p-4 shadow-sm">
             <h3 className="mb-4 font-semibold">Average Resolution Time</h3>
             <p className="text-3xl font-bold text-primary">
-              {analytics.data?.avg_days ? `${analytics.data.avg_days.toFixed(1)} days` : "—"}
+              {analytics.data?.avg_days ? `${Number(analytics.data.avg_days).toFixed(1)} days` : "—"}
             </p>
             <p className="text-sm text-muted-foreground">From report to resolution</p>
           </div>
