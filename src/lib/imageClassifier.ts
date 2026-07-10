@@ -60,6 +60,13 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
+const REJECT_KEYWORDS = [
+  "person", "man", "woman", "face", "hair", "groom", "bride", "suit", "tie", 
+  "boy", "girl", "child", "human", "shirt", "pants", "clothing",
+  "monitor", "television", "laptop", "screen", "display", "computer",
+  "dog", "cat", "pet", "animal", "bird"
+];
+
 // ── Model singleton ──────────────────────────────────────────────────────────
 let modelPromise: Promise<MobileNet> | null = null;
 
@@ -70,8 +77,16 @@ async function getModel(): Promise<MobileNet> {
       import("@tensorflow/tfjs"),
       import("@tensorflow-models/mobilenet"),
     ]);
-    // Suppress verbose TF logging
-    tf.setBackend("webgl").catch(() => tf.setBackend("cpu"));
+    
+    // Initialize backend safely
+    try {
+      await tf.setBackend("webgl");
+      await tf.ready();
+    } catch {
+      await tf.setBackend("cpu");
+      await tf.ready();
+    }
+
     modelPromise = mobilenet.load({ version: 2, alpha: 1.0 });
   }
   return modelPromise;
@@ -83,6 +98,10 @@ export interface ClassifyResult {
   slug: string | null;
   /** Confidence 0–1 */
   confidence: number;
+  /** True if the image strongly matches a non-civic category (e.g., selfie, animal) */
+  isRejected: boolean;
+  /** Reason for rejection if isRejected is true */
+  rejectReason?: string;
   /** Raw MobileNet top-3 predictions for debugging */
   raw: { className: string; probability: number }[];
 }
@@ -113,8 +132,17 @@ export async function classifyImage(
 
   // Score each category by summing probabilities of matching keywords
   const scores: Record<string, number> = {};
+  let rejectScore = 0;
+
   for (const pred of predictions) {
     const label = pred.className.toLowerCase();
+    
+    // Check if it hits our reject list
+    if (REJECT_KEYWORDS.some((kw) => label.includes(kw))) {
+      rejectScore += pred.probability;
+    }
+
+    // Check civic keywords
     for (const [slug, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
       if (keywords.some((kw) => label.includes(kw))) {
         scores[slug] = (scores[slug] ?? 0) + pred.probability;
@@ -122,11 +150,19 @@ export async function classifyImage(
     }
   }
 
+  // Determine if it should be rejected
+  const isRejected = rejectScore > 0.3; // If 30%+ confidence it's a person/screen/animal
+  const rejectReason = isRejected 
+    ? "This looks like a picture of a person, animal, or unclassified item. Please upload a clear photo of the civic issue."
+    : undefined;
+
   const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
 
   return {
     slug: best ? best[0] : null,
     confidence: best ? Math.min(best[1], 1) : 0,
+    isRejected,
+    rejectReason,
     raw: predictions.map((p) => ({
       className: p.className,
       probability: p.probability,

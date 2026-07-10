@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { trackVisitFn } from "@/lib/queries.functions";
+import { useSessionTracker } from "@/hooks/useSessionTracker";
 
 function NotFoundComponent() {
   return (
@@ -127,6 +128,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useSessionTracker();
 
   useEffect(() => {
     trackVisitFn().catch(console.error);

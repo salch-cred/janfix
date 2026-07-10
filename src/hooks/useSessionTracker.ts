@@ -25,11 +25,8 @@ export function useSessionTracker() {
     // Open the session
     trackSessionFn({
       data: {
-        device_id: deviceId,
-        session_id: sid,
-        user_agent: ua,
+        deviceId,
         action: "start",
-        pages_visited: 1,
       },
     }).catch(() => {});
 
@@ -38,21 +35,22 @@ export function useSessionTracker() {
       pagesRef.current += 1;
       trackSessionFn({
         data: {
-          device_id: deviceId,
-          session_id: sid,
-          user_agent: ua,
+          deviceId,
           action: "heartbeat",
-          pages_visited: pagesRef.current,
         },
       }).catch(() => {});
     }, 30_000);
 
     // Mark offline when tab closes
     const handleUnload = () => {
-      navigator.sendBeacon?.(
-        "/api/session-end",
-        JSON.stringify({ device_id: deviceId, session_id: sid }),
-      );
+      // Browsers often block async requests on unload, but we try anyway.
+      // Next time they connect it'll create a new session if enough time passed.
+      trackSessionFn({
+        data: {
+          deviceId,
+          action: "end",
+        },
+      }).catch(() => {});
     };
 
     window.addEventListener("beforeunload", handleUnload);

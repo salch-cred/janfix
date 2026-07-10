@@ -172,6 +172,20 @@ function ReportPage() {
         fileType: "image/jpeg",
         initialQuality: 0.85,
       });
+
+      // Run AI classification
+      setAiLoading(true);
+      const aiResult = await classifyImage(compressed).catch((err) => {
+        console.error("TensorFlow error:", err);
+        return null;
+      });
+      setAiLoading(false);
+
+      if (aiResult?.isRejected) {
+        toast.error(aiResult.rejectReason || "Photo rejected. Please upload a clear photo of the civic issue.");
+        return;
+      }
+
       setFile(compressed);
       setPreview((prevUrl) => {
         safeRevokeObjectURL(prevUrl);
@@ -183,16 +197,15 @@ function ReportPage() {
       getGPS();
       setStep("details");
 
-      // Run AI classification in background (non-blocking)
-      setAiLoading(true);
-      classifyImage(compressed)
-        .then((result) => {
-          if (result.slug && result.confidence > 0.12) {
-            setAiSuggestion({ slug: result.slug, confidence: result.confidence });
-          }
-        })
-        .catch(() => {})
-        .finally(() => setAiLoading(false));
+      if (aiResult?.slug && aiResult.confidence > 0.12) {
+        setAiSuggestion({ slug: aiResult.slug, confidence: aiResult.confidence });
+        setCat(aiResult.slug); // Automatically select it
+      } else {
+        // Fallback if TensorFlow ran but didn't strongly match, or if it errored out
+        const fallbackSlug = "others";
+        setAiSuggestion({ slug: fallbackSlug, confidence: aiResult ? Math.max(0.01, aiResult.confidence) : 0.01 });
+        setCat(fallbackSlug); // Automatically select it
+      }
     } catch (e: any) {
       toast.error("Could not process image: " + (e?.message ?? "unknown"));
     } finally {
@@ -214,6 +227,13 @@ function ReportPage() {
         fileType: "image/jpeg",
         initialQuality: 0.85,
       });
+
+      const aiResult = await classifyImage(compressed).catch(() => null);
+      if (aiResult?.isRejected) {
+        toast.error(aiResult.rejectReason || "Photo rejected. Please upload a clear photo of the civic issue.");
+        return;
+      }
+
       setExtraFiles((prev) => [...prev, compressed]);
       setExtraPreviews((prev) => [...prev, URL.createObjectURL(compressed)]);
     } catch (e: any) {
@@ -587,7 +607,8 @@ function ReportPage() {
                     {CATEGORIES.map((c) => (
                       <button
                         key={c.slug}
-                        onClick={() => setCat(c.slug)}
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setCat(c.slug); }}
                         className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                           cat === c.slug
                             ? "border-transparent text-white"
@@ -606,7 +627,8 @@ function ReportPage() {
                     {(Object.keys(SEVERITY_META) as (keyof typeof SEVERITY_META)[]).map((s) => (
                       <button
                         key={s}
-                        onClick={() => setSev(s)}
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setSev(s); }}
                         className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
                           sev === s
                             ? "border-primary bg-primary/10 text-primary"

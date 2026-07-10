@@ -258,3 +258,76 @@ export const trackVisitFn = createServerFn({ method: "POST" }).handler(async () 
   `);
   return { ok: true };
 });
+
+export const trackSessionFn = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { deviceId: string; action: "start" | "heartbeat" | "end" }) =>
+      z.object({
+        deviceId: z.string(),
+        action: z.enum(["start", "heartbeat", "end"]),
+      }).parse(d)
+  )
+  .handler(async ({ data, request }) => {
+    const { deviceId, action } = data;
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    
+    // Parse simple platform from user-agent
+    let platform = "unknown";
+    if (/android/i.test(userAgent)) platform = "Android";
+    else if (/iphone|ipad|ipod/i.test(userAgent)) platform = "iOS";
+    else if (/windows/i.test(userAgent)) platform = "Windows";
+    else if (/mac/i.test(userAgent)) platform = "macOS";
+    else if (/linux/i.test(userAgent)) platform = "Linux";
+
+    // Create table if it doesn't exist
+    await query(`
+      CREATE TABLE IF NOT EXISTS public.user_sessions (
+        id SERIAL PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        session_start TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        session_end TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        user_agent TEXT,
+        platform TEXT,
+        pages_visited INTEGER DEFAULT 1,
+        is_online BOOLEAN DEFAULT true,
+        UNIQUE(device_id, session_start)
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_device_start ON public.user_sessions (device_id, session_start DESC);
+    `);
+
+    try {
+      if (action === "start") {
+        await query(`
+          INSERT INTO public.user_sessions (device_id, user_agent, platform, session_start, session_end, is_online, pages_visited)
+          VALUES ($1, $2, $3, now(), now(), true, 1)
+        `, [deviceId, userAgent, platform]);
+      } else if (action === "heartbeat") {
+        await query(`
+          UPDATE public.user_sessions
+          SET session_end = now(), is_online = true, pages_visited = pages_visited + 1
+          WHERE id = (
+            SELECT id FROM public.user_sessions 
+            WHERE device_id = $1 
+            ORDER BY session_start DESC 
+            LIMIT 1
+          )
+        `, [deviceId]);
+      } else if (action === "end") {
+        await query(`
+          UPDATE public.user_sessions
+          SET session_end = now(), is_online = false
+          WHERE id = (
+            SELECT id FROM public.user_sessions 
+            WHERE device_id = $1 
+            ORDER BY session_start DESC 
+            LIMIT 1
+          )
+        `, [deviceId]);
+      }
+      return { success: true };
+    } catch (e) {
+      console.error("Failed to track session:", e);
+      return { success: false };
+    }
+  });

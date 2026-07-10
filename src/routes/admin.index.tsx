@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { analyticsFn } from "@/lib/queries.functions";
-import { adminAnalyticsDetailFn } from "@/lib/admin.functions";
+import { adminAnalyticsDetailFn, adminSessionAnalyticsFn } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,6 +35,7 @@ import {
   GitBranch,
   Compass,
   Inbox,
+  Activity,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
@@ -99,12 +100,39 @@ function AdminDashboard() {
     );
   }
 
+  const sessionData = useQuery({
+    queryKey: ["admin-session-analytics-dash", session],
+    queryFn: () => adminSessionAnalyticsFn({ data: { access_token: session } }),
+    enabled: !!session,
+    refetchInterval: 30000,
+  });
+
   const stats = [
+    {
+      label: "Online Now",
+      value: sessionData.data?.onlineNow ?? 0,
+      icon: Activity,
+      color: "text-green-600 bg-green-100 dark:bg-green-950 dark:text-green-400",
+    },
+    {
+      label: "Avg Session",
+      value: sessionData.data?.avgSessionSeconds 
+        ? `${Math.floor(sessionData.data.avgSessionSeconds / 60)}m ${sessionData.data.avgSessionSeconds % 60}s`
+        : "—",
+      icon: Clock,
+      color: "text-blue-600 bg-blue-100 dark:bg-blue-950 dark:text-blue-400",
+    },
     {
       label: "Total Issues",
       value: analytics.data?.total ?? 0,
       icon: AlertTriangle,
-      color: "text-blue-600 bg-blue-100 dark:bg-blue-950 dark:text-blue-400",
+      color: "text-orange-600 bg-orange-100 dark:bg-orange-950 dark:text-orange-400",
+    },
+    {
+      label: "Reported Today",
+      value: analytics.data?.today ?? 0,
+      icon: TrendingUp,
+      color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400",
     },
     {
       label: "Total Visitors",
@@ -113,34 +141,10 @@ function AdminDashboard() {
       color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
     },
     {
-      label: "Weekly Visitors",
-      value: analytics.data?.visitors_week ?? 0,
-      icon: Users,
-      color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
-    },
-    {
       label: "Monthly Visitors",
       value: analytics.data?.visitors_month ?? 0,
       icon: Users,
       color: "text-indigo-600 bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400",
-    },
-    {
-      label: "Reported Today",
-      value: analytics.data?.today ?? 0,
-      icon: TrendingUp,
-      color: "text-green-600 bg-green-100 dark:bg-green-950 dark:text-green-400",
-    },
-    {
-      label: "This Week",
-      value: analytics.data?.week ?? 0,
-      icon: Clock,
-      color: "text-orange-600 bg-orange-100 dark:bg-orange-950 dark:text-orange-400",
-    },
-    {
-      label: "Resolved",
-      value: analytics.data?.resolved ?? 0,
-      icon: CheckCircle2,
-      color: "text-emerald-600 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400",
     },
   ];
 

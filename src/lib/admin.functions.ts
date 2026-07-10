@@ -787,3 +787,82 @@ export const adminDeleteFeedbackFn = createServerFn({ method: "POST" })
 		await query(`DELETE FROM public.feedback WHERE id = $1`, [data.id]);
 		return { ok: true };
 	});
+
+export const adminSessionAnalyticsFn = createServerFn({ method: "POST" })
+	.inputValidator((d: { access_token: string }) =>
+		z.object({ access_token: z.string() }).parse(d),
+	)
+	.handler(async ({ data }) => {
+		await requireAdmin(data.access_token);
+    
+		try {
+			// Ensure table exists just in case tracking hasn't fired yet
+			await query(`
+				CREATE TABLE IF NOT EXISTS public.user_sessions (
+					id SERIAL PRIMARY KEY,
+					device_id TEXT NOT NULL,
+					session_start TIMESTAMP WITH TIME ZONE DEFAULT now(),
+					session_end TIMESTAMP WITH TIME ZONE DEFAULT now(),
+					user_agent TEXT,
+					platform TEXT,
+					pages_visited INTEGER DEFAULT 1,
+					is_online BOOLEAN DEFAULT true,
+					UNIQUE(device_id, session_start)
+				);
+			`);
+
+			// 1. Online now (active in last 90 seconds AND marked as is_online = true)
+			const { rows: onlineRows } = await query(`
+				SELECT COUNT(DISTINCT device_id) as count
+				FROM public.user_sessions
+				WHERE is_online = true AND session_end > NOW() - INTERVAL '90 seconds'
+			`);
+			
+			// 2. Average session time (in seconds)
+			const { rows: avgRows } = await query(`
+				SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (session_end - session_start))), 0) as avg_seconds
+				FROM public.user_sessions
+				WHERE session_end > session_start
+			`);
+
+			// 3. Per-day unique device count (last 30 days)
+			const { rows: dailyRows } = await query(`
+				SELECT DATE(session_start) as date, COUNT(DISTINCT device_id) as count
+				FROM public.user_sessions
+				WHERE session_start > NOW() - INTERVAL '30 days'
+				GROUP BY DATE(session_start)
+				ORDER BY DATE(session_start) ASC
+			`);
+
+			// 4. Session list (all sessions)
+			const { rows: sessions } = await query(`
+				SELECT 
+					device_id,
+					session_start,
+					session_end,
+					platform,
+					user_agent,
+					pages_visited,
+					CASE WHEN is_online = true AND session_end > NOW() - INTERVAL '90 seconds' THEN true ELSE false END as currently_online,
+					EXTRACT(EPOCH FROM (session_end - session_start)) as duration_seconds
+				FROM public.user_sessions
+				ORDER BY session_end DESC
+				LIMIT 100
+			`);
+
+			return {
+				onlineNow: parseInt(onlineRows[0]?.count || "0"),
+				avgSessionSeconds: Math.round(parseFloat(avgRows[0]?.avg_seconds || "0")),
+				dailyVisitors: dailyRows,
+				sessions: sessions,
+			};
+		} catch (e) {
+			console.error("Failed to fetch session analytics", e);
+			return {
+				onlineNow: 0,
+				avgSessionSeconds: 0,
+				dailyVisitors: [],
+				sessions: [],
+			};
+		}
+	});

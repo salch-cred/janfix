@@ -291,12 +291,24 @@ function IssuePage() {
               <div className="border-b border-primary/20 p-5 md:border-b-0 md:border-r">
                 <div className="flex items-center gap-3">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-primary/10">
-                    <AuthorityLogo url={i.authority?.logo_url} />
+                    {i.authority ? (
+                      <AuthorityLogo url={i.authority.logo_url} />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-muted text-lg font-bold text-muted-foreground">
+                        ?
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Assigned authority</div>
-                    <div className="truncate text-base font-bold">{i.authority?.name ?? "Unassigned"}</div>
-                    {i.authority?.phone && <div className="text-xs text-muted-foreground">{i.authority.phone}</div>}
+                    {i.authority ? (
+                      <>
+                        <div className="truncate text-base font-bold">{i.authority.name}</div>
+                        {i.authority.phone && <div className="text-xs text-muted-foreground">{i.authority.phone}</div>}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Not assigned yet</p>
+                    )}
                   </div>
                 </div>
               </div>

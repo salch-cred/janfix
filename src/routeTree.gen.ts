@@ -20,6 +20,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RepresentativesRepIdRouteImport } from './routes/representatives.$repId'
 import { Route as AuthoritiesAuthorityIdRouteImport } from './routes/authorities.$authorityId'
 import { Route as AdminWardsRouteImport } from './routes/admin.wards'
+import { Route as AdminVisitorsRouteImport } from './routes/admin.visitors'
 import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminRepresentativesRouteImport } from './routes/admin.representatives'
 import { Route as AdminJurisdictionRouteImport } from './routes/admin.jurisdiction'
@@ -85,6 +86,11 @@ const AdminWardsRoute = AdminWardsRouteImport.update({
   path: '/admin/wards',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminVisitorsRoute = AdminVisitorsRouteImport.update({
+  id: '/admin/visitors',
+  path: '/admin/visitors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRulesRoute = AdminRulesRouteImport.update({
   id: '/admin/rules',
   path: '/admin/rules',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/admin/jurisdiction': typeof AdminJurisdictionRoute
   '/admin/representatives': typeof AdminRepresentativesRoute
   '/admin/rules': typeof AdminRulesRoute
+  '/admin/visitors': typeof AdminVisitorsRoute
   '/admin/wards': typeof AdminWardsRoute
   '/authorities/$authorityId': typeof AuthoritiesAuthorityIdRoute
   '/representatives/$repId': typeof RepresentativesRepIdRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/admin/jurisdiction': typeof AdminJurisdictionRoute
   '/admin/representatives': typeof AdminRepresentativesRoute
   '/admin/rules': typeof AdminRulesRoute
+  '/admin/visitors': typeof AdminVisitorsRoute
   '/admin/wards': typeof AdminWardsRoute
   '/authorities/$authorityId': typeof AuthoritiesAuthorityIdRoute
   '/representatives/$repId': typeof RepresentativesRepIdRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/admin/jurisdiction': typeof AdminJurisdictionRoute
   '/admin/representatives': typeof AdminRepresentativesRoute
   '/admin/rules': typeof AdminRulesRoute
+  '/admin/visitors': typeof AdminVisitorsRoute
   '/admin/wards': typeof AdminWardsRoute
   '/authorities/$authorityId': typeof AuthoritiesAuthorityIdRoute
   '/representatives/$repId': typeof RepresentativesRepIdRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/admin/jurisdiction'
     | '/admin/representatives'
     | '/admin/rules'
+    | '/admin/visitors'
     | '/admin/wards'
     | '/authorities/$authorityId'
     | '/representatives/$repId'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/admin/jurisdiction'
     | '/admin/representatives'
     | '/admin/rules'
+    | '/admin/visitors'
     | '/admin/wards'
     | '/authorities/$authorityId'
     | '/representatives/$repId'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/jurisdiction'
     | '/admin/representatives'
     | '/admin/rules'
+    | '/admin/visitors'
     | '/admin/wards'
     | '/authorities/$authorityId'
     | '/representatives/$repId'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   AdminJurisdictionRoute: typeof AdminJurisdictionRoute
   AdminRepresentativesRoute: typeof AdminRepresentativesRoute
   AdminRulesRoute: typeof AdminRulesRoute
+  AdminVisitorsRoute: typeof AdminVisitorsRoute
   AdminWardsRoute: typeof AdminWardsRoute
   AuthoritiesAuthorityIdRoute: typeof AuthoritiesAuthorityIdRoute
   RepresentativesRepIdRoute: typeof RepresentativesRepIdRoute
@@ -369,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWardsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/visitors': {
+      id: '/admin/visitors'
+      path: '/admin/visitors'
+      fullPath: '/admin/visitors'
+      preLoaderRoute: typeof AdminVisitorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/rules': {
       id: '/admin/rules'
       path: '/admin/rules'
@@ -450,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminJurisdictionRoute: AdminJurisdictionRoute,
   AdminRepresentativesRoute: AdminRepresentativesRoute,
   AdminRulesRoute: AdminRulesRoute,
+  AdminVisitorsRoute: AdminVisitorsRoute,
   AdminWardsRoute: AdminWardsRoute,
   AuthoritiesAuthorityIdRoute: AuthoritiesAuthorityIdRoute,
   RepresentativesRepIdRoute: RepresentativesRepIdRoute,
