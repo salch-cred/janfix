@@ -266,7 +266,7 @@ function Footer() {
                 </svg>
                 Instagram
               </a>
-
+            </div>
           </div>
 
           {showForm && (
