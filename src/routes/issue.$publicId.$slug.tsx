@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getIssueByPublicIdFn } from "@/lib/queries.functions";
@@ -121,6 +121,102 @@ function IssuePage() {
   const issueLocation = { lat: i.lat, lng: i.lng };
   const extraPhotos = (payload as any).photos ?? [];
 
+  const supportMutation = useMutation({
+    mutationFn: () => supportIssueFn({ data: { issue_id: i.id, device_id: getDeviceId() } }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["issue", publicId] });
+      const previousValue = qc.getQueryData(["issue", publicId]);
+      qc.setQueryData(["issue", publicId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          issue: {
+            ...old.issue,
+            supporters_count: (old.issue.supporters_count ?? 0) + 1,
+          },
+        };
+      });
+      return { previousValue };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousValue) {
+        qc.setQueryData(["issue", publicId], context.previousValue);
+      }
+      toast.error(err instanceof Error ? err.message : "Failed to add support");
+    },
+    onSuccess: () => {
+      toast.success("Added your support");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["issue", publicId] });
+    },
+  });
+
+  const voteMutation = useMutation({
+    mutationFn: (v: "exists" | "fixed") =>
+      voteIssueFn({ data: { issue_id: i.id, device_id: getDeviceId(), vote: v } }),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: ["issue", publicId] });
+      const previousValue = qc.getQueryData(["issue", publicId]);
+      qc.setQueryData(["issue", publicId], (old: any) => {
+        if (!old) return old;
+        const existsDiff = v === "exists" ? 1 : 0;
+        const fixedDiff = v === "fixed" ? 1 : 0;
+        return {
+          ...old,
+          votes: {
+            exists: (old.votes?.exists ?? 0) + existsDiff,
+            fixed: (old.votes?.fixed ?? 0) + fixedDiff,
+          },
+        };
+      });
+      return { previousValue };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousValue) {
+        qc.setQueryData(["issue", publicId], context.previousValue);
+      }
+      toast.error(err instanceof Error ? err.message : "Failed to register vote");
+    },
+    onSuccess: (_, v) => {
+      toast.success(v === "exists" ? "Marked as still exists" : "Marked as fixed");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["issue", publicId] });
+    },
+  });
+
+  const thanksMutation = useMutation({
+    mutationFn: () => thanksIssueFn({ data: { issue_id: i.id, device_id: getDeviceId() } }),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["issue", publicId] });
+      const previousValue = qc.getQueryData(["issue", publicId]);
+      qc.setQueryData(["issue", publicId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          issue: {
+            ...old.issue,
+            thanked_count: (old.issue.thanked_count ?? 0) + 1,
+          },
+        };
+      });
+      return { previousValue };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousValue) {
+        qc.setQueryData(["issue", publicId], context.previousValue);
+      }
+      toast.error(err instanceof Error ? err.message : "Failed to record thanks");
+    },
+    onSuccess: () => {
+      toast.success("Thanks recorded");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["issue", publicId] });
+    },
+  });
+
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     try {
       await fn();
@@ -131,23 +227,9 @@ function IssuePage() {
     }
   };
 
-  const vote = (v: "exists" | "fixed") =>
-    act(
-      () => voteIssueFn({ data: { issue_id: i.id, device_id: getDeviceId(), vote: v } }),
-      v === "exists" ? "Marked as still exists" : "Marked as fixed",
-    );
-
-  const support = () =>
-    act(
-      () => supportIssueFn({ data: { issue_id: i.id, device_id: getDeviceId() } }),
-      "Added your support",
-    );
-
-  const thanks = () =>
-    act(
-      () => thanksIssueFn({ data: { issue_id: i.id, device_id: getDeviceId() } }),
-      "Thanks recorded",
-    );
+  const vote = (v: "exists" | "fixed") => voteMutation.mutate(v);
+  const support = () => supportMutation.mutate();
+  const thanks = () => thanksMutation.mutate();
 
   const watch = () => {
     const email = prompt("Optional email for updates (leave empty to just bookmark)") ?? "";
