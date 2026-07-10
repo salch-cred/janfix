@@ -15,7 +15,8 @@ import { listAuthoritiesFn, listRepresentativesFn } from "@/lib/queries.function
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, MapPin, Loader2, CheckCircle2, AlertTriangle, X, ImagePlus, Building2 } from "lucide-react";
+import { Camera, MapPin, Loader2, CheckCircle2, AlertTriangle, X, ImagePlus, Building2, Sparkles } from "lucide-react";
+import { classifyImage, warmupClassifier } from "@/lib/imageClassifier";
 
 export const Route = createFileRoute("/report")({
   component: ReportPage,
@@ -82,6 +83,9 @@ function ReportPage() {
   const [reportCount, setReportCount] = useState<number>(0);
   const [customAuthId, setCustomAuthId] = useState<number | null>(null);
   const [customRepId, setCustomRepId] = useState<number | null>(null);
+  // AI classification state
+  const [aiSuggestion, setAiSuggestion] = useState<{ slug: string; confidence: number } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const authoritiesQuery = useQuery({
     queryKey: ["authorities-list"],
@@ -127,6 +131,8 @@ function ReportPage() {
     })();
     // Warm up GPS immediately
     getGPS();
+    // Warm up the TF model in the background so it's ready when needed
+    warmupClassifier();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -157,6 +163,7 @@ function ReportPage() {
 
   const onPickFile = async (f: File) => {
     setWorking(true);
+    setAiSuggestion(null);
     try {
       const compressed = await imageCompression(f, {
         maxSizeMB: 1.2,
@@ -175,6 +182,17 @@ function ReportPage() {
       // try GPS in parallel
       getGPS();
       setStep("details");
+
+      // Run AI classification in background (non-blocking)
+      setAiLoading(true);
+      classifyImage(compressed)
+        .then((result) => {
+          if (result.slug && result.confidence > 0.12) {
+            setAiSuggestion({ slug: result.slug, confidence: result.confidence });
+          }
+        })
+        .catch(() => {})
+        .finally(() => setAiLoading(false));
     } catch (e: any) {
       toast.error("Could not process image: " + (e?.message ?? "unknown"));
     } finally {
@@ -530,6 +548,41 @@ function ReportPage() {
                 </Field>
 
                 <Field label="Category">
+                  {/* AI suggestion banner */}
+                  {(aiLoading || aiSuggestion) && (
+                    <div className={`mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium transition-all ${
+                      aiLoading
+                        ? "border border-dashed border-primary/30 bg-primary/5 text-primary/70"
+                        : "border border-primary/20 bg-primary/10 text-primary"
+                    }`}>
+                      {aiLoading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                          <span>Analysing photo with AI…</span>
+                        </>
+                      ) : aiSuggestion ? (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            AI suggests: <strong>{CATEGORIES.find(c => c.slug === aiSuggestion.slug)?.name_en}</strong>
+                            <span className="ml-1 opacity-70">({Math.round(aiSuggestion.confidence * 100)}% confidence)</span>
+                          </span>
+                          {cat !== aiSuggestion.slug && (
+                            <button
+                              type="button"
+                              onClick={() => setCat(aiSuggestion.slug)}
+                              className="ml-auto shrink-0 rounded-md bg-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary hover:bg-primary/30 transition"
+                            >
+                              Apply
+                            </button>
+                          )}
+                          {cat === aiSuggestion.slug && (
+                            <CheckCircle2 className="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                  )}
                   <div className="-mx-1 flex w-full flex-wrap gap-1.5">
                     {CATEGORIES.map((c) => (
                       <button
