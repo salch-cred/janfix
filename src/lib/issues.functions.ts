@@ -34,7 +34,12 @@ const createIssueInput = z.object({
   lng: z.number(),
   address: z.string().optional().nullable(),
   area: z.string().optional().nullable(),
-   extra_image_urls: z.array(z.string().url()).max(4).optional().nullable(),
+  locality: z.string().optional().nullable(),
+  pincode: z.string().optional().nullable(),
+  ward_id: z.number().int().optional().nullable(),
+  image_url: z.string().url().optional().nullable(),
+  image_phash: z.string().optional().nullable(),
+  extra_image_urls: z.array(z.string().url()).max(4).optional().nullable(),
   assigned_authority_id: z.number().int().optional().nullable(),
   assigned_representative_id: z.number().int().optional().nullable(),
 });
