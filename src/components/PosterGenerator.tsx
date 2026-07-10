@@ -7,6 +7,8 @@ import { Download, Share2 } from "lucide-react";
 import { STATUS_META, categoryBySlug } from "@/lib/civic";
 import { getBase64ImageFn } from "@/lib/proxy.functions";
 
+import { AUTHORITY_LOGO_FALLBACK_URL } from "./AuthorityLogo";
+
 type IssueLike = {
   public_id: string;
   description: string;
@@ -106,15 +108,17 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const statusLabel = STATUS_LABEL[issue.status] ?? "REPORTED";
   const dims = SIZES[size];
 
+  const authorityLogoUrl = issue.authority?.logo_url || AUTHORITY_LOGO_FALLBACK_URL;
+
   const imageUrls = useMemo(() => [
     issue.image_url,
-    issue.authority?.logo_url,
+    authorityLogoUrl,
     issue.representative?.photo_url,
-  ], [issue.image_url, issue.authority?.logo_url, issue.representative?.photo_url]);
+  ], [issue.image_url, authorityLogoUrl, issue.representative?.photo_url]);
   const { map: dataUrls, ready: imagesReady } = useImageDataUrls(imageUrls);
 
   const imgSrc  = issue.image_url             ? (dataUrls.get(issue.image_url)             ?? ISSUE_PLACEHOLDER)         : ISSUE_PLACEHOLDER;
-  const logoSrc = issue.authority?.logo_url   ? (dataUrls.get(issue.authority.logo_url)    ?? AUTHORITY_PLACEHOLDER)     : AUTHORITY_PLACEHOLDER;
+  const logoSrc = dataUrls.get(authorityLogoUrl) ?? AUTHORITY_PLACEHOLDER;
   const repSrc  = issue.representative?.photo_url ? (dataUrls.get(issue.representative.photo_url) ?? REPRESENTATIVE_PLACEHOLDER) : REPRESENTATIVE_PLACEHOLDER;
 
   useEffect(() => {
