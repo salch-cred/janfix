@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { analyticsFn } from "@/lib/queries.functions";
 import { adminAnalyticsDetailFn, adminSessionAnalyticsFn } from "@/lib/admin.functions";
@@ -21,7 +21,6 @@ import {
   Loader2,
   LogOut,
   AlertTriangle,
-  CheckCircle2,
   Clock,
   TrendingUp,
   Shield,
@@ -75,7 +74,6 @@ const statusBadgeVariant: Record<string, "secondary" | "outline" | "destructive"
 };
 
 function AdminDashboard() {
-  const navigate = useNavigate();
   const { token: session, checking, logout } = useAdminSession();
 
 
