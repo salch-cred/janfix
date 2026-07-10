@@ -40,7 +40,7 @@ type IssueLike = {
 };
 
 const POSTER_W = 750;
-const POSTER_H = 1100;
+const POSTER_H = 1250;
 
 const SIZES = {
   instagram: { w: 1080, h: 1350, label: "Instagram Post" },
@@ -231,9 +231,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
           </div>
 
           {/* Title Block (Right) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: px(70), marginTop: px(-8) }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginRight: px(70), marginTop: 0 }}>
             <div style={{ display: "flex", alignItems: "center" }}>
-               <div style={{ fontSize: px(48), fontWeight: 900, color: "#292929", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+               <div style={{ fontSize: px(42), fontWeight: 900, color: "#292929", lineHeight: 1.2, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
                  ಯಾವಾಗ
                </div>
                {/* 3 lines decoration */}
@@ -243,7 +243,7 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
                   <div style={{ width: px(28), height: px(3), background: "#292929", transform: "rotate(15deg)" }}></div>
                </div>
             </div>
-            <div style={{ fontSize: px(64), fontWeight: 900, color: "#254328", lineHeight: 1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
+            <div style={{ fontSize: px(56), fontWeight: 900, color: "#254328", lineHeight: 1.1, fontFamily: '"Noto Sans Kannada", sans-serif' }}>
               ಸರಿ ಮಾಡುವುದು ?
             </div>
             <div style={{ fontSize: px(18), color: "#292929", fontWeight: 700, marginTop: px(12), borderBottom: `${px(2)}px solid #254328`, paddingBottom: px(4), fontFamily: '"Noto Sans Kannada", sans-serif' }}>
