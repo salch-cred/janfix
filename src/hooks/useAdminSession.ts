@@ -4,7 +4,7 @@
  *
  * Returns { token, checking } so the caller can gate render.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { adminVerifyFn } from "@/lib/admin.auth";
 
@@ -32,33 +32,40 @@ export function setAdminToken(token: string) {
 
 export function useAdminSession() {
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
   const [token, setToken] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+
+  // Keep ref current so effect closure always has the latest navigate
+  // without re-running the effect when navigate reference changes.
+  useEffect(() => {
+    navigateRef.current = navigate;
+  });
 
   useEffect(() => {
     const t = getAdminToken();
     if (!t) {
-      navigate({ to: "/auth" });
+      navigateRef.current({ to: "/auth" });
       return;
     }
     adminVerifyFn({ data: { token: t } })
       .then(({ valid }) => {
         if (!valid) {
           clearAdminToken();
-          navigate({ to: "/auth" });
+          navigateRef.current({ to: "/auth" });
         } else {
           setToken(t);
           setChecking(false);
         }
       })
       .catch(() => {
-        navigate({ to: "/auth" });
+        navigateRef.current({ to: "/auth" });
       });
-  }, [navigate]);
+  }, []); // run once on mount only
 
   const logout = () => {
     clearAdminToken();
-    navigate({ to: "/auth" });
+    navigateRef.current({ to: "/auth" });
   };
 
   return { token, checking, logout };
