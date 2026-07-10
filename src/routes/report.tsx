@@ -820,10 +820,7 @@ function ReportPage() {
                         </div>
                       )}
 
-                      {/* Assignment Reason badge */}
-                      <div className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border">
-                        <span className="font-bold text-slate-700 dark:text-slate-200">Assignment Logic:</span> {assignmentPreviewQuery.data.reason}
-                      </div>
+
 
                       {/* Override selection dropdowns */}
                       <div className="border-t pt-3 space-y-3">
