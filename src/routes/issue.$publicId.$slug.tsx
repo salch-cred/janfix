@@ -45,8 +45,38 @@ import {
 
 export const Route = createFileRoute("/issue/$publicId/$slug")({
   component: IssuePage,
-  ssr: false,
-  pendingComponent: () => <div className="min-h-screen" />,
+  loader: async ({ context: { queryClient }, params }) => {
+    return queryClient.ensureQueryData({
+      queryKey: ["issue", params.publicId],
+      queryFn: () => getIssueByPublicIdFn({ data: { public_id: params.publicId } }),
+    });
+  },
+  meta: ({ loaderData }) => {
+    if (!loaderData?.issue) {
+      return [{ title: "Issue Not Found — JanFix" }];
+    }
+    const i = loaderData.issue as any;
+    const cat = i.category ?? categoryBySlug(i.category_slug ?? "others") ?? { name_en: "Civic Issue" };
+    const title = `JanFix Report: ${cat.name_en || "Civic Issue"} (${i.public_id})`;
+    const description = `${i.description || "Reported on JanFix."} Near ${[i.area, i.locality].filter(Boolean).join(", ") || "Mangaluru"}. Support it today!`;
+    const image = i.image_url || "https://janfix.vercel.app/og-image.jpg";
+    const url = `https://janfix.vercel.app/issue/${i.public_id}/${i.slug || "view"}`;
+
+    return [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:image", content: image },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: url },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+      { name: "twitter:image", content: image },
+    ];
+  },
+  pendingComponent: () => <div className="min-h-screen animate-pulse bg-muted/20" />,
   notFoundComponent: () => (
     <AppShell>
       <div className="mx-auto max-w-md p-10 text-center text-muted-foreground">
@@ -81,9 +111,11 @@ function IssuePage() {
   const { publicId } = Route.useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const loaderData = Route.useLoaderData();
   const q = useQuery({
     queryKey: ["issue", publicId],
     queryFn: () => getIssueByPublicIdFn({ data: { public_id: publicId } }),
+    initialData: loaderData,
   });
 
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
