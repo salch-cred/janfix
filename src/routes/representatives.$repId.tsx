@@ -325,8 +325,8 @@ function BudgetReportSection({ repName, constituency }: { repName: string; const
                 <h4 className="text-sm font-semibold flex items-center gap-1.5">
                   <BarChart3 className="h-4 w-4 text-muted-foreground" /> Fund Breakdown by Development Sector
                 </h4>
-                <div className="border rounded-xl overflow-hidden">
-                  <table className="w-full text-sm text-left border-collapse">
+                <div className="border rounded-xl overflow-hidden overflow-x-auto">
+                  <table className="w-full min-w-[500px] text-sm text-left border-collapse">
                     <thead>
                       <tr className="bg-muted/40 border-b">
                         <th className="p-3 font-semibold text-muted-foreground">Development Head / Sector</th>
