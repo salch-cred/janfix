@@ -125,6 +125,15 @@ const EXTRA_MAPPINGS: AreaMapping[] = [
   { keyword: "belthangady",  ward_id: null, constituency: "Belthangady", city: null, priority: 5 },
   { keyword: "moodabidri",   ward_id: null, constituency: "Moodabidri",  city: null, priority: 5 },
   { keyword: "mulki",        ward_id: null, constituency: "Mangaluru",   city: null, priority: 5 },
+  // Additional rural villages/towns that must NOT route to MCC
+  { keyword: "vittal",       ward_id: null, constituency: "Bantwal",     city: null, priority: 5 },
+  { keyword: "uppinangady",  ward_id: null, constituency: "Bantwal",     city: null, priority: 5 },
+  { keyword: "farangipet",   ward_id: null, constituency: "Bantwal",     city: null, priority: 5 },
+  { keyword: "kadaba",       ward_id: null, constituency: "Puttur",      city: null, priority: 5 },
+  { keyword: "dharmasthala", ward_id: null, constituency: "Belthangady", city: null, priority: 5 },
+  { keyword: "venur",        ward_id: null, constituency: "Belthangady", city: null, priority: 5 },
+  { keyword: "subramanya",   ward_id: null, constituency: "Sullia (SC)", city: null, priority: 5 },
+  { keyword: "guruvayanakere",ward_id: null, constituency: "Belthangady", city: null, priority: 5 },
 ];
 
 // ── Rural taluk keyword detection (for scope-aware jurisdiction rules) ──
@@ -141,7 +150,18 @@ const TALUK_KEYWORDS: Record<string, string> = {
   ullal: "Ullala",
   mulki: "Mulki",
   kadaba: "Kadaba",
+  vittal: "Bantwal",
+  uppinangady: "Bantwal",
+  farangipet: "Bantwal",
+  dharmasthala: "Belthangady",
+  venur: "Belthangady",
+  subramanya: "Sullia",
+  guruvayanakere: "Belthangady",
 };
+
+// Known MCC ward area names — if the location text mentions any of these,
+// the report is inside the municipal corporation boundary, not rural.
+const MCC_AREA_NAMES = new Set(Object.keys(WARD_NAMES));
 
 function detectScope(
   locationText: string,
@@ -150,10 +170,17 @@ function detectScope(
   if (/\bnh[\s-]?\d+\b|national highway/i.test(locationText)) return { scope: "national_highway", taluk: null };
   if (/\bsh[\s-]?\d+\b|state highway/i.test(locationText)) return { scope: "state_highway", taluk: null };
   if (hasWard) return { scope: "mcc", taluk: null };
+  // Check for explicit taluk/village keywords → rural
   for (const [kw, taluk] of Object.entries(TALUK_KEYWORDS)) {
     if (locationText.includes(kw)) return { scope: "rural", taluk };
   }
-  return { scope: "any", taluk: null };
+  // Check if location mentions a known MCC ward area → mcc even without ward_id
+  for (const areaName of MCC_AREA_NAMES) {
+    if (locationText.includes(areaName)) return { scope: "mcc", taluk: null };
+  }
+  // Default: if no ward AND no known MCC area → treat as rural (not 'any')
+  // This prevents villages from being assigned to MCC by default
+  return { scope: "rural", taluk: null };
 }
 
 // resolveIssue now fetches rules from Neon directly (no Supabase parameter).
@@ -267,7 +294,12 @@ export async function resolveIssue(input: ResolveInput): Promise<ResolveResult> 
     (scopeMatches.length ? scopeMatches : anyMatches).sort((a, b) => b.priority - a.priority)[0] ?? null;
 
   const genericRule = rules.find((r) => r.ward_id === null);
-  const authorityId = genericRule?.authority_id ?? jurisdictionRule?.authority_id ?? null;
+  // For rural/highway scopes, jurisdiction rules MUST take priority over
+  // generic category rules (which default to MCC). Only fall back to generic
+  // rules for 'mcc' or 'any' scope where MCC is the correct authority.
+  const authorityId = (scope === "rural" || scope === "state_highway" || scope === "national_highway")
+    ? (jurisdictionRule?.authority_id ?? genericRule?.authority_id ?? null)
+    : (genericRule?.authority_id ?? jurisdictionRule?.authority_id ?? null);
 
   let needsReview = false;
   let jurisdictionConfidence: string | null = null;

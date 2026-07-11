@@ -38,6 +38,9 @@ import {
   ArrowRight,
   AlertTriangle,
   CheckCircle2,
+  X,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/issue/$publicId/$slug")({
@@ -51,10 +54,20 @@ export const Route = createFileRoute("/issue/$publicId/$slug")({
       </div>
     </AppShell>
   ),
-  errorComponent: () => (
+  errorComponent: ({ reset }: any) => (
     <AppShell>
-      <div className="mx-auto max-w-md p-10 text-center text-muted-foreground">
-        Failed to load issue.
+      <div className="mx-auto max-w-md p-10 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+        </div>
+        <h2 className="font-display text-lg font-bold">Failed to load issue</h2>
+        <p className="mt-2 text-sm text-muted-foreground">The issue could not be loaded. Please check your connection and try again.</p>
+        <button
+          onClick={() => { if (typeof reset === "function") reset(); else window.location.reload(); }}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+        >
+          <RefreshCw className="h-4 w-4" /> Retry
+        </button>
       </div>
     </AppShell>
   ),
@@ -98,10 +111,15 @@ function IssuePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.data?.issue?.slug, q.data?.issue?.description, publicId]);
 
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
   if (q.isLoading) {
     return (
       <AppShell>
-        <div className="mx-auto max-w-3xl p-10">Loading…</div>
+        <div className="mx-auto max-w-3xl p-10 flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Loading issue…</span>
+        </div>
       </AppShell>
     );
   }
@@ -284,7 +302,8 @@ function IssuePage() {
             <img
               src={i.image_url}
               alt={i.description}
-              className="aspect-[4/3] w-full object-cover"
+              className="aspect-[4/3] w-full object-cover cursor-zoom-in transition-transform hover:scale-[1.02]"
+              onClick={() => setLightboxSrc(i.image_url)}
             />
           )}
         </div>
@@ -292,19 +311,19 @@ function IssuePage() {
         {extraPhotos.length > 0 && (
           <div className="mt-2 grid grid-cols-3 gap-2">
             {extraPhotos.map((p: any) => (
-              <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
+              <button key={p.id} onClick={() => setLightboxSrc(p.url)} className="group relative overflow-hidden rounded-xl border">
                 <img
                   src={p.url}
                   alt=""
-                  className="aspect-square w-full rounded-xl border object-cover"
+                  className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                 />
-              </a>
+              </button>
             ))}
           </div>
         )}
 
         {/* Action bar */}
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-2 xs:grid-cols-3 sm:grid-cols-5">
           <ActionButton
             onClick={support}
             icon={<ThumbsUp className="h-4 w-4" />}
@@ -562,6 +581,28 @@ function IssuePage() {
             ← Back to all issues
           </Link>
         </div>
+
+        {/* Photo lightbox modal */}
+        {lightboxSrc && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setLightboxSrc(null)}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxSrc(null); }}
+              className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white/20"
+              aria-label="Close lightbox"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={lightboxSrc}
+              alt="Full view"
+              className="max-h-[90vh] max-w-[95vw] rounded-xl object-contain shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
       </article>
     </AppShell>
   );

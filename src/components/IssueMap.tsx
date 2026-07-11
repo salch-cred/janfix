@@ -10,7 +10,7 @@ export type MapPoint = {
   popup?: string;
 };
 
-const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
 const MAPLIBRE_CSS_URL = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
 const BUILDINGS_LAYER_ID = "jf-3d-buildings";
 
@@ -121,7 +121,7 @@ export function IssueMap({
       map.on("load", () => {
         if (cancelled) return;
 
-        // Add optional 3D Building Extrusions
+        // Add optional 3D Building Extrusions (dark theme tinted)
         try {
           const style = map.getStyle() as any;
           const sourceId = Object.keys(style?.sources ?? {}).find(
@@ -139,10 +139,10 @@ export function IssueMap({
                 type: "fill-extrusion",
                 minzoom: 13,
                 paint: {
-                  "fill-extrusion-color": "#c9d2dc",
+                  "fill-extrusion-color": "#1e293b",
                   "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
                   "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-                  "fill-extrusion-opacity": 0.85,
+                  "fill-extrusion-opacity": 0.7,
                 },
               } as any,
               labelLayer?.id,
@@ -166,34 +166,142 @@ export function IssueMap({
     };
   }, [shouldLoad]);
 
-  // Render individual markers for all points (colored by category)
-  const pointMarkersRef = useRef<any[]>([]);
-
+  // ── WebGL clustered rendering for points ──────────────────────────────
   useEffect(() => {
     if (!ready || !mapRef.current || !MLRef.current) return;
     const ML = MLRef.current;
     const map = mapRef.current;
+    const pts = points ?? [];
 
-    // Remove old markers
-    pointMarkersRef.current.forEach((m) => m.remove());
-    pointMarkersRef.current = [];
+    // Remove old cluster layers/source if they exist
+    const layerIds = ["jf-clusters", "jf-cluster-count", "jf-unclustered-point", "jf-unclustered-glow"];
+    layerIds.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+    if (map.getSource("jf-issues")) map.removeSource("jf-issues");
 
-    // Add new markers
-    (points ?? []).forEach((p) => {
-      if (!isFiniteNumber(p.lat) || !isFiniteNumber(p.lng)) return;
+    if (pts.length === 0) return;
 
-      const m = new ML.Marker({ color: p.color ?? "#1a5d2b" })
-        .setLngLat([Number(p.lng), Number(p.lat)])
-        .addTo(map);
+    // Build GeoJSON
+    const geojson: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: pts
+        .filter((p) => isFiniteNumber(p.lat) && isFiniteNumber(p.lng))
+        .map((p) => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [Number(p.lng), Number(p.lat)] },
+          properties: { id: p.id, color: p.color ?? "#ef4444", popup: p.popup ?? "" },
+        })),
+    };
 
-      if (p.popup) {
-        m.setPopup(
-          new ML.Popup({ offset: 25, maxWidth: "280px" }).setHTML(p.popup)
-        );
-      }
-
-      pointMarkersRef.current.push(m);
+    map.addSource("jf-issues", {
+      type: "geojson",
+      data: geojson,
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50,
     });
+
+    // Cluster circles — size + color based on point_count
+    map.addLayer({
+      id: "jf-clusters",
+      type: "circle",
+      source: "jf-issues",
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": [
+          "step", ["get", "point_count"],
+          "#22c55e",   // green < 10
+          10, "#f59e0b", // amber 10-30
+          30, "#ef4444", // red 30+
+        ],
+        "circle-radius": [
+          "step", ["get", "point_count"],
+          18,          // radius < 10
+          10, 24,      // radius 10-30
+          30, 32,      // radius 30+
+        ],
+        "circle-opacity": 0.85,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "rgba(255,255,255,0.25)",
+      },
+    });
+
+    // Cluster count labels
+    map.addLayer({
+      id: "jf-cluster-count",
+      type: "symbol",
+      source: "jf-issues",
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": "{point_count_abbreviated}",
+        "text-size": 13,
+        "text-font": ["Open Sans Bold"],
+      },
+      paint: {
+        "text-color": "#ffffff",
+      },
+    });
+
+    // Unclustered point — glowing halo
+    map.addLayer({
+      id: "jf-unclustered-glow",
+      type: "circle",
+      source: "jf-issues",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": ["get", "color"],
+        "circle-radius": 14,
+        "circle-opacity": 0.2,
+        "circle-blur": 1,
+      },
+    });
+
+    // Unclustered point — core dot
+    map.addLayer({
+      id: "jf-unclustered-point",
+      type: "circle",
+      source: "jf-issues",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-color": ["get", "color"],
+        "circle-radius": 7,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+
+    // Cluster click → zoom in
+    map.on("click", "jf-clusters", (e) => {
+      const features = map.queryRenderedFeatures(e.point, { layers: ["jf-clusters"] });
+      if (!features.length) return;
+      const clusterId = features[0].properties?.cluster_id;
+      const src = map.getSource("jf-issues") as any;
+      src?.getClusterExpansionZoom?.(clusterId, (err: any, zoom: number) => {
+        if (!err) {
+          map.easeTo({ center: (features[0].geometry as any).coordinates, zoom });
+        }
+      });
+    });
+
+    // Single point click → popup
+    map.on("click", "jf-unclustered-point", (e) => {
+      const features = map.queryRenderedFeatures(e.point, { layers: ["jf-unclustered-point"] });
+      if (!features.length) return;
+      const f = features[0];
+      const coords = (f.geometry as any).coordinates.slice();
+      const popupHtml = f.properties?.popup;
+      if (popupHtml) {
+        new ML.Popup({ offset: 12, maxWidth: "280px", className: "jf-dark-popup" })
+          .setLngLat(coords)
+          .setHTML(popupHtml)
+          .addTo(map);
+      }
+    });
+
+    // Cursor pointer on interactive layers
+    map.on("mouseenter", "jf-clusters", () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", "jf-clusters", () => { map.getCanvas().style.cursor = ""; });
+    map.on("mouseenter", "jf-unclustered-point", () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", "jf-unclustered-point", () => { map.getCanvas().style.cursor = ""; });
   }, [points, ready]);
 
   // Update center/marker
@@ -206,7 +314,24 @@ export function IssueMap({
       pinMarkerRef.current = null;
     }
     if (!marker || !isFiniteNumber(marker.lat) || !isFiniteNumber(marker.lng)) return;
-    pinMarkerRef.current = new ML.Marker({ color: "#1a5d2b" })
+
+    // Pulsing marker element
+    const el = document.createElement("div");
+    el.className = "jf-pulse-marker";
+    el.innerHTML = `
+      <div style="width:20px;height:20px;background:#ef4444;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px rgba(239,68,68,0.6);position:relative;">
+        <div style="position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(239,68,68,0.4);animation:jf-ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>
+      </div>
+    `;
+    // Add animation keyframes if not present
+    if (!document.getElementById("jf-pulse-style")) {
+      const style = document.createElement("style");
+      style.id = "jf-pulse-style";
+      style.textContent = `@keyframes jf-ping{0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2);opacity:0}}`;
+      document.head.appendChild(style);
+    }
+
+    pinMarkerRef.current = new ML.Marker({ element: el })
       .setLngLat([marker.lng, marker.lat])
       .addTo(map);
     map.flyTo({ center: [marker.lng, marker.lat], zoom: Math.max(map.getZoom(), 16) });
@@ -254,7 +379,7 @@ export function IssueMap({
       className={
         fullscreen
           ? "fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-background"
-          : "w-full rounded-xl border bg-muted/30 relative overflow-hidden flex items-center justify-center"
+          : "w-full rounded-xl border border-border/50 bg-muted/30 relative overflow-hidden flex items-center justify-center"
       }
     >
       <div ref={ref} className="absolute inset-0 h-full w-full" />
@@ -271,13 +396,13 @@ export function IssueMap({
       {!shouldLoad && loadOn === "visible" && (
         <span className="z-10 text-xs text-muted-foreground">Loading map…</span>
       )}
-      {shouldLoad && !ready && <span className="z-10 text-xs text-muted-foreground">Loading map…</span>}
+      {shouldLoad && !ready && <span className="z-10 text-xs text-muted-foreground animate-pulse">Loading map…</span>}
       {ready && (
         <>
           <button
             type="button"
             onClick={toggle3D}
-            className="absolute bottom-2 left-2 z-10 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
+            className="absolute bottom-2 left-2 z-10 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm backdrop-blur transition hover:bg-black/80"
           >
             {is3D ? "2D view" : "3D view"}
           </button>
@@ -285,7 +410,7 @@ export function IssueMap({
             type="button"
             onClick={() => setFullscreen((f) => !f)}
             aria-label={fullscreen ? "Exit full width view" : "View map full width"}
-            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm backdrop-blur transition hover:bg-black/80"
           >
             {fullscreen ? (
               <Minimize2 className="h-3.5 w-3.5" />
