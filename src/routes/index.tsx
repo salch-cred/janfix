@@ -82,109 +82,54 @@ function Home() {
     <AppShell>
       {/* Hero */}
       <section className="relative overflow-hidden bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-6xl px-4 pt-14 pb-24 md:pt-20 md:pb-32">
-          <div className="grid items-center gap-12 md:grid-cols-2">
-            <div className="animate-fade-in-up stagger-1">
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-4 py-2 text-xs font-semibold ring-1 ring-inset ring-primary-foreground/20">
-                <HugeiconsIcon icon={Location01Icon} size={14} strokeWidth={1.5} /> Ask JanFix. Where do
-                I report an issue?
+        <div className="mx-auto max-w-4xl px-4 pt-16 pb-28 text-center md:pt-24 md:pb-36 animate-fade-in-up">
+          <div className="flex flex-col items-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-4 py-2 text-xs font-semibold ring-1 ring-inset ring-primary-foreground/20">
+              <HugeiconsIcon icon={Location01Icon} size={14} strokeWidth={1.5} /> Ask JanFix. Where do
+              I report an issue?
+            </span>
+            <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md ring-1 ring-white/20 max-w-fit">
+              <span className="text-sm font-black uppercase tracking-wider text-yellow-300">
+                undu dada avassthe mare, yapa sari malpuni??
               </span>
-              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl bg-white/10 px-4 py-2.5 backdrop-blur-md ring-1 ring-white/20 max-w-fit">
-                <span className="text-sm font-black uppercase tracking-wider text-yellow-300">
-                  undu dada avassthe mare, yapa sari malpuni??
-                </span>
-              </div>
-              <h1 className="mt-5 font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-6xl">
-                Report it. Track it.
-                <br />
-                Get it fixed.
-              </h1>
-              <p className="mt-5 max-w-md text-base text-primary-foreground/80 md:text-lg">
-                Pothole, garbage, broken streetlight — snap a photo and the right civic
-                authority gets notified. No login needed.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link to="/report">
-                  <Button
-                    size="lg"
-                    className="gap-2 rounded-full bg-background px-7 text-foreground shadow-md hover:bg-background/90"
-                  >
-                    Report an issue{" "}
-                    <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.5} />
-                  </Button>
-                </Link>
-                <Link to="/explore">
-                  <Button
-                    size="lg"
-                    className="gap-2 rounded-full bg-primary-foreground/10 px-7 text-primary-foreground ring-1 ring-inset ring-primary-foreground/25 hover:bg-primary-foreground/15"
-                  >
-                    <HugeiconsIcon icon={Location01Icon} size={18} strokeWidth={1.5} /> Explore the map
-                  </Button>
-                </Link>
-              </div>
-
-              <dl className="mt-10 grid max-w-md grid-cols-3 gap-3">
-                <Stat label="Issues reported" value={analytics.data?.total ?? 0} />
-                <Stat label="Resolved" value={analytics.data?.resolved ?? 0} />
-                <Stat
-                  label="Avg. fix days"
-                  value={analytics.data?.avg_days ? Number(analytics.data.avg_days).toFixed(1) : "\u2014"}
-                />
-              </dl>
+            </div>
+            <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.03] tracking-tight md:text-6.5xl">
+              Report it. Track it.
+              <br />
+              Get it fixed.
+            </h1>
+            <p className="mt-6 max-w-xl text-base text-primary-foreground/80 md:text-lg">
+              Pothole, garbage, broken streetlight — snap a photo and the right civic
+              authority gets notified. No login needed.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Link to="/report">
+                <Button
+                  size="lg"
+                  className="gap-2 rounded-full bg-background px-7 text-foreground shadow-md hover:bg-background/90"
+                >
+                  Report an issue{" "}
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={18} strokeWidth={1.5} />
+                </Button>
+              </Link>
+              <Link to="/explore">
+                <Button
+                  size="lg"
+                  className="gap-2 rounded-full bg-primary-foreground/10 px-7 text-primary-foreground ring-1 ring-inset ring-primary-foreground/25 hover:bg-primary-foreground/15"
+                >
+                  <HugeiconsIcon icon={Location01Icon} size={18} strokeWidth={1.5} /> Explore the map
+                </Button>
+              </Link>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[300px] animate-fade-in-up stagger-2">
-              <div className="overflow-hidden rounded-[2.5rem] border-[6px] border-foreground/90 bg-background text-foreground shadow-2xl">
-                <div className="flex items-center gap-2 border-b px-4 py-3">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <HugeiconsIcon icon={Location01Icon} size={12} strokeWidth={1.5} />
-                  </div>
-                  <span className="text-xs font-bold">janfix.app</span>
-                </div>
-                <div className="space-y-3 px-4 py-5">
-                  <div className="flex items-start gap-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <HugeiconsIcon icon={Notification03Icon} size={12} strokeWidth={1.5} />
-                    </div>
-                    <div className="rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-xs">
-                      Hi! What's the issue you'd like to report?
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-xs text-primary-foreground">
-                      Pothole near MG Road, outside the bus stop.
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <HugeiconsIcon icon={Notification03Icon} size={12} strokeWidth={1.5} />
-                    </div>
-                    <div className="rounded-2xl rounded-tl-sm bg-muted px-3 py-2 text-xs">
-                      Got it — routed to PWD Mangaluru for you.
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
-                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} strokeWidth={1.5} />
-                    </div>
-                    <div className="rounded-2xl rounded-tl-sm bg-success/10 px-3 py-2 text-xs text-success">
-                      Reported! Tracking ID #JF-4521.
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 border-t px-3 py-3">
-                  <div className="flex flex-1 items-center gap-2 rounded-full bg-muted px-3 py-2 text-[11px] text-muted-foreground">
-                    <HugeiconsIcon icon={Camera01Icon} size={14} strokeWidth={1.5} /> Attach a photo...
-                  </div>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={1.5} />
-                  </div>
-                </div>
-                <div className="border-t px-4 py-2 text-center text-[10px] text-muted-foreground">
-                  Powered by JanFix
-                </div>
-              </div>
-            </div>
+            <dl className="mt-12 grid max-w-md grid-cols-3 gap-6 text-center">
+              <Stat label="Issues reported" value={analytics.data?.total ?? 0} />
+              <Stat label="Resolved" value={analytics.data?.resolved ?? 0} />
+              <Stat
+                label="Avg. fix days"
+                value={analytics.data?.avg_days ? Number(analytics.data.avg_days).toFixed(1) : "\u2014"}
+              />
+            </dl>
           </div>
         </div>
 

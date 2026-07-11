@@ -822,6 +822,44 @@ function ReportPage() {
 
 
 
+                      {/* Suggestion banner to escalate/route to MP or Minister */}
+                      <div className="border-t pt-3 space-y-2">
+                        <div className="rounded-xl border border-primary/10 bg-primary/5 p-3.5 space-y-2">
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <Sparkles className="h-3.5 w-3.5 text-primary" /> District-Level Escalation Suggestion
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Since this issue impacts the wider Dakshina Kannada district, you can route it directly to the MP or the District In-charge Minister:
+                          </p>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-8 bg-card font-semibold"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCustomRepId(1); // Capt. Brijesh Chowta
+                                toast.success("Routed to Capt. Brijesh Chowta (MP)");
+                              }}
+                            >
+                              Route to MP (Capt. Brijesh Chowta)
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-8 bg-card font-semibold"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCustomRepId(8); // U.T. Khader
+                                toast.success("Routed to U.T. Khader (District Minister)");
+                              }}
+                            >
+                              Route to District Minister (U.T. Khader)
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Override selection dropdowns */}
                       <div className="border-t pt-3 space-y-3">
                         <div className="text-xs font-bold text-slate-700 dark:text-slate-300">

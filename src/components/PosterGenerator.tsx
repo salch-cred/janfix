@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import QRCode from "qrcode";
-import { toPng } from "html-to-image";
+import { toJpeg } from "html-to-image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Download, Share2 } from "lucide-react";
@@ -135,7 +135,9 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
   const votesFixed    = issue.votes?.fixed ?? 0;
   const votesExists   = issue.votes?.exists ?? 0;
   const idTail        = issue.public_id.includes("-") ? issue.public_id.split("-").pop() : issue.public_id;
-  const shortLink     = `janfix.in/${idTail}`;  const download = async () => {
+  const shortLink     = `janfix.in/${idTail}`;
+
+  const download = async () => {
     if (!downloadRef.current || downloading) return;
     setDownloading(true);
     try {
@@ -149,27 +151,29 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
         });
       }
       await new Promise((r) => setTimeout(r, 300));
-      // Run toPng twice — first call "warms" the canvas, second is the real capture
-      await toPng(downloadRef.current, {
+      // Run toJpeg twice — first call "warms" the canvas, second is the real capture
+      await toJpeg(downloadRef.current, {
         cacheBust: true,
         pixelRatio: 2,
         width: dims.w,
         height: dims.h,
+        quality: 0.9,
         backgroundColor: "#e9e7df",
         skipAutoScale: true,
       });
       await new Promise((r) => setTimeout(r, 200));
-      const data = await toPng(downloadRef.current, {
+      const data = await toJpeg(downloadRef.current, {
         cacheBust: true,
         pixelRatio: 2,
         width: dims.w,
         height: dims.h,
+        quality: 0.9,
         backgroundColor: "#e9e7df",
         skipAutoScale: true,
       });
       const a = document.createElement("a");
       a.href = data;
-      a.download = `JanFix-${issue.public_id}-${size}.png`;
+      a.download = `JanFix-${issue.public_id}-${size}.jpg`;
       document.body.appendChild(a);
       a.click();
       a.remove();

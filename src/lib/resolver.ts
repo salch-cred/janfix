@@ -41,9 +41,18 @@ type JurisdictionRule = {
 // Ward numbers map to:
 //   wards 1-30 (Kudroli–Bunts Hostel)  → Mangaluru City South
 //   wards 31-60 (Lalbagh–Thenka Patla) → Mangaluru City North
+const SOUTH_WARDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 47, 52, 55];
+const NORTH_WARDS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 23, 24, 25, 26, 41, 43, 44, 48, 50, 51, 53, 54, 57];
+const MANGALURU_WARDS = [19, 20, 21, 22, 49];
+const BANTWAL_WARDS = [42, 45, 58];
+const MOODABIDRI_WARDS = [46, 56, 59, 60];
+
 const WARD_CONSTITUENCY: Record<number, string> = {};
-for (let i = 1; i <= 30; i++) WARD_CONSTITUENCY[i] = "Mangaluru City South";
-for (let i = 31; i <= 60; i++) WARD_CONSTITUENCY[i] = "Mangaluru City North";
+for (const w of SOUTH_WARDS) WARD_CONSTITUENCY[w] = "Mangaluru City South";
+for (const w of NORTH_WARDS) WARD_CONSTITUENCY[w] = "Mangaluru City North";
+for (const w of MANGALURU_WARDS) WARD_CONSTITUENCY[w] = "Mangaluru";
+for (const w of BANTWAL_WARDS) WARD_CONSTITUENCY[w] = "Bantwal";
+for (const w of MOODABIDRI_WARDS) WARD_CONSTITUENCY[w] = "Moodabidri";
 
 // Ward number → ward name mapping (for area→ward resolution)
 const WARD_NAMES: Record<string, { number: number; area: string }> = {
@@ -80,6 +89,7 @@ const WARD_NAMES: Record<string, { number: number; area: string }> = {
   hampankatta:   { number: 31, area: "Hampankatta" },
   balmatta:      { number: 32, area: "Balmatta" },
   "state bank":  { number: 33, area: "State Bank" },
+  pandeshwar:    { number: 33, area: "State Bank" },
   "pvs circle":  { number: 34, area: "PVS Circle" },
   falnir:        { number: 35, area: "Falnir" },
   "bunts hostel":{ number: 36, area: "Bunts Hostel" },
@@ -90,7 +100,7 @@ const WARD_NAMES: Record<string, { number: number; area: string }> = {
   kapikad:       { number: 41, area: "Kapikad" },
   thumbay:       { number: 42, area: "Thumbay" },
   vamanjoor:     { number: 43, area: "Vamanjoor" },
-  kutipuram:     { number: 44, area: "Kutipuram" },
+  typepuram:     { number: 44, area: "Kutipuram" },
   adyar:         { number: 45, area: "Adyar" },
   gantalkatte:   { number: 46, area: "Gantalkatte" },
   nandigudda:    { number: 47, area: "Nandigudda" },
@@ -118,6 +128,7 @@ const EXTRA_MAPPINGS: AreaMapping[] = [
   // correction requested by the workspace owner.
   { keyword: "valachil",     ward_id: null, constituency: "Mangaluru City North", city: "Mangaluru", priority: 20 },
   { keyword: "bangalagudde", ward_id: null, constituency: "Mangaluru City North", city: "Mangaluru", priority: 20 },
+  { keyword: "pandeshwar",   ward_id: null, constituency: "Mangaluru City South", city: "Mangaluru", priority: 20 },
   // Rural DK taluk names → constituency only (no ward)
   { keyword: "bantwal",      ward_id: null, constituency: "Bantwal",     city: null, priority: 5 },
   { keyword: "puttur",       ward_id: null, constituency: "Puttur",      city: null, priority: 5 },
