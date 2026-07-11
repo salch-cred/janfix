@@ -86,61 +86,10 @@ function IssuePage() {
     queryFn: () => getIssueByPublicIdFn({ data: { public_id: publicId } }),
   });
 
-  // count a view once per session
-  useEffect(() => {
-    if (!q.data?.issue?.id) return;
-    const key = `v_${publicId}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    incrementViewFn({ data: { issue_id: q.data.issue.id } }).catch(() => {});
-  }, [q.data?.issue?.id, publicId]);
-
-  // ensure URL slug matches (canonical) — must run unconditionally on every
-  // render (not after an early return) to avoid a Rules-of-Hooks violation.
-  useEffect(() => {
-    if (!q.data?.issue) return;
-    const canon = q.data.issue.slug || slugify(q.data.issue.description);
-    const last = (location.pathname.split("/").pop() ?? "").trim();
-    if (canon && last && last !== canon) {
-      navigate({
-        to: "/issue/$publicId/$slug",
-        params: { publicId, slug: canon },
-        replace: true,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q.data?.issue?.slug, q.data?.issue?.description, publicId]);
-
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
-  if (q.isLoading) {
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-3xl p-10 flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="text-sm text-muted-foreground">Loading issue…</span>
-        </div>
-      </AppShell>
-    );
-  }
-  const payload = q.data;
-  if (!payload?.issue) {
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-3xl p-10">Not found.</div>
-      </AppShell>
-    );
-  }
-  const i = payload.issue as any;
-  const cat = i.category ?? categoryBySlug("others");
-  const status = STATUS_META[i.status as keyof typeof STATUS_META] ?? STATUS_META.reported;
-  const severity = SEVERITY_META[i.severity as keyof typeof SEVERITY_META] ?? SEVERITY_META.medium;
-  const categoryBadgeStyle = { background: (cat as any).color ?? "#64748b" };
-  const issueLocation = { lat: i.lat, lng: i.lng };
-  const extraPhotos = (payload as any).photos ?? [];
-
   const supportMutation = useMutation({
-    mutationFn: () => supportIssueFn({ data: { issue_id: i.id, device_id: getDeviceId() } }),
+    mutationFn: (issueId: string) => supportIssueFn({ data: { issue_id: issueId, device_id: getDeviceId() } }),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["issue", publicId] });
       const previousValue = qc.getQueryData(["issue", publicId]);
@@ -171,15 +120,15 @@ function IssuePage() {
   });
 
   const voteMutation = useMutation({
-    mutationFn: (v: "exists" | "fixed") =>
-      voteIssueFn({ data: { issue_id: i.id, device_id: getDeviceId(), vote: v } }),
-    onMutate: async (v) => {
+    mutationFn: ({ issueId, vote }: { issueId: string; vote: "exists" | "fixed" }) =>
+      voteIssueFn({ data: { issue_id: issueId, device_id: getDeviceId(), vote } }),
+    onMutate: async ({ vote }) => {
       await qc.cancelQueries({ queryKey: ["issue", publicId] });
       const previousValue = qc.getQueryData(["issue", publicId]);
       qc.setQueryData(["issue", publicId], (old: any) => {
         if (!old) return old;
-        const existsDiff = v === "exists" ? 1 : 0;
-        const fixedDiff = v === "fixed" ? 1 : 0;
+        const existsDiff = vote === "exists" ? 1 : 0;
+        const fixedDiff = vote === "fixed" ? 1 : 0;
         return {
           ...old,
           votes: {
@@ -196,8 +145,8 @@ function IssuePage() {
       }
       toast.error(err instanceof Error ? err.message : "Failed to register vote");
     },
-    onSuccess: (_, v) => {
-      toast.success(v === "exists" ? "Marked as still exists" : "Marked as fixed");
+    onSuccess: (_, { vote }) => {
+      toast.success(vote === "exists" ? "Marked as still exists" : "Marked as fixed");
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["issue", publicId] });
@@ -205,7 +154,7 @@ function IssuePage() {
   });
 
   const thanksMutation = useMutation({
-    mutationFn: () => thanksIssueFn({ data: { issue_id: i.id, device_id: getDeviceId() } }),
+    mutationFn: (issueId: string) => thanksIssueFn({ data: { issue_id: issueId, device_id: getDeviceId() } }),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["issue", publicId] });
       const previousValue = qc.getQueryData(["issue", publicId]);
@@ -235,6 +184,57 @@ function IssuePage() {
     },
   });
 
+  // count a view once per session
+  useEffect(() => {
+    if (!q.data?.issue?.id) return;
+    const key = `v_${publicId}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    incrementViewFn({ data: { issue_id: q.data.issue.id } }).catch(() => {});
+  }, [q.data?.issue?.id, publicId]);
+
+  // ensure URL slug matches (canonical) — must run unconditionally on every
+  // render (not after an early return) to avoid a Rules-of-Hooks violation.
+  useEffect(() => {
+    if (!q.data?.issue) return;
+    const canon = q.data.issue.slug || slugify(q.data.issue.description);
+    const last = (location.pathname.split("/").pop() ?? "").trim();
+    if (canon && last && last !== canon) {
+      navigate({
+        to: "/issue/$publicId/$slug",
+        params: { publicId, slug: canon },
+        replace: true,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.data?.issue?.slug, q.data?.issue?.description, publicId]);
+
+  if (q.isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-3xl p-10 flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Loading issue…</span>
+        </div>
+      </AppShell>
+    );
+  }
+  const payload = q.data;
+  if (!payload?.issue) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-3xl p-10">Not found.</div>
+      </AppShell>
+    );
+  }
+  const i = payload.issue as any;
+  const cat = i.category ?? categoryBySlug("others");
+  const status = STATUS_META[i.status as keyof typeof STATUS_META] ?? STATUS_META.reported;
+  const severity = SEVERITY_META[i.severity as keyof typeof SEVERITY_META] ?? SEVERITY_META.medium;
+  const categoryBadgeStyle = { background: (cat as any).color ?? "#64748b" };
+  const issueLocation = { lat: i.lat, lng: i.lng };
+  const extraPhotos = (payload as any).photos ?? [];
+
   const act = async (fn: () => Promise<unknown>, msg: string) => {
     try {
       await fn();
@@ -245,9 +245,9 @@ function IssuePage() {
     }
   };
 
-  const vote = (v: "exists" | "fixed") => voteMutation.mutate(v);
-  const support = () => supportMutation.mutate();
-  const thanks = () => thanksMutation.mutate();
+  const vote = (v: "exists" | "fixed") => voteMutation.mutate({ issueId: i.id, vote: v });
+  const support = () => supportMutation.mutate(i.id);
+  const thanks = () => thanksMutation.mutate(i.id);
 
   const watch = () => {
     const email = prompt("Optional email for updates (leave empty to just bookmark)") ?? "";
