@@ -10,7 +10,7 @@ export type MapPoint = {
   popup?: string;
 };
 
-const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
+const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const MAPLIBRE_CSS_URL = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
 const BUILDINGS_LAYER_ID = "jf-3d-buildings";
 
@@ -139,10 +139,10 @@ export function IssueMap({
                 type: "fill-extrusion",
                 minzoom: 13,
                 paint: {
-                  "fill-extrusion-color": "#1e293b",
+                  "fill-extrusion-color": "#c9d2dc",
                   "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
                   "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-                  "fill-extrusion-opacity": 0.7,
+                  "fill-extrusion-opacity": 0.85,
                 },
               } as any,
               labelLayer?.id,
@@ -402,7 +402,7 @@ export function IssueMap({
           <button
             type="button"
             onClick={toggle3D}
-            className="absolute bottom-2 left-2 z-10 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm backdrop-blur transition hover:bg-black/80"
+            className="absolute bottom-2 left-2 z-10 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
           >
             {is3D ? "2D view" : "3D view"}
           </button>
@@ -410,7 +410,7 @@ export function IssueMap({
             type="button"
             onClick={() => setFullscreen((f) => !f)}
             aria-label={fullscreen ? "Exit full width view" : "View map full width"}
-            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm backdrop-blur transition hover:bg-black/80"
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-full border bg-card/90 px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition hover:bg-accent"
           >
             {fullscreen ? (
               <Minimize2 className="h-3.5 w-3.5" />
