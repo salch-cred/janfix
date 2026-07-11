@@ -1,6 +1,6 @@
-import { resolveIssue } from '../src/lib/resolver.js';
-
 process.env.DATABASE_URL = 'postgresql://neondb_owner:npg_uNp6ikrfW8eM@ep-soft-poetry-ad6ivbvy-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+
+import { resolveIssue } from '../src/lib/resolver';
 
 const CATS = [
   { id: 1, name: 'Pothole' },

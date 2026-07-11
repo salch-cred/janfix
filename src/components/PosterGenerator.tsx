@@ -419,34 +419,39 @@ export function PosterGenerator({ issue, publicUrl }: { issue: IssueLike; public
           <div style={{ flex: 1.05, display: "flex", flexDirection: "column", gap: rightColGap, minWidth: 0 }}>
             
             {/* Responsible Authority Card */}
-            <div style={{ background: "#f0efe9", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 2px 4px rgba(0,0,0,0.05)", flexShrink: 0 }}>
-               <div style={{ background: "#254328", color: "white", padding: `${px(8)}px`, fontSize: px(9), fontWeight: 700, letterSpacing: px(0.5), textAlign: "center" }}>
+            <div style={{ background: "#f0efe9", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", flexShrink: 0 }}>
+               <div style={{ background: "#254328", color: "white", padding: `${px(10)}px`, fontSize: px(10), fontWeight: 800, letterSpacing: px(0.8), textAlign: "center" }}>
                   RESPONSIBLE AUTHORITY
                </div>
-               <div style={{ padding: px(12), display: "flex", alignItems: "center", gap: px(10) }}>
-                  <div style={{ width: px(48), height: px(48), background: "white", borderRadius: "50%", padding: px(3), flexShrink: 0, border: `${px(1)}px solid #cbd5e1` }}>
+               <div style={{ padding: px(16), display: "flex", alignItems: "center", gap: px(12) }}>
+                  <div style={{ width: px(56), height: px(56), background: "white", borderRadius: "50%", padding: px(4), flexShrink: 0, border: `${px(2)}px solid #254328`, boxShadow: "0 2px 4px rgba(0,0,0,0.08)" }}>
                      <img src={logoSrc} alt="logo" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                     <div style={{ fontSize: px(13), fontWeight: 800, color: "#111827", lineHeight: 1.1, truncate: "true", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{issue.authority?.name ?? "MCC"}</div>
-                     <div style={{ fontSize: px(10), fontWeight: 700, color: "#4b5563", marginTop: px(2) }}>{issue.authority?.department ?? "ROADS DIVISION"}</div>
+                     <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis" }}>{issue.authority?.name ?? "MCC"}</div>
+                     <div style={{ fontSize: px(11), fontWeight: 700, color: "#4b5563", marginTop: px(3) }}>{issue.authority?.department ?? "Engineering"}</div>
                   </div>
                </div>
             </div>
 
             {/* Local Representative Card */}
-            <div style={{ background: "#f0efe9", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 2px 4px rgba(0,0,0,0.05)", flexShrink: 0 }}>
-               <div style={{ background: "#254328", color: "white", padding: `${px(8)}px`, fontSize: px(9), fontWeight: 700, letterSpacing: px(0.5), textAlign: "center" }}>
-                  LOCAL REPRESENTATIVE
+            <div style={{ background: "#f0efe9", borderRadius: px(12), overflow: "hidden", border: `${px(1)}px solid #dfdad0`, boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", flexShrink: 0 }}>
+               <div style={{ background: "#254328", color: "white", padding: `${px(10)}px`, fontSize: px(10), fontWeight: 800, letterSpacing: px(0.8), textAlign: "center" }}>
+                  OFFICIAL RESPONSIBLE
                </div>
-               <div style={{ padding: px(12), display: "flex", alignItems: "center", gap: px(10) }}>
-                  <img src={repSrc} alt="rep" crossOrigin="anonymous" style={{ width: px(48), height: px(48), objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
-                  <div style={{ minWidth: 0 }}>
-                     <div style={{ fontSize: px(12), fontWeight: 800, color: "#111827", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+               <div style={{ padding: px(16), display: "flex", alignItems: "center", gap: px(12) }}>
+                  <div style={{ position: "relative", flexShrink: 0, width: px(64), height: px(64) }}>
+                     <img src={repSrc} alt="rep" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", border: `${px(2.5)}px solid #da3d2b`, boxShadow: "0 4px 6px rgba(0,0,0,0.12)" }} />
+                     <span style={{ position: "absolute", bottom: px(-2), right: px(-2), background: "#da3d2b", color: "white", fontSize: px(8), fontWeight: 900, borderRadius: px(4), padding: `${px(1)}px ${px(5)}px`, border: `${px(1)}px solid white`, whiteSpace: "nowrap" }}>
+                        {issue.representative?.role ?? "MLA"}
+                     </span>
+                  </div>
+                  <div style={{ minWidth: 0, paddingLeft: px(4) }}>
+                     <div style={{ fontSize: px(14), fontWeight: 800, color: "#111827", lineHeight: 1.2 }}>
                         {issue.representative?.name ? `Sri. ${issue.representative.name}` : "Sri. D. Vedavyas Kamath"}
                      </div>
-                     <div style={{ fontSize: px(10), color: "#4b5563", marginTop: px(2) }}>
-                        {issue.representative?.role ?? "MLA - Mangaluru"}
+                     <div style={{ fontSize: px(11), fontWeight: 700, color: "#4b5563", marginTop: px(3) }}>
+                        {issue.representative?.constituency ?? "Mangaluru City South"}
                      </div>
                   </div>
                </div>

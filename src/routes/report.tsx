@@ -756,8 +756,12 @@ function ReportPage() {
                     <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                       <Building2 className="h-4 w-4 text-primary" /> Routing & Assignment
                     </h3>
-                    <span className="text-[10px] bg-primary/10 text-primary font-extrabold uppercase px-2 py-0.5 rounded-full">
-                      System Resolved
+                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                      customRepId || customAuthId
+                        ? "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                        : "bg-primary/10 text-primary"
+                    }`}>
+                      {customRepId || customAuthId ? "Custom Override" : "System Resolved"}
                     </span>
                   </div>
 
@@ -768,57 +772,75 @@ function ReportPage() {
                     </div>
                   ) : assignmentPreviewQuery.data ? (
                     <div className="space-y-4">
-                      {/* Authority Card */}
-                      <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                        {assignmentPreviewQuery.data.authority?.logo_url ? (
-                          <img
-                            src={assignmentPreviewQuery.data.authority.logo_url}
-                            alt=""
-                            className="h-10 w-10 rounded-lg object-contain bg-white p-1 border shadow-sm"
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-extrabold">
-                            {(assignmentPreviewQuery.data.authority?.name ?? "M").slice(0, 1)}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Assigned Authority</div>
-                          <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
-                            {assignmentPreviewQuery.data.authority?.name ?? "Mangaluru City Corporation"}
-                          </div>
-                          {assignmentPreviewQuery.data.authority?.department && (
-                            <div className="text-xs text-muted-foreground font-semibold mt-0.5">
-                              {assignmentPreviewQuery.data.authority.department}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      {(() => {
+                        const selectedAuth = customAuthId
+                          ? (authoritiesQuery.data ?? []).find((a: any) => a.id === customAuthId)
+                          : assignmentPreviewQuery.data.authority;
 
-                      {/* Representative Card */}
-                      {assignmentPreviewQuery.data.representative && (
-                        <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                          {assignmentPreviewQuery.data.representative.photo_url ? (
-                            <img
-                              src={assignmentPreviewQuery.data.representative.photo_url}
-                              alt=""
-                              className="h-10 w-10 rounded-full object-cover border shadow-sm"
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-extrabold">
-                              {(assignmentPreviewQuery.data.representative.name).slice(0, 1)}
+                        const selectedRep = customRepId
+                          ? (representativesQuery.data ?? []).find((r: any) => r.id === customRepId)
+                          : assignmentPreviewQuery.data.representative;
+
+                        return (
+                          <>
+                            {/* Authority Card */}
+                            <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                              {selectedAuth?.logo_url ? (
+                                <img
+                                  src={selectedAuth.logo_url}
+                                  alt=""
+                                  className="h-10 w-10 rounded-lg object-contain bg-white p-1 border shadow-sm"
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-extrabold">
+                                  {(selectedAuth?.name ?? "M").slice(0, 1)}
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">
+                                  {customAuthId ? "Overridden Authority" : "Assigned Authority"}
+                                </div>
+                                <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                                  {selectedAuth?.name ?? "Mangaluru City Corporation"}
+                                </div>
+                                {selectedAuth?.department && (
+                                  <div className="text-xs text-muted-foreground font-semibold mt-0.5">
+                                    {selectedAuth.department}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">Local Representative</div>
-                            <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
-                              {assignmentPreviewQuery.data.representative.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground font-semibold mt-0.5">
-                              {assignmentPreviewQuery.data.representative.role}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+
+                            {/* Representative Card */}
+                            {selectedRep && (
+                              <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                {selectedRep.photo_url ? (
+                                  <img
+                                    src={selectedRep.photo_url}
+                                    alt=""
+                                    className="h-10 w-10 rounded-full object-cover border shadow-sm"
+                                  />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-extrabold">
+                                    {(selectedRep.name || "R").slice(0, 1)}
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[9px] text-muted-foreground uppercase font-black tracking-wider">
+                                    {customRepId ? "Overridden Representative" : "Local Representative"}
+                                  </div>
+                                  <div className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                                    {selectedRep.name}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground font-semibold mt-0.5">
+                                    {selectedRep.role} {selectedRep.constituency ? `(${selectedRep.constituency})` : ""}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
 
 
 
